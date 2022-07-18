@@ -5,5 +5,6 @@
 - Gradle 7.4.1
 - Data JPA
 - MySQL
+- WebSocket
 - AWS EC2
 - ETC ...

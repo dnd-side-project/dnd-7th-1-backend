@@ -3,7 +3,9 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/ground
     username: root
-    password: 451200
+    password: sonamu0928*
+#    username: root
+#    password: 451200
   jpa:
     hibernate:
       ddl-auto: create-drop
