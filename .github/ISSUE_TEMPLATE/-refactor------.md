@@ -1,14 +1,11 @@
 ---
-name: "[BUG] 에러 리포트"
-about: 'Bug: 에러 리포트'
+name: "[REFACTOR] 리팩토링"
+about: 'Refactor: 기능 수정'
 title: ''
-labels: BUG
+labels: ''
 assignees: ''
 
 ---
-
-### - 발견 날짜
-<pre></pre>
 
 ### - 제목
 <pre></pre>
@@ -17,15 +14,17 @@ assignees: ''
 <pre>
 
 
+</pre>
+
+### - 변경 전
+<pre>
 
 
 
 </pre>
 
-### - 실제 결과
+### - 변경 후
 <pre>
-
-
 
 
 
