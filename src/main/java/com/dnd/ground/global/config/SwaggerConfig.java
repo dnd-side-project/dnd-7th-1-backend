@@ -10,9 +10,10 @@ import springfox.documentation.spi.DocumentationType;
 import springfox.documentation.spring.web.plugins.Docket;
 
 /**
- * Swagger 설정 파일
- *
- * @author 박찬호
+ * @description Swagger 설정 파일
+ * @author  박찬호
+ * @since   2022-07-18
+ * @updated 2022-07-18 / Swagger 설정 추가
  */
 
 @Configuration
