@@ -23,7 +23,7 @@ import java.time.LocalDateTime;
 @Entity
 public class Matrix {
     @Id @GeneratedValue
-    @Column(name = "matrix_id", nullable = false)
+    @Column(name = "matrix_id")
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)

@@ -27,7 +27,7 @@ import java.util.List;
 public class ExerciseRecord {
 
     @Id @GeneratedValue
-    @Column(name = "exercise_record_id", nullable = false)
+    @Column(name = "exercise_record_id")
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
