@@ -38,14 +38,9 @@ public class ExerciseRecord {
     private List<Matrix> matrices = new ArrayList<>();
 
     @Column(nullable = false)
-    private LocalDateTime duration;
-
-    @Column(nullable = false)
     private LocalDateTime started;
 
     @Column(nullable = false)
     private LocalDateTime ended;
 
-    @Column(nullable = false)
-    private Long durationMatrix;
 }

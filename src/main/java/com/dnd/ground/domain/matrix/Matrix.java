@@ -22,6 +22,7 @@ import java.time.LocalDateTime;
 @Table(name="matrix")
 @Entity
 public class Matrix {
+
     @Id @GeneratedValue
     @Column(name = "matrix_id")
     private Long id;
@@ -38,4 +39,5 @@ public class Matrix {
 
     @Column(nullable = false)
     private LocalDateTime created;
+
 }

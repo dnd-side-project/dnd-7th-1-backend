@@ -48,4 +48,5 @@ public class User {
 
     @Column
     private double weight;
+
 }
