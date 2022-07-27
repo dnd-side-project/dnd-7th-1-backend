@@ -12,6 +12,13 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * @description 운동 기록 엔티티
+ * @author  박찬호, 박세헌
+ * @since   2022-07-27
+ * @updated 2022-07-27 / 운동기록 생성 및 연관 관계 매핑 :박세헌
+ */
+
 @Getter
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)

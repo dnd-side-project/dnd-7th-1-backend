@@ -14,7 +14,7 @@ import java.util.List;
  * @description 회원 엔티티
  * @author  박찬호, 박세헌
  * @since   2022-07-26
- * @updated 2022-07-26 / 회원 엔티티 생성 :박찬호
+ * @updated 2022-07-27 / 연관 관계 매핑 :박세헌
  */
 
 @Getter
