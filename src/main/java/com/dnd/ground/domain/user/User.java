@@ -1,11 +1,14 @@
 package com.dnd.ground.domain.user;
 
+import com.dnd.ground.domain.exerciseRecord.ExerciseRecord;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @description 회원 엔티티
@@ -22,8 +25,11 @@ import javax.persistence.*;
 public class User {
 
     @Id @GeneratedValue
-    @Column(nullable = false)
+    @Column(name = "user_id", nullable = false)
     private Long id;
+
+    @OneToMany(mappedBy = "user")
+    private List<ExerciseRecord> exerciseRecords = new ArrayList<>();
 
     @Column(name = "username", nullable = false)
     private String userName;
