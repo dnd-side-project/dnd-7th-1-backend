@@ -30,18 +30,18 @@ public class ExerciseRecord {
     @Column(name = "exercise_record_id")
     private Long id;
 
+    @Column(nullable = false)
+    private LocalDateTime started;
+
+    @Column(nullable = false)
+    private LocalDateTime ended;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User user;
 
     @OneToMany(mappedBy = "exerciseRecord")
     private List<Matrix> matrices = new ArrayList<>();
-
-    @Column(nullable = false)
-    private LocalDateTime started;
-
-    @Column(nullable = false)
-    private LocalDateTime ended;
 
     public ExerciseRecord(User user, List<Matrix> matrices, LocalDateTime started, LocalDateTime ended) {
         this.user = user;

@@ -27,10 +27,6 @@ public class Matrix {
     @Column(name = "matrix_id")
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "exercise_record_id")
-    private ExerciseRecord exerciseRecord;
-
     @Column(nullable = false)
     private double latitude;
 
@@ -39,6 +35,10 @@ public class Matrix {
 
     @Column(nullable = false)
     private LocalDateTime created;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "exercise_record_id")
+    private ExerciseRecord exerciseRecord;
 
     public Matrix(ExerciseRecord exerciseRecord, double latitude, double longitude, LocalDateTime created) {
         this.exerciseRecord = exerciseRecord;

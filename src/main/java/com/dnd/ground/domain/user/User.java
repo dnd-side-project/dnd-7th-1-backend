@@ -28,9 +28,6 @@ public class User {
     @Column(name = "user_id")
     private Long id;
 
-    @OneToMany(mappedBy = "user")
-    private List<ExerciseRecord> exerciseRecords = new ArrayList<>();
-
     @Column(name = "username", nullable = false)
     private String userName;
 
@@ -48,5 +45,8 @@ public class User {
 
     @Column
     private double weight;
+
+    @OneToMany(mappedBy = "user")
+    private List<ExerciseRecord> exerciseRecords = new ArrayList<>();
 
 }
