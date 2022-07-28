@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
  * @description 운동 기록 엔티티
  * @author  박찬호, 박세헌
  * @since   2022-07-27
- * @updated 2022-07-27 / 기록 영역 생성 및 연관 관계 매핑 :박세헌
+ * @updated 2022-07-27 / constructor 생성 : 박세헌
  */
 
 @Getter
@@ -40,4 +40,10 @@ public class Matrix {
     @Column(nullable = false)
     private LocalDateTime created;
 
+    public Matrix(ExerciseRecord exerciseRecord, double latitude, double longitude, LocalDateTime created) {
+        this.exerciseRecord = exerciseRecord;
+        this.latitude = latitude;
+        this.longitude = longitude;
+        this.created = created;
+    }
 }
