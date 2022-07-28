@@ -1,18 +1,20 @@
 package com.dnd.ground.domain.user;
 
 import com.dnd.ground.domain.challenge.UserChallenge;
+import com.dnd.ground.domain.exerciseRecord.ExerciseRecord;
 import com.dnd.ground.domain.friend.Friend;
 import lombok.*;
 
 import javax.persistence.*;
 import javax.validation.constraints.Email;
+
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * @description 회원 엔티티
  * @author  박찬호, 박세헌
- * @since   2022-07-26
+ * @since   2022-07-28
  * @updated 1. Friend와 연관관계 매핑
  *          2. Builder 패턴 적용
  *          - 박찬호
@@ -54,4 +56,8 @@ public class User {
 
     @OneToMany(mappedBy = "user")
     private List<UserChallenge> challenges = new ArrayList<>();
+
+    @OneToMany(mappedBy = "user")
+    private List<ExerciseRecord> exerciseRecords = new ArrayList<>();
+
 }
