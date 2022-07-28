@@ -44,10 +44,10 @@ public class User {
     private String gender;
 
     @Column
-    private double height;
+    private Double height;
 
     @Column
-    private double weight;
+    private Double weight;
 
     @OneToMany(mappedBy = "friend")
     private List<Friend> friends = new ArrayList<>();
