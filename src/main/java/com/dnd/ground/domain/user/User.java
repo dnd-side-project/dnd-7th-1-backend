@@ -1,10 +1,8 @@
 package com.dnd.ground.domain.user;
 
 import com.dnd.ground.domain.challenge.UserChallenge;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import com.dnd.ground.domain.friend.Friend;
+import lombok.*;
 
 import javax.persistence.*;
 import javax.validation.constraints.Email;
@@ -15,10 +13,13 @@ import java.util.List;
  * @description 회원 엔티티
  * @author  박찬호, 박세헌
  * @since   2022-07-26
- * @updated 2022-07-27 / user, friends 컬럼 추가 및 유저챌린지 엔티티와 연관관계 매핑 :박찬호
+ * @updated 1. Friend와 연관관계 매핑
+ *          2. Builder 패턴 적용
+ *          - 박찬호
  */
 
 @Getter
+@Builder
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(name="user")
@@ -48,12 +49,8 @@ public class User {
     @Column
     private double weight;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user", referencedColumnName = "user_id", insertable = false, updatable = false)
-    private User user;
-
-    @OneToMany(mappedBy = "user")
-    private List<User> friends;
+    @OneToMany(mappedBy = "friend")
+    private List<Friend> friends = new ArrayList<>();
 
     @OneToMany(mappedBy = "user")
     private List<UserChallenge> challenges = new ArrayList<>();
