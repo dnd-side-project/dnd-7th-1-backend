@@ -11,5 +11,5 @@ import com.dnd.ground.domain.friend.dto.FriendResponseDto;
  */
 
 public interface FriendService {
-    FriendResponseDto getFriends(Long user);
+    FriendResponseDto getFriends(String nickname);
 }

@@ -12,5 +12,5 @@ import org.springframework.web.bind.annotation.RequestParam;
  */
 
 public interface FriendController {
-    FriendResponseDto getFriends(@RequestParam("nickname") Long user);
+    FriendResponseDto getFriends(@RequestParam("nickname") String nickname);
 }

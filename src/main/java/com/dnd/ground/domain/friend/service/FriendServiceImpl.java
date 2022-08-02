@@ -28,11 +28,11 @@ public class FriendServiceImpl implements FriendService {
     private final FriendRepository friendRepository;
     private final UserRepository userRepository;
 
-    public FriendResponseDto getFriends(Long user) {
+    public FriendResponseDto getFriends(String nickname) {
 
         //유저 및 친구 조회
-        User findUser = userRepository.findById(user).get();
-        List<Friend> findFriends = friendRepository.findFriends(findUser);
+        User findUser = userRepository.findByNickName(nickname).orElseThrow(); //예외 처리 예정!
+        List<Friend> findFriends = friendRepository.findFriendsById(findUser);
         List<FriendResponseDto.Info> infos = new ArrayList<>();
 
         //친구 정보 모음

@@ -26,8 +26,8 @@ public class FriendControllerImpl implements FriendController {
     private final FriendService friendService;
 
     @GetMapping("/list")
-    public FriendResponseDto getFriends(@RequestParam("user") Long user) {
-        return friendService.getFriends(user);
+    public FriendResponseDto getFriends(@RequestParam("nickname") String nickname) {
+        return friendService.getFriends(nickname);
     }
 
 }
