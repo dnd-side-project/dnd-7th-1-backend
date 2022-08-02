@@ -48,7 +48,6 @@ public class ExerciseRecordServiceImpl implements ExerciseRecordService{
         LocalDateTime end = LocalDateTime.now();
         LocalDateTime result = end.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
         LocalDateTime start = LocalDateTime.of(result.getYear(), result.getMonth(), result.getDayOfMonth(), 0, 0, 0);
-        System.out.println("시작: " + start + " 끝: " + end);
         return exerciseRecordRepository.findRecord(id, start, end);
     }
 
