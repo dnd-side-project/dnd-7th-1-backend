@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
  * @description 운동 기록 엔티티
  * @author  박세헌
  * @since   2022-07-27
- * @updated 2022-08-01 / 비즈니스 로직 추가 : 박세헌
+ * @updated 2022-08-03 / created 삭제 : 박세헌
  */
 
 @Getter
@@ -30,17 +30,13 @@ public class Matrix {
     @Column(nullable = false)
     private double longitude;
 
-    @Column(nullable = false)
-    private LocalDateTime created;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "exercise_record_id")
     private ExerciseRecord exerciseRecord;
 
-    public Matrix(double latitude, double longitude, LocalDateTime created) {
+    public Matrix(double latitude, double longitude) {
         this.latitude = latitude;
         this.longitude = longitude;
-        this.created = created;
     }
 
     // setExerciseRecord
