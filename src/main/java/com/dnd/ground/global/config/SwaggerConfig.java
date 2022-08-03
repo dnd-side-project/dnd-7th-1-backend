@@ -13,7 +13,7 @@ import springfox.documentation.spring.web.plugins.Docket;
  * @description Swagger 설정 파일
  * @author  박찬호
  * @since   2022-07-18
- * @updated 2022-07-18 / Swagger 설정 추가
+ * @updated 2022-08-03 / default response message 삭제 설정 추가
  */
 
 @Configuration
@@ -27,7 +27,8 @@ public class SwaggerConfig {
                 .apis(RequestHandlerSelectors.any())
                 .paths(PathSelectors.any())
                 .build()
-                .apiInfo(apiInfo());
+                .apiInfo(apiInfo())
+                .useDefaultResponseMessages(false);
     }
 
     private ApiInfo apiInfo() {

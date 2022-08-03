@@ -8,6 +8,7 @@ import com.dnd.ground.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,6 +29,8 @@ public class FriendServiceImpl implements FriendService {
     private final FriendRepository friendRepository;
     private final UserRepository userRepository;
 
+    //친구 목록과 추가 정보를 함께 반환
+    @Transactional
     public FriendResponseDto getFriends(String nickname) {
 
         //유저 및 친구 조회
@@ -38,17 +41,14 @@ public class FriendServiceImpl implements FriendService {
         //친구 정보 모음
         for (Friend findFriend : findFriends) {
             if (findFriend.getUser() == findUser) {
-
                 infos.add(FriendResponseDto.Info.of()
                         .nickname(findFriend.getFriend().getNickName())
                         .build());
-
-            } else if (findFriend.getFriend() == findUser) {
-
+            }
+            else if (findFriend.getFriend() == findUser) {
                 infos.add(FriendResponseDto.Info.of()
                         .nickname(findFriend.getUser().getNickName())
                         .build());
-
             }
         }
 
@@ -56,5 +56,23 @@ public class FriendServiceImpl implements FriendService {
                 .infos(infos)
                 .size(findFriends.size())
                 .build();
+    }
+
+    //List<User> 형태의 친구 목록 반환
+    public List<User> getFriends(User user) {
+        List<Friend> findFriends = friendRepository.findFriendsById(user);
+        List<User> friends = new ArrayList<>();
+
+
+        for (Friend findFriend : findFriends) {
+            if (findFriend.getUser() == user) {
+                friends.add(findFriend.getFriend());
+            }
+            else if (findFriend.getFriend() == user) {
+                friends.add(findFriend.getUser());
+            }
+        }
+
+        return friends;
     }
 }
