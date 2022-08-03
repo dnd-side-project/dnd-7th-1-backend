@@ -5,6 +5,7 @@ import com.dnd.ground.domain.friend.service.FriendService;
 import io.swagger.annotations.Api;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 
@@ -25,9 +26,8 @@ public class FriendControllerImpl implements FriendController {
 
     private final FriendService friendService;
 
-    @GetMapping("/list")
-    public FriendResponseDto getFriends(@RequestParam("nickname") String nickname) {
-        return friendService.getFriends(nickname);
+    @GetMapping("/list/{nickname}")
+    public ResponseEntity<FriendResponseDto> getFriends(@PathVariable("nickname") String nickname) {
+        return ResponseEntity.ok(friendService.getFriends(nickname));
     }
-
 }

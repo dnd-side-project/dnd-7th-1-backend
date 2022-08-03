@@ -1,7 +1,8 @@
 package com.dnd.ground.domain.friend.controller;
 
 import com.dnd.ground.domain.friend.dto.FriendResponseDto;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PathVariable;
 
 /**
  * @description 친구와 관련된 컨트롤러의 역할을 분리한 인터페이스
@@ -12,5 +13,5 @@ import org.springframework.web.bind.annotation.RequestParam;
  */
 
 public interface FriendController {
-    FriendResponseDto getFriends(@RequestParam("nickname") String nickname);
+    ResponseEntity<FriendResponseDto> getFriends(@PathVariable("nickname") String nickname);
 }

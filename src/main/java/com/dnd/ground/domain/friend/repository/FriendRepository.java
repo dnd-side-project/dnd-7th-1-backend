@@ -20,7 +20,7 @@ import java.util.Optional;
 public interface FriendRepository extends JpaRepository<Friend, Long> {
 
     @Query("select f from Friend f where (f.friend =:user or f.user = :user) and f.status='Accept'")
-    List<Friend> findFriends(@Param("user") User user);
+    List<Friend> findFriendsById(@Param("user") User user);
 
 
     Optional<Friend> findById(Long id);
