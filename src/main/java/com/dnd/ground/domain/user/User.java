@@ -35,11 +35,11 @@ public class User {
     @Column(name = "username", nullable = false)
     private String userName;
 
-    @Column(name = "nickname", nullable = false)
+    @Column(name = "nickname", nullable = false, unique = true)
     private String nickName;
 
     @Email
-    @Column
+    @Column(unique = true)
     private String mail;
 
     @Column
