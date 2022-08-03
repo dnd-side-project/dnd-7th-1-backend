@@ -2,10 +2,7 @@ package com.dnd.ground.domain.exerciseRecord;
 
 import com.dnd.ground.domain.matrix.Matrix;
 import com.dnd.ground.domain.user.User;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
@@ -16,7 +13,7 @@ import java.util.List;
  * @description 운동 기록 엔티티
  * @author  박찬호, 박세헌
  * @since   2022-07-27
- * @updated 2022-07-27 / constructor 생성 : 박세헌
+ * @updated 2022-08-02 / 거리(distance) 추가 : 박세헌
  */
 
 @Getter
@@ -36,6 +33,9 @@ public class ExerciseRecord {
     @Column(nullable = false)
     private LocalDateTime ended;
 
+    @Column(nullable = false)
+    private Double distance;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User user;
@@ -43,10 +43,19 @@ public class ExerciseRecord {
     @OneToMany(mappedBy = "exerciseRecord")
     private List<Matrix> matrices = new ArrayList<>();
 
-    public ExerciseRecord(User user, List<Matrix> matrices, LocalDateTime started, LocalDateTime ended) {
+    public ExerciseRecord(User user, LocalDateTime started) {
         this.user = user;
-        this.matrices = matrices;
         this.started = started;
+    }
+
+    // setMatrix
+    public void addMatrix(Matrix matrix){
+        this.matrices.add(matrix);
+        matrix.belongRecord(this);
+    }
+
+    // setEnded
+    public void endedTime(LocalDateTime ended){
         this.ended = ended;
     }
 }
