@@ -34,8 +34,6 @@ public class ChallengeControllerImpl implements ChallengeController {
     @PostMapping("/")
     @Operation(summary = "챌린지 생성", description = "챌린지 생성")
     public ResponseEntity<?> createChallenge(@RequestBody ChallengeCreateRequestDto challengeCreateRequestDto) {
-//        return new ResponseEntity(HttpStatus.CREATED);
-//        return ResponseEntity.status(HttpStatus.CREATED).body(challengeService.createChallenge(challengeCreateRequestDto));
         return challengeService.createChallenge(challengeCreateRequestDto);
     }
 

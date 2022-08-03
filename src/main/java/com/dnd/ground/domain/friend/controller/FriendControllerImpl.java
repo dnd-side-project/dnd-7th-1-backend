@@ -3,6 +3,7 @@ package com.dnd.ground.domain.friend.controller;
 import com.dnd.ground.domain.friend.dto.FriendResponseDto;
 import com.dnd.ground.domain.friend.service.FriendService;
 import io.swagger.annotations.Api;
+import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -27,6 +28,7 @@ public class FriendControllerImpl implements FriendController {
     private final FriendService friendService;
 
     @GetMapping("/list/{nickname}")
+    @Operation(summary = "친구 목록 조회", description = "닉네임을 통해 수락 상태의 친구 조회")
     public ResponseEntity<FriendResponseDto> getFriends(@PathVariable("nickname") String nickname) {
         return ResponseEntity.ok(friendService.getFriends(nickname));
     }
