@@ -13,7 +13,7 @@ import java.util.List;
  * @description 운동 기록 엔티티
  * @author  박찬호, 박세헌
  * @since   2022-07-27
- * @updated 2022-08-01 / 비즈니스 로직 추가 : 박세헌
+ * @updated 2022-08-02 / 거리(distance) 추가 : 박세헌
  */
 
 @Getter
@@ -32,6 +32,9 @@ public class ExerciseRecord {
 
     @Column(nullable = false)
     private LocalDateTime ended;
+
+    @Column(nullable = false)
+    private Double distance;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
