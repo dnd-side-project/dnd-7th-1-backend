@@ -13,7 +13,7 @@ import java.util.List;
  * @description 운동 기록 엔티티
  * @author  박찬호, 박세헌
  * @since   2022-07-27
- * @updated 2022-08-03 / 비즈니스 로직 추가 : 박세헌
+ * @updated 2022-08-04 / cascade 조건 추가 : 박세헌
  */
 
 @Getter
@@ -40,7 +40,7 @@ public class ExerciseRecord {
     @JoinColumn(name = "user_id")
     private User user;
 
-    @OneToMany(mappedBy = "exerciseRecord")
+    @OneToMany(mappedBy = "exerciseRecord", cascade = CascadeType.ALL)
     private List<Matrix> matrices = new ArrayList<>();
 
     public ExerciseRecord(User user, LocalDateTime started) {
