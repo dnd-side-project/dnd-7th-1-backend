@@ -13,6 +13,6 @@ import org.springframework.web.bind.annotation.*;
  */
 
 public interface RecordController {
-    ResponseEntity<?> start(@RequestParam("nickName") String nickname);
+    ResponseEntity<?> start(@RequestParam("nickname") String nickname);
     ResponseEntity<?> end(@RequestBody EndRequestDto endRequestDto);
 }

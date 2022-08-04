@@ -13,7 +13,9 @@ import java.util.*;
  *              3. 챌린지 하는 친구들 매트릭스 및 정보
  * @author  박세헌
  * @since   2022-08-02
- * @updated 2022-08-02 / 생성 : 박세헌
+ * @updated 2022-08-04 / 1. FriendMatrix 에 nickname 추가
+ *                       2. ChallengeMatrix 에 challengeNumber 추가
+ *                       - 박세헌
  */
 
 @Data @Builder
@@ -30,14 +32,16 @@ public class HomeResponseDto {
 
     @AllArgsConstructor
     static public class FriendMatrix{
+        public String nickname;
         public Set<ShowMatrix> matrices;
     }
 
     @AllArgsConstructor
     static public class ChallengeMatrix{
         public String nickname;
-        public Set<ShowMatrix> matrices = new HashSet<>();
+        public Integer challengeNumber;
         public String challengeColor;
+        public Set<ShowMatrix> matrices = new HashSet<>();
     }
 
     // 중복 제거
