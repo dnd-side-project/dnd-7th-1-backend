@@ -52,6 +52,8 @@ dependencies {
 	implementation 'com.querydsl:querydsl-jpa'
 	implementation 'com.querydsl:querydsl-apt'
 
+	//UUID
+	implementation "com.fasterxml.uuid:java-uuid-generator:4.0.1"
 
 	compileOnly 'org.projectlombok:lombok'
 	runtimeOnly 'mysql:mysql-connector-java'

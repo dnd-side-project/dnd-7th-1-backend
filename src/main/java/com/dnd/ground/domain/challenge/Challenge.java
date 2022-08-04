@@ -3,16 +3,18 @@ package com.dnd.ground.domain.challenge;
 import lombok.*;
 
 import javax.persistence.*;
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * @description 챌린지 엔티티
  * @author  박찬호
  * @since   2022-07-26
- * @updated 1.builder를 활용한 생성자 추가
- *          - 2022-08-03 박찬호
+ * @updated 1.stared 컬럼 데이터 타입 변경 (LocalDateTime → LocalDate)
+ *          2.UUID 컬럼 생성
+ *          - 2022-08-04 박찬호
  */
 
 @Getter
@@ -28,11 +30,14 @@ public class Challenge {
     @Column(name = "challenge_id")
     private Long id;
 
+    @Column(columnDefinition = "CHAR(32)", nullable = false, unique = true)
+    private String uuid;
+
     @Column(name = "challenge_name", nullable = false)
     private String name;
 
     @Column(name = "challenge_started", nullable = false)
-    private LocalDateTime started;
+    private LocalDate started;
 
     @Column(name = "challenge_message", nullable = false)
     private String message;
@@ -49,7 +54,8 @@ public class Challenge {
     private List<UserChallenge> users = new ArrayList<>();
 
     @Builder(builderMethodName = "create")
-    public Challenge(String name, LocalDateTime started, String message, String color) {
+    public Challenge(String name, String uuid, LocalDate started, String message, String color) {
+        this.uuid = uuid;
         this.name = name;
         this.started = started;
         this.message = message;
