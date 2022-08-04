@@ -13,7 +13,7 @@ import java.util.List;
  * @description 운동 기록 엔티티
  * @author  박찬호, 박세헌
  * @since   2022-07-27
- * @updated 2022-08-02 / 거리(distance) 추가 : 박세헌
+ * @updated 2022-08-04 / cascade 조건 추가 : 박세헌
  */
 
 @Getter
@@ -40,10 +40,12 @@ public class ExerciseRecord {
     @JoinColumn(name = "user_id")
     private User user;
 
-    @OneToMany(mappedBy = "exerciseRecord")
+    @OneToMany(mappedBy = "exerciseRecord", cascade = CascadeType.ALL)
     private List<Matrix> matrices = new ArrayList<>();
 
     public ExerciseRecord(User user, LocalDateTime started) {
+        this.distance = 0.0;
+        this.ended = LocalDateTime.now();
         this.user = user;
         this.started = started;
     }
@@ -57,5 +59,10 @@ public class ExerciseRecord {
     // setEnded
     public void endedTime(LocalDateTime ended){
         this.ended = ended;
+    }
+
+    // setDistance
+    public void addDistance(Double distance){
+        this.distance = distance;
     }
 }
