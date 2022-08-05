@@ -10,7 +10,7 @@ import lombok.Data;
  *              2. (일주일)누적 칸의 수
  * @author  박세헌
  * @since   2022-08-02
- * @updated 2022-08-02 / 기록 api 명세 추가: 박세헌
+ * @updated 2022-08-05 / 기록 api 명세 추가: 박세헌
  */
 
 @Data

@@ -14,7 +14,7 @@ import java.util.List;
  *              3. 거리
  * @author  박세헌
  * @since   2022-08-02
- * @updated 2022-08-02 / 생성 : 박세헌
+ * @updated 2022-08-05 / 기록 api 명세 추가: 박세헌
  */
 
 @Data
