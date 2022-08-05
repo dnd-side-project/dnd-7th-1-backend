@@ -18,8 +18,8 @@ import org.springframework.transaction.annotation.Transactional;
  * @description 챌린지와 관련된 서비스의 역할을 분리한 구현체
  * @author  박찬호
  * @since   2022-08-03
- * @updated 1. UUID 추가
- *          - 2022.08.04 박찬호
+ * @updated 1. 주석 추가
+ *          - 2022.08.05 박찬호
  */
 
 @RequiredArgsConstructor
@@ -30,6 +30,7 @@ public class ChallengeServiceImpl implements ChallengeService {
     private final UserChallengeRepository userChallengeRepository;
     private final UserRepository userRepository;
 
+    /*챌린지 생성*/
     @Transactional
     public ResponseEntity<?> createChallenge(ChallengeCreateRequestDto requestDto) {
 
@@ -50,4 +51,5 @@ public class ChallengeServiceImpl implements ChallengeService {
 
         return new ResponseEntity(HttpStatus.CREATED);
     }
+
 }
