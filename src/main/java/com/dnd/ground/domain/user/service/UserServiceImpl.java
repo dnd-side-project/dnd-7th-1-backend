@@ -5,6 +5,7 @@ import com.dnd.ground.domain.exerciseRecord.ExerciseRecord;
 import com.dnd.ground.domain.exerciseRecord.Repository.ExerciseRecordRepository;
 import com.dnd.ground.domain.friend.service.FriendService;
 import com.dnd.ground.domain.matrix.Matrix;
+import com.dnd.ground.domain.matrix.dto.MatrixSetDto;
 import com.dnd.ground.domain.user.User;
 import com.dnd.ground.domain.user.dto.HomeResponseDto;
 import com.dnd.ground.domain.user.repository.UserRepository;
@@ -46,7 +47,7 @@ public class UserServiceImpl implements UserService{
         User user = userRepository.findByNickName(nickname).orElseThrow();  // 예외 처리
 
         /*유저의 matrix 와 정보 (userMatrix)*/
-        Set<HomeResponseDto.ShowMatrix> userShowMatrices = new HashSet<>();
+        Set<MatrixSetDto> userShowMatrices = new HashSet<>();
         HomeResponseDto.UserMatrix userMatrix = new HomeResponseDto.UserMatrix(nickname, userShowMatrices);
 
         List<ExerciseRecord> userRecordOfThisWeek = exerciseRecordRepository.findRecordOfThisWeek(user.getId());
@@ -56,7 +57,7 @@ public class UserServiceImpl implements UserService{
 
             userMatrices.forEach(ms -> ms.forEach(m ->
                     userShowMatrices.add(
-                            HomeResponseDto.ShowMatrix.builder()
+                            MatrixSetDto.builder()
                             .latitude(m.getLatitude())
                             .longitude(m.getLongitude())
                             .build())
@@ -68,13 +69,12 @@ public class UserServiceImpl implements UserService{
 
         /*챌린지를 안하는 친구들의 matrix 와 정보 (friendMatrices)*/
         List<User> notChallenges = friendService.getNotChallenge(user);
-        Map<String, Set<HomeResponseDto.ShowMatrix>> friendHashMap= new HashMap<>();
+        Map<String, Set<MatrixSetDto>> friendHashMap= new HashMap<>();
 
         notChallenges.forEach(nf -> exerciseRecordRepository.findRecordOfThisWeek(nf.getId())
                 .forEach(e -> friendHashMap.put(nf.getNickName(),
                         e.getMatrices()
-                                .stream().map(m -> HomeResponseDto.ShowMatrix
-                                .builder().
+                                .stream().map(m -> MatrixSetDto.builder().
                                 latitude(m.getLatitude())
                                 .longitude(m.getLongitude())
                                 .build()
@@ -91,15 +91,14 @@ public class UserServiceImpl implements UserService{
 
         List<HomeResponseDto.ChallengeMatrix> challengeMatrices = new ArrayList<>();
         for (User friend : challenges) {
-            Set<HomeResponseDto.ShowMatrix> showMatrices = new HashSet<>();
+            Set<MatrixSetDto> showMatrices = new HashSet<>();
             Integer challengeNumber = challengeRepository.getCountChallenge(user, friend); // 구현 완!
             String challengeColor = ""; // 이 유저의 가장 먼저 선정된 챌린지 색깔 (구현 예정)
 
             List<ExerciseRecord> recordOfThisWeek = exerciseRecordRepository.findRecordOfThisWeek(friend.getId());
             recordOfThisWeek.forEach(e ->
                     e.getMatrices()
-                            .forEach(m -> showMatrices.add(HomeResponseDto.ShowMatrix
-                                    .builder()
+                            .forEach(m -> showMatrices.add(MatrixSetDto.builder()
                                     .latitude(m.getLatitude())
                                     .longitude(m.getLongitude())
                                     .build())
