@@ -5,6 +5,7 @@ import com.dnd.ground.domain.exerciseRecord.Repository.ExerciseRecordRepository;
 import com.dnd.ground.domain.exerciseRecord.dto.EndRequestDto;
 import com.dnd.ground.domain.exerciseRecord.dto.StartResponseDto;
 import com.dnd.ground.domain.matrix.Matrix;
+import com.dnd.ground.domain.matrix.dto.MatrixSetDto;
 import com.dnd.ground.domain.user.User;
 import com.dnd.ground.domain.user.repository.UserRepository;
 import com.dnd.ground.domain.user.service.UserService;
@@ -27,7 +28,7 @@ import java.util.Set;
  * @description 운동 기록 서비스 클래스
  * @author  박세헌
  * @since   2022-08-01
- * @updated 2022-08-04 / 운동기록 시작, 끝 로직 함수 구현: 박세헌
+ * @updated 2022-08-04 /  MatrixSetDto로 중복없는 칸 관리 : 박세헌
  */
 
 @Service
@@ -55,8 +56,8 @@ public class ExerciseRecordServiceImpl implements ExerciseRecordService {
             return new StartResponseDto(exerciseRecord.getId(), 0);
         }
         // 중복 제거
-        Set<MatrixSet> setMatrices = new HashSet<>();
-        recordOfThisWeek.forEach(r -> r.getMatrices().forEach(m -> setMatrices.add(MatrixSet.builder().latitude(m.getLatitude()).longitude(m.getLongitude()).build())));
+        Set<MatrixSetDto> setMatrices = new HashSet<>();
+        recordOfThisWeek.forEach(r -> r.getMatrices().forEach(m -> setMatrices.add(MatrixSetDto.builder().latitude(m.getLatitude()).longitude(m.getLongitude()).build())));
         return new StartResponseDto(exerciseRecord.getId(), setMatrices.size());
     }
 
@@ -70,24 +71,5 @@ public class ExerciseRecordServiceImpl implements ExerciseRecordService {
         endRequestDto.getMatrices().forEach(m -> exerciseRecord.addMatrix(new Matrix(m.getLatitude(), m.getLongitude())));
         exerciseRecordRepository.save(exerciseRecord);
         return ResponseEntity.ok(HttpStatus.OK);
-    }
-
-    // 중복 제거
-    @Builder
-    static public class MatrixSet {
-        public Double latitude;
-        public Double longitude;
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(latitude, longitude);
-        }
-
-        @Override
-        public boolean equals(Object obj) {
-            if (this.getClass() != obj.getClass()) return false;
-            return (Objects.equals(((MatrixSet) obj).latitude, this.latitude)) &&
-                    (Objects.equals(((MatrixSet) obj).longitude, this.longitude));
-        }
     }
 }

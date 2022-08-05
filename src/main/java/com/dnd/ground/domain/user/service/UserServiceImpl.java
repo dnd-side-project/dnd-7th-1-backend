@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
  * @description 유저 서비스 클래스
  * @author  박세헌, 박찬호
  * @since   2022-08-01
- * @updated 2022-08-04 / 홈화면 구성 로직 함수(showHome): 박세헌
+ * @updated 2022-08-05 / 충돌 방지 복구: 박세헌
  */
 
 @Service
