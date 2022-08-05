@@ -18,9 +18,9 @@ import java.util.List;
  * @description 친구와 관련된 서비스 구현체
  * @author  박찬호
  * @since   2022-08-01
- * @updated 1. 챌린지를 진행하는 친구 목록 조회
- *          2. 챌린지를 진행하지 않는 친구 목록 조회
- *          - 2022.08.05 박찬호
+ * @updated 1. 챌린지를 진행하는 친구 목록 조회 (수정)
+ *          2. 챌린지를 진행하지 않는 친구 목록 조회 (수정)
+ *          - 2022.08.06 박찬호
  */
 
 @Slf4j
@@ -81,9 +81,13 @@ public class FriendServiceImpl implements FriendService {
         //친구 조회
         List<User> friends = getFriends(user);
 
-        for (User friend : friends) {
-            userChallengeRepository.findChallenging(friend) //챌린지를 진행 중인 회원은
-                    .ifPresent(friends::remove);     //제거
+        //챌린지가 없는 친구 삭제
+        for (int i = 0 ; i<friends.size() ; i++) {
+            User friend = friends.get(i);
+            if (friend.getChallenges().isEmpty() || userChallengeRepository.findNotChallenging(friend).isPresent()) {
+                friends.remove(friend);
+                i--;
+            }
         }
 
         return friends;
@@ -94,9 +98,13 @@ public class FriendServiceImpl implements FriendService {
         //친구 조회
         List<User> friends = getFriends(user);
 
-        for (User friend : friends) {
-            userChallengeRepository.findNotChallenging(friend) //챌린지를 안하는 회원은
-                    .ifPresent(friends::remove);     //제거
+        //챌린지가 있는 친구 삭제
+        for (int i = 0 ; i<friends.size() ; i++) {
+            User friend = friends.get(i);
+            if (friend.getChallenges().isEmpty() || userChallengeRepository.findChallenging(friend).isPresent()) {
+                friends.remove(friend);
+                i--;
+            }
         }
 
         return friends;
