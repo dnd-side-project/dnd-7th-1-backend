@@ -27,13 +27,13 @@ public class RecordControllerImpl implements RecordController{
     private final ExerciseRecordService exerciseRecordService;
 
     @PostMapping("/start")
-    @Operation(summary = "기록 시작", description = "닉네임을 통해 운동기록 생성, 누적영역 조회")
+    @Operation(summary = "기록 시작", description = "기록 시작: 운동기록 생성, 누적영역 조회")
     public ResponseEntity<StartResponseDto> start(@RequestParam("nickname") String nickname){
         return ResponseEntity.ok(exerciseRecordService.recordStart(nickname));
     }
 
     @PostMapping("/end")
-    @Operation(summary = "기록 끝", description = "운동기록에 거리, matrix 저장")
+    @Operation(summary = "기록 끝", description = "기록 끝: 운동기록에 거리, matrix 저장")
     public ResponseEntity<?> end(@RequestBody EndRequestDto endRequestDto){
         return exerciseRecordService.recordEnd(endRequestDto);
     }

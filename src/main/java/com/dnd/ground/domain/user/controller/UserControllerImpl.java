@@ -29,7 +29,10 @@ public class UserControllerImpl implements UserController {
     private final UserService userService;
 
     @GetMapping("/home")
-    @Operation(summary = "홈 화면 조회", description = "닉네임을 통해 홈화면에 필요한 유저, 친구, 챌린지 정보 조회")
+    @Operation(summary = "홈 화면 조회",
+            description = "닉네임을 통해 홈화면에 필요한 유저 정보(userMatrix), " +
+                    "챌린지를 안하는 친구 정보(friendMatrices, 리스트), " +
+                    "나와 챌린지를 하는 유저 정보(challengeMatrices, 리스트) 조회")
     public ResponseEntity<HomeResponseDto> home(@RequestParam("nickname") String nickName){
         return ResponseEntity.ok(userService.showHome(nickName));
     }
