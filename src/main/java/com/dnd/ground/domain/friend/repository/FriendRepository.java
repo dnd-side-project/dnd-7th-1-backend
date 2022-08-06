@@ -19,9 +19,9 @@ import java.util.Optional;
 
 public interface FriendRepository extends JpaRepository<Friend, Long> {
 
+    //User를 통해 친구 목록 조회
     @Query("select f from Friend f where (f.friend =:user or f.user = :user) and f.status='Accept'")
     List<Friend> findFriendsById(@Param("user") User user);
-
 
     Optional<Friend> findById(Long id);
 }

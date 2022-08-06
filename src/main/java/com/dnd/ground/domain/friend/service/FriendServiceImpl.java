@@ -1,5 +1,6 @@
 package com.dnd.ground.domain.friend.service;
 
+import com.dnd.ground.domain.challenge.repository.UserChallengeRepository;
 import com.dnd.ground.domain.friend.Friend;
 import com.dnd.ground.domain.friend.dto.FriendResponseDto;
 import com.dnd.ground.domain.friend.repository.FriendRepository;
@@ -17,8 +18,9 @@ import java.util.List;
  * @description 친구와 관련된 서비스 구현체
  * @author  박찬호
  * @since   2022-08-01
- * @updated 1. 친구 목록 조회 기능 구현
- *          - 2022.08.02 박찬호
+ * @updated 1. 챌린지를 진행하는 친구 목록 조회 (수정)
+ *          2. 챌린지를 진행하지 않는 친구 목록 조회 (수정)
+ *          - 2022.08.06 박찬호
  */
 
 @Slf4j
@@ -27,6 +29,7 @@ import java.util.List;
 public class FriendServiceImpl implements FriendService {
 
     private final FriendRepository friendRepository;
+    private final UserChallengeRepository userChallengeRepository;
     private final UserRepository userRepository;
 
     //친구 목록과 추가 정보를 함께 반환
@@ -44,8 +47,7 @@ public class FriendServiceImpl implements FriendService {
                 infos.add(FriendResponseDto.Info.of()
                         .nickname(findFriend.getFriend().getNickName())
                         .build());
-            }
-            else if (findFriend.getFriend() == findUser) {
+            } else if (findFriend.getFriend() == findUser) {
                 infos.add(FriendResponseDto.Info.of()
                         .nickname(findFriend.getUser().getNickName())
                         .build());
@@ -63,16 +65,49 @@ public class FriendServiceImpl implements FriendService {
         List<Friend> findFriends = friendRepository.findFriendsById(user);
         List<User> friends = new ArrayList<>();
 
-
         for (Friend findFriend : findFriends) {
             if (findFriend.getUser() == user) {
                 friends.add(findFriend.getFriend());
-            }
-            else if (findFriend.getFriend() == user) {
+            } else if (findFriend.getFriend() == user) {
                 friends.add(findFriend.getUser());
             }
         }
 
         return friends;
     }
+
+    //챌린지를 진행하는 친구 조회
+    public List<User> getChallenge(User user) {
+        //친구 조회
+        List<User> friends = getFriends(user);
+
+        //챌린지가 없는 친구 삭제
+        for (int i = 0 ; i<friends.size() ; i++) {
+            User friend = friends.get(i);
+            if (friend.getChallenges().isEmpty() || userChallengeRepository.findNotChallenging(friend).isPresent()) {
+                friends.remove(friend);
+                i--;
+            }
+        }
+
+        return friends;
+    }
+
+    //챌린지를 진행하지 않는 친구 조회
+    public List<User> getNotChallenge(User user) {
+        //친구 조회
+        List<User> friends = getFriends(user);
+
+        //챌린지가 있는 친구 삭제
+        for (int i = 0 ; i<friends.size() ; i++) {
+            User friend = friends.get(i);
+            if (friend.getChallenges().isEmpty() || userChallengeRepository.findChallenging(friend).isPresent()) {
+                friends.remove(friend);
+                i--;
+            }
+        }
+
+        return friends;
+    }
+
 }
