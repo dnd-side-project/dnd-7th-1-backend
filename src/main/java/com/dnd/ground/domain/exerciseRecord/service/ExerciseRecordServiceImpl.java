@@ -28,7 +28,9 @@ import java.util.Set;
  * @description 운동 기록 서비스 클래스
  * @author  박세헌
  * @since   2022-08-01
- * @updated 2022-08-04 /  MatrixSetDto로 중복없는 칸 관리 : 박세헌
+ * @updated 2022-08-04 /  1. 칸의 수 조회 함수
+ *                        2. 영역의 수 조회 함수
+ *                        - 박세헌
  */
 
 @Service
@@ -55,10 +57,8 @@ public class ExerciseRecordServiceImpl implements ExerciseRecordService {
         if (recordOfThisWeek.isEmpty()) {
             return new StartResponseDto(exerciseRecord.getId(), 0);
         }
-        // 중복 제거
-        Set<MatrixSetDto> setMatrices = new HashSet<>();
-        recordOfThisWeek.forEach(r -> r.getMatrices().forEach(m -> setMatrices.add(MatrixSetDto.builder().latitude(m.getLatitude()).longitude(m.getLongitude()).build())));
-        return new StartResponseDto(exerciseRecord.getId(), setMatrices.size());
+
+        return new StartResponseDto(exerciseRecord.getId(), findAreaNumber(recordOfThisWeek));
     }
 
     // 기록 끝
@@ -71,5 +71,26 @@ public class ExerciseRecordServiceImpl implements ExerciseRecordService {
         endRequestDto.getMatrices().forEach(m -> exerciseRecord.addMatrix(new Matrix(m.getLatitude(), m.getLongitude())));
         exerciseRecordRepository.save(exerciseRecord);
         return ResponseEntity.ok(HttpStatus.OK);
+    }
+
+    // 누적 칸의 수 조회
+    public Integer findMatrixNumber(List<ExerciseRecord> exerciseRecord){
+        int count = 0;
+        for (ExerciseRecord record : exerciseRecord) {
+            count += record.getMatrices().size();
+        }
+        return count;
+    }
+
+    // 누적 영역의 수 조회
+    public Integer findAreaNumber(List<ExerciseRecord> exerciseRecord){
+        Set<MatrixSetDto> setMatrices = new HashSet<>();
+        exerciseRecord.forEach(r -> r.getMatrices()
+                .forEach(m -> setMatrices.add(MatrixSetDto
+                        .builder()
+                        .latitude(m.getLatitude())
+                        .longitude(m.getLongitude())
+                        .build())));
+        return setMatrices.size();
     }
 }
