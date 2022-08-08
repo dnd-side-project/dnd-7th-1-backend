@@ -22,4 +22,8 @@ public interface ExerciseRecordService {
     StartResponseDto recordStart(String nickname);
 
     ResponseEntity<?> recordEnd(EndRequestDto endRequestDto);
+
+    Integer findMatrixNumber(List<ExerciseRecord> exerciseRecord);
+
+    Integer findAreaNumber(List<ExerciseRecord> exerciseRecord);
 }

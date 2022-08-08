@@ -1,7 +1,6 @@
 package com.dnd.ground.domain.user.service;
 
 import com.dnd.ground.domain.challenge.Challenge;
-import com.dnd.ground.domain.challenge.UserChallenge;
 import com.dnd.ground.domain.challenge.repository.ChallengeRepository;
 import com.dnd.ground.domain.challenge.repository.UserChallengeRepository;
 import com.dnd.ground.domain.exerciseRecord.ExerciseRecord;
@@ -11,10 +10,10 @@ import com.dnd.ground.domain.matrix.Matrix;
 import com.dnd.ground.domain.matrix.dto.MatrixSetDto;
 import com.dnd.ground.domain.user.User;
 import com.dnd.ground.domain.user.dto.HomeResponseDto;
+import com.dnd.ground.domain.user.dto.UserResponseDto;
 import com.dnd.ground.domain.user.repository.UserRepository;
 import lombok.*;
 
-import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -52,7 +51,7 @@ public class UserServiceImpl implements UserService{
 
         /*유저의 matrix 와 정보 (userMatrix)*/
         Set<MatrixSetDto> userShowMatrices = new HashSet<>();
-        HomeResponseDto.UserMatrix userMatrix = new HomeResponseDto.UserMatrix(nickname, userShowMatrices);
+        UserResponseDto.UserMatrix userMatrix = new UserResponseDto.UserMatrix(nickname, userShowMatrices);
 
         List<ExerciseRecord> userRecordOfThisWeek = exerciseRecordRepository.findRecordOfThisWeek(user.getId());
 
@@ -70,7 +69,7 @@ public class UserServiceImpl implements UserService{
                     )
             );
 
-            userMatrix = new HomeResponseDto.UserMatrix(user.getNickName(), userShowMatrices);
+            userMatrix = new UserResponseDto.UserMatrix(user.getNickName(), userShowMatrices);
         }
 
         /*----------*/
@@ -107,13 +106,13 @@ public class UserServiceImpl implements UserService{
                         )
                         .collect(Collectors.toSet()))));
 
-        List<HomeResponseDto.FriendMatrix> friendMatrices = new ArrayList<>();
+        List<UserResponseDto.FriendMatrix> friendMatrices = new ArrayList<>();
         for (String s : friendHashMap.keySet()) {
-            friendMatrices.add(new HomeResponseDto.FriendMatrix(s, friendHashMap.get(s)));
+            friendMatrices.add(new UserResponseDto.FriendMatrix(s, friendHashMap.get(s)));
         }
 
         /*챌린지를 하는 사람들의 matrix 와 정보 (challengeMatrices)*/
-        List<HomeResponseDto.ChallengeMatrix> challengeMatrices = new ArrayList<>();
+        List<UserResponseDto.ChallengeMatrix> challengeMatrices = new ArrayList<>();
 
         for (User friend : friendsWithChallenge) {
             Set<MatrixSetDto> showMatrices = new HashSet<>();
@@ -128,7 +127,7 @@ public class UserServiceImpl implements UserService{
                                     .build())
                             )
             );
-            challengeMatrices.add(new HomeResponseDto.ChallengeMatrix(friend.getNickName(), challengeNumber, challengeColor, showMatrices));
+            challengeMatrices.add(new UserResponseDto.ChallengeMatrix(friend.getNickName(), challengeNumber, challengeColor, showMatrices));
         }
 
         return HomeResponseDto.builder()
