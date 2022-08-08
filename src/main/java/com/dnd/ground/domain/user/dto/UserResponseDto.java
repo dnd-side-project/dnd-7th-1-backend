@@ -5,17 +5,21 @@ import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 /**
  * @description 유저 Response Dto
- *              1. 유저 매트릭스 및 정보
- *              2. 챌린지 안하는 친구들 매트릭스
- *              3. 챌린지 하는 친구들 매트릭스 및 정보
+ *              1. 유저(나) 매트릭스 및 정보
+ *              2. 나와 챌린지 안하는 친구들 매트릭스
+ *              3. 나와 챌린지 하는 친구들 매트릭스 및 정보
+ *              4. 누적 칸의 수에 대한 랭킹 정보
+ *  *           5. 누적 영역의 수에 대한 랭킹 정보
  * @author  박세헌
  * @since   2022-08-08
- * @updated 2022-08-08 / UserResponseDto 생성 : 박세헌
+ * @updated 2022-08-09 / 랭킹에 관한 dto 생성 : 박세헌
  */
 
 @Data
@@ -52,6 +56,25 @@ public class UserResponseDto {
 
         @ApiModelProperty(value = "칸 꼭지점 위도, 경도 리스트", required = true)
         public Set<MatrixSetDto> matrices = new HashSet<>();
+    }
 
+    @Data
+    @AllArgsConstructor
+    public static class matrixRanking{
+        @ApiModelProperty(value = "닉네임", example = "NickA", required = true)
+        private String nickname;
+
+        @ApiModelProperty(value = "누적 칸의 수", example = "누적 칸의 수", required = true)
+        private Integer matrixNumber;
+    }
+
+    @Data
+    @AllArgsConstructor
+    public static class areaRanking{
+        @ApiModelProperty(value = "닉네임", example = "NickA", required = true)
+        private String nickname;
+
+        @ApiModelProperty(value = "누적 영역의 수", example = "누적 영역의 수", required = true)
+        private Integer areaNumber;
     }
 }
