@@ -12,7 +12,8 @@ import javax.persistence.*;
  * @description User - Challenge 간 조인 테이블
  * @author  박찬호
  * @since   2022-07-27
- * @updated 2022-08-03 / 챌린지 수락 여부(status) 필드 추가
+ * @updated 1. 챌린지 생성 시, 주최자는 Master 상태로 초기화
+ *          - 2022-08-08 박찬호
  */
 
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -44,4 +45,8 @@ public class UserChallenge {
         this.status = ChallengeStatus.Wait;
     }
 
+    //챌린지 상태 변경
+    public void changeStatus(ChallengeStatus status) {
+        this.status = status;
+    }
 }
