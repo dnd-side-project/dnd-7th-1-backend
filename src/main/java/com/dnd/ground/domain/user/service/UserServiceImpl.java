@@ -5,11 +5,13 @@ import com.dnd.ground.domain.challenge.repository.ChallengeRepository;
 import com.dnd.ground.domain.challenge.repository.UserChallengeRepository;
 import com.dnd.ground.domain.exerciseRecord.ExerciseRecord;
 import com.dnd.ground.domain.exerciseRecord.Repository.ExerciseRecordRepository;
+import com.dnd.ground.domain.exerciseRecord.service.ExerciseRecordService;
 import com.dnd.ground.domain.friend.service.FriendService;
 import com.dnd.ground.domain.matrix.Matrix;
 import com.dnd.ground.domain.matrix.dto.MatrixSetDto;
 import com.dnd.ground.domain.user.User;
 import com.dnd.ground.domain.user.dto.HomeResponseDto;
+import com.dnd.ground.domain.user.dto.RankResponseDto;
 import com.dnd.ground.domain.user.dto.UserResponseDto;
 import com.dnd.ground.domain.user.repository.UserRepository;
 import lombok.*;
@@ -24,10 +26,8 @@ import java.util.stream.Collectors;
  * @description 유저 서비스 클래스
  * @author  박세헌, 박찬호
  * @since   2022-08-01
- * @updated showHome() 메소드 변경
- *          1. 챌린지 관련 조회 메소드 수정
- *          2. 코드 가독성 개선
- *          - 2022.08.08 박찬호
+ * @updated 영역의 수, 칸의 수 기준 랭킹 조회
+ *          - 2022.08.09 박세헌
  */
 
 @Service
@@ -37,9 +37,10 @@ public class UserServiceImpl implements UserService{
 
     private final UserRepository userRepository;
     private final ExerciseRecordRepository exerciseRecordRepository;
-    private final FriendService friendService;
     private final ChallengeRepository challengeRepository;
     private final UserChallengeRepository userChallengeRepository;
+    private final FriendService friendService;
+    private final ExerciseRecordService exerciseRecordService;
 
     @Transactional
     public User save(User user){
@@ -135,5 +136,55 @@ public class UserServiceImpl implements UserService{
                 .friendMatrices(friendMatrices)
                 .challengeMatrices(challengeMatrices)
                 .build();
+    }
+
+    // 랭킹 조회(누적 칸의 수 기준)
+    public RankResponseDto.matrixRankingResponseDto matrixRanking(String nickname){
+        User user = userRepository.findByNickName(nickname).orElseThrow();
+        List<User> friends = friendService.getFriends(user); // 친구들 조회
+        List<UserResponseDto.matrixRanking> matrixRankings = new ArrayList<>(); // [닉네임, 칸의 수]
+
+        // 유저의 닉네임과 (이번주)칸의 수 대입
+        matrixRankings.add(new UserResponseDto.matrixRanking(user.getNickName(),
+                exerciseRecordService.findMatrixNumber(exerciseRecordRepository.findRecordOfThisWeek(user.getId()))));
+
+        // 친구들의 닉네임과 (이번주)칸의 수 대입
+        friends.forEach(f -> matrixRankings.add(new UserResponseDto.matrixRanking(f.getNickName(),
+                exerciseRecordService.findMatrixNumber(exerciseRecordRepository.findRecordOfThisWeek(f.getId())))));
+
+        // 칸의 수를 기준으로 내림차순 정렬
+        matrixRankings.sort(new Comparator<UserResponseDto.matrixRanking>() {
+            @Override
+            public int compare(UserResponseDto.matrixRanking o1, UserResponseDto.matrixRanking o2) {
+                return o2.getMatrixNumber().compareTo(o1.getMatrixNumber());
+            }
+        });
+
+        return new RankResponseDto.matrixRankingResponseDto(matrixRankings);
+    }
+
+    // 랭킹 조회(누적 영역의 수 기준)
+    public RankResponseDto.areaRankingResponseDto areaRanking(String nickname){
+        User user = userRepository.findByNickName(nickname).orElseThrow();
+        List<User> friends = friendService.getFriends(user);  // 친구들 조회
+        List<UserResponseDto.areaRanking> areaRankings = new ArrayList<>();  // [닉네임, 영역의 수]
+
+        // 유저의 닉네임과 (이번주)영역의 수 대입
+        areaRankings.add(new UserResponseDto.areaRanking(user.getNickName(),
+                exerciseRecordService.findAreaNumber(exerciseRecordRepository.findRecordOfThisWeek(user.getId()))));
+
+        // 친구들의 닉네임과 (이번주)영역의 수 대입
+        friends.forEach(f -> areaRankings.add(new UserResponseDto.areaRanking(f.getNickName(),
+                exerciseRecordService.findAreaNumber(exerciseRecordRepository.findRecordOfThisWeek(f.getId())))));
+
+        // 영역의 수를 기준으로 내림차순 정렬
+        areaRankings.sort(new Comparator<UserResponseDto.areaRanking>() {
+            @Override
+            public int compare(UserResponseDto.areaRanking o1, UserResponseDto.areaRanking o2) {
+                return o2.getAreaNumber().compareTo(o1.getAreaNumber());
+            }
+        });
+
+        return new RankResponseDto.areaRankingResponseDto(areaRankings);
     }
 }
