@@ -1,20 +1,21 @@
 package com.dnd.ground.domain.user.service;
 
 import com.dnd.ground.domain.challenge.Challenge;
-import com.dnd.ground.domain.challenge.UserChallenge;
 import com.dnd.ground.domain.challenge.repository.ChallengeRepository;
 import com.dnd.ground.domain.challenge.repository.UserChallengeRepository;
 import com.dnd.ground.domain.exerciseRecord.ExerciseRecord;
 import com.dnd.ground.domain.exerciseRecord.Repository.ExerciseRecordRepository;
+import com.dnd.ground.domain.exerciseRecord.service.ExerciseRecordService;
 import com.dnd.ground.domain.friend.service.FriendService;
 import com.dnd.ground.domain.matrix.Matrix;
 import com.dnd.ground.domain.matrix.dto.MatrixSetDto;
 import com.dnd.ground.domain.user.User;
 import com.dnd.ground.domain.user.dto.HomeResponseDto;
+import com.dnd.ground.domain.user.dto.RankResponseDto;
+import com.dnd.ground.domain.user.dto.UserResponseDto;
 import com.dnd.ground.domain.user.repository.UserRepository;
 import lombok.*;
 
-import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,10 +26,8 @@ import java.util.stream.Collectors;
  * @description 유저 서비스 클래스
  * @author  박세헌, 박찬호
  * @since   2022-08-01
- * @updated showHome() 메소드 변경
- *          1. 챌린지 관련 조회 메소드 수정
- *          2. 코드 가독성 개선
- *          - 2022.08.08 박찬호
+ * @updated 영역의 수, 칸의 수 기준 랭킹 조회
+ *          - 2022.08.09 박세헌
  */
 
 @Service
@@ -38,9 +37,10 @@ public class UserServiceImpl implements UserService{
 
     private final UserRepository userRepository;
     private final ExerciseRecordRepository exerciseRecordRepository;
-    private final FriendService friendService;
     private final ChallengeRepository challengeRepository;
     private final UserChallengeRepository userChallengeRepository;
+    private final FriendService friendService;
+    private final ExerciseRecordService exerciseRecordService;
 
     @Transactional
     public User save(User user){
@@ -52,7 +52,7 @@ public class UserServiceImpl implements UserService{
 
         /*유저의 matrix 와 정보 (userMatrix)*/
         Set<MatrixSetDto> userShowMatrices = new HashSet<>();
-        HomeResponseDto.UserMatrix userMatrix = new HomeResponseDto.UserMatrix(nickname, userShowMatrices);
+        UserResponseDto.UserMatrix userMatrix = new UserResponseDto.UserMatrix(nickname, userShowMatrices);
 
         List<ExerciseRecord> userRecordOfThisWeek = exerciseRecordRepository.findRecordOfThisWeek(user.getId());
 
@@ -70,7 +70,7 @@ public class UserServiceImpl implements UserService{
                     )
             );
 
-            userMatrix = new HomeResponseDto.UserMatrix(user.getNickName(), userShowMatrices);
+            userMatrix = new UserResponseDto.UserMatrix(user.getNickName(), userShowMatrices);
         }
 
         /*----------*/
@@ -107,13 +107,13 @@ public class UserServiceImpl implements UserService{
                         )
                         .collect(Collectors.toSet()))));
 
-        List<HomeResponseDto.FriendMatrix> friendMatrices = new ArrayList<>();
+        List<UserResponseDto.FriendMatrix> friendMatrices = new ArrayList<>();
         for (String s : friendHashMap.keySet()) {
-            friendMatrices.add(new HomeResponseDto.FriendMatrix(s, friendHashMap.get(s)));
+            friendMatrices.add(new UserResponseDto.FriendMatrix(s, friendHashMap.get(s)));
         }
 
         /*챌린지를 하는 사람들의 matrix 와 정보 (challengeMatrices)*/
-        List<HomeResponseDto.ChallengeMatrix> challengeMatrices = new ArrayList<>();
+        List<UserResponseDto.ChallengeMatrix> challengeMatrices = new ArrayList<>();
 
         for (User friend : friendsWithChallenge) {
             Set<MatrixSetDto> showMatrices = new HashSet<>();
@@ -128,7 +128,7 @@ public class UserServiceImpl implements UserService{
                                     .build())
                             )
             );
-            challengeMatrices.add(new HomeResponseDto.ChallengeMatrix(friend.getNickName(), challengeNumber, challengeColor, showMatrices));
+            challengeMatrices.add(new UserResponseDto.ChallengeMatrix(friend.getNickName(), challengeNumber, challengeColor, showMatrices));
         }
 
         return HomeResponseDto.builder()
@@ -136,5 +136,55 @@ public class UserServiceImpl implements UserService{
                 .friendMatrices(friendMatrices)
                 .challengeMatrices(challengeMatrices)
                 .build();
+    }
+
+    // 랭킹 조회(누적 칸의 수 기준)
+    public RankResponseDto.matrixRankingResponseDto matrixRanking(String nickname){
+        User user = userRepository.findByNickName(nickname).orElseThrow();
+        List<User> friends = friendService.getFriends(user); // 친구들 조회
+        List<UserResponseDto.matrixRanking> matrixRankings = new ArrayList<>(); // [닉네임, 칸의 수]
+
+        // 유저의 닉네임과 (이번주)칸의 수 대입
+        matrixRankings.add(new UserResponseDto.matrixRanking(user.getNickName(),
+                exerciseRecordService.findMatrixNumber(exerciseRecordRepository.findRecordOfThisWeek(user.getId()))));
+
+        // 친구들의 닉네임과 (이번주)칸의 수 대입
+        friends.forEach(f -> matrixRankings.add(new UserResponseDto.matrixRanking(f.getNickName(),
+                exerciseRecordService.findMatrixNumber(exerciseRecordRepository.findRecordOfThisWeek(f.getId())))));
+
+        // 칸의 수를 기준으로 내림차순 정렬
+        matrixRankings.sort(new Comparator<UserResponseDto.matrixRanking>() {
+            @Override
+            public int compare(UserResponseDto.matrixRanking o1, UserResponseDto.matrixRanking o2) {
+                return o2.getMatrixNumber().compareTo(o1.getMatrixNumber());
+            }
+        });
+
+        return new RankResponseDto.matrixRankingResponseDto(matrixRankings);
+    }
+
+    // 랭킹 조회(누적 영역의 수 기준)
+    public RankResponseDto.areaRankingResponseDto areaRanking(String nickname){
+        User user = userRepository.findByNickName(nickname).orElseThrow();
+        List<User> friends = friendService.getFriends(user);  // 친구들 조회
+        List<UserResponseDto.areaRanking> areaRankings = new ArrayList<>();  // [닉네임, 영역의 수]
+
+        // 유저의 닉네임과 (이번주)영역의 수 대입
+        areaRankings.add(new UserResponseDto.areaRanking(user.getNickName(),
+                exerciseRecordService.findAreaNumber(exerciseRecordRepository.findRecordOfThisWeek(user.getId()))));
+
+        // 친구들의 닉네임과 (이번주)영역의 수 대입
+        friends.forEach(f -> areaRankings.add(new UserResponseDto.areaRanking(f.getNickName(),
+                exerciseRecordService.findAreaNumber(exerciseRecordRepository.findRecordOfThisWeek(f.getId())))));
+
+        // 영역의 수를 기준으로 내림차순 정렬
+        areaRankings.sort(new Comparator<UserResponseDto.areaRanking>() {
+            @Override
+            public int compare(UserResponseDto.areaRanking o1, UserResponseDto.areaRanking o2) {
+                return o2.getAreaNumber().compareTo(o1.getAreaNumber());
+            }
+        });
+
+        return new RankResponseDto.areaRankingResponseDto(areaRankings);
     }
 }
