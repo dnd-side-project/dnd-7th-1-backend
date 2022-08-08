@@ -15,9 +15,7 @@ import java.util.*;
  *              3. 챌린지 하는 친구들 매트릭스 및 정보
  * @author  박세헌
  * @since   2022-08-02
- * @updated 2022-08-05 / 1. 홈화면 api 명세 추가
- *                       2. MatrixSetDto로 중복없는 칸 관리
- *                         - 박세헌
+ * @updated 2022-08-08 / UserResponseDto로 한번에 관리 : 박세헌
  */
 
 @Data @Builder

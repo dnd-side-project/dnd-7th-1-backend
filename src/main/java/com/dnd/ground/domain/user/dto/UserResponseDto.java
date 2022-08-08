@@ -8,6 +8,16 @@ import lombok.Data;
 import java.util.HashSet;
 import java.util.Set;
 
+/**
+ * @description 유저 Response Dto
+ *              1. 유저 매트릭스 및 정보
+ *              2. 챌린지 안하는 친구들 매트릭스
+ *              3. 챌린지 하는 친구들 매트릭스 및 정보
+ * @author  박세헌
+ * @since   2022-08-08
+ * @updated 2022-08-08 / UserResponseDto 생성 : 박세헌
+ */
+
 @Data
 public class UserResponseDto {
 
