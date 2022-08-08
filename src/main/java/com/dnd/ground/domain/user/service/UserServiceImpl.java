@@ -1,6 +1,9 @@
 package com.dnd.ground.domain.user.service;
 
+import com.dnd.ground.domain.challenge.Challenge;
+import com.dnd.ground.domain.challenge.UserChallenge;
 import com.dnd.ground.domain.challenge.repository.ChallengeRepository;
+import com.dnd.ground.domain.challenge.repository.UserChallengeRepository;
 import com.dnd.ground.domain.exerciseRecord.ExerciseRecord;
 import com.dnd.ground.domain.exerciseRecord.Repository.ExerciseRecordRepository;
 import com.dnd.ground.domain.friend.service.FriendService;
@@ -11,6 +14,7 @@ import com.dnd.ground.domain.user.dto.HomeResponseDto;
 import com.dnd.ground.domain.user.repository.UserRepository;
 import lombok.*;
 
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,10 +26,9 @@ import java.util.stream.Collectors;
  * @author  박세헌, 박찬호
  * @since   2022-08-01
  * @updated showHome() 메소드 변경
- *          1. 챌린지를 진행하지 않는 친구 목록 조회 추가 추가
- *          2. 친구와 함께 진행 중인 챌린지 개수 조회 추가
- *          3. 코드 가독성 개선
- *          - 2022.08.05 박찬호
+ *          1. 챌린지 관련 조회 메소드 수정
+ *          2. 코드 가독성 개선
+ *          - 2022.08.08 박찬호
  */
 
 @Service
@@ -37,6 +40,7 @@ public class UserServiceImpl implements UserService{
     private final ExerciseRecordRepository exerciseRecordRepository;
     private final FriendService friendService;
     private final ChallengeRepository challengeRepository;
+    private final UserChallengeRepository userChallengeRepository;
 
     @Transactional
     public User save(User user){
@@ -53,7 +57,9 @@ public class UserServiceImpl implements UserService{
         List<ExerciseRecord> userRecordOfThisWeek = exerciseRecordRepository.findRecordOfThisWeek(user.getId());
 
         if (!userRecordOfThisWeek.isEmpty()){
-            List<List<Matrix>> userMatrices = userRecordOfThisWeek.stream().map(e -> e.getMatrices()).collect(Collectors.toList());
+            List<List<Matrix>> userMatrices = userRecordOfThisWeek.stream()
+                    .map(ExerciseRecord::getMatrices)
+                    .collect(Collectors.toList());
 
             userMatrices.forEach(ms -> ms.forEach(m ->
                     userShowMatrices.add(
@@ -67,17 +73,37 @@ public class UserServiceImpl implements UserService{
             userMatrix = new HomeResponseDto.UserMatrix(user.getNickName(), userShowMatrices);
         }
 
+        /*----------*/
+        //진행 중인 챌린지 목록 조회 List<UserChallenge>
+        List<Challenge> challenges = challengeRepository.findChallenge(user);
+
+        //챌린지를 함께하지 않는 친구 목록
+        List<User> friendsNotChallenge = friendService.getFriends(user);
+
+        //나랑 챌린지를 함께 하는 사람들(친구+친구X 둘 다)
+        Set<User> friendsWithChallenge = new HashSet<>();
+
+        for (Challenge challenge : challenges) {
+            List<User> challengeUsers = userChallengeRepository.findChallengeUsers(challenge);
+            //챌린지를 함께하고 있는 사람들 조회
+            for (User cu : challengeUsers) {
+                friendsWithChallenge.add(cu);
+                friendsNotChallenge.remove(cu);
+            }
+        }
+        friendsWithChallenge.remove(user);
+        /*----------*/
+
         /*챌린지를 안하는 친구들의 matrix 와 정보 (friendMatrices)*/
-        List<User> notChallenges = friendService.getNotChallenge(user);
         Map<String, Set<MatrixSetDto>> friendHashMap= new HashMap<>();
 
-        notChallenges.forEach(nf -> exerciseRecordRepository.findRecordOfThisWeek(nf.getId())
+        friendsNotChallenge.forEach(nf -> exerciseRecordRepository.findRecordOfThisWeek(nf.getId())
                 .forEach(e -> friendHashMap.put(nf.getNickName(),
                         e.getMatrices()
-                                .stream().map(m -> MatrixSetDto.builder().
-                                latitude(m.getLatitude())
-                                .longitude(m.getLongitude())
-                                .build()
+                                .stream().map(m -> MatrixSetDto.builder()
+                                        .latitude(m.getLatitude())
+                                        .longitude(m.getLongitude())
+                                        .build()
                         )
                         .collect(Collectors.toSet()))));
 
@@ -87,14 +113,12 @@ public class UserServiceImpl implements UserService{
         }
 
         /*챌린지를 하는 사람들의 matrix 와 정보 (challengeMatrices)*/
-        List<User> challenges = friendService.getNotChallenge(user); // 구현 완!
-
         List<HomeResponseDto.ChallengeMatrix> challengeMatrices = new ArrayList<>();
-        for (User friend : challenges) {
-            Set<MatrixSetDto> showMatrices = new HashSet<>();
-            Integer challengeNumber = challengeRepository.getCountChallenge(user, friend); // 구현 완!
-            String challengeColor = ""; // 이 유저의 가장 먼저 선정된 챌린지 색깔 (구현 예정)
 
+        for (User friend : friendsWithChallenge) {
+            Set<MatrixSetDto> showMatrices = new HashSet<>();
+            Integer challengeNumber = challengeRepository.findCountChallenge(user, friend); // 구현 완!
+            String challengeColor = challengeRepository.findChallengesWithFriend(user, friend).get(0).getColor();; // 구현 완!
             List<ExerciseRecord> recordOfThisWeek = exerciseRecordRepository.findRecordOfThisWeek(friend.getId());
             recordOfThisWeek.forEach(e ->
                     e.getMatrices()
@@ -108,7 +132,7 @@ public class UserServiceImpl implements UserService{
         }
 
         return HomeResponseDto.builder()
-                .userMatrix(userMatrix)
+                .userMatrices(userMatrix)
                 .friendMatrices(friendMatrices)
                 .challengeMatrices(challengeMatrices)
                 .build();

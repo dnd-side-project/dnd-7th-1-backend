@@ -24,13 +24,13 @@ import java.util.*;
 public class HomeResponseDto {
 
     @ApiModelProperty(value="유저에 대한 정보", required = true)
-    private UserMatrix userMatrix;
+    private UserMatrix userMatrices;
 
     @ApiModelProperty(value="(챌린지를 안하는)친구들에 대한 정보", required = true)
-    private List<FriendMatrix> friendMatrices = new ArrayList<>();
+    private List<FriendMatrix> friendMatrices;
 
     @ApiModelProperty(value="(챌린지를 하는)유저들에 대한 정보",  required = true)
-    private List<ChallengeMatrix> challengeMatrices = new ArrayList<>();
+    private List<ChallengeMatrix> challengeMatrices;
 
     @AllArgsConstructor
     static public class UserMatrix{
@@ -38,7 +38,7 @@ public class HomeResponseDto {
         public String nickname;
 
         @ApiModelProperty(value = "칸 꼭지점 위도, 경도 리스트", required = true)
-        public Set<MatrixSetDto> matrices = new HashSet<>();
+        public Set<MatrixSetDto> matrices;
     }
 
     @AllArgsConstructor
@@ -62,6 +62,6 @@ public class HomeResponseDto {
         public String challengeColor;
 
         @ApiModelProperty(value = "칸 꼭지점 위도, 경도 리스트", required = true)
-        public Set<MatrixSetDto> matrices = new HashSet<>();
+        public Set<MatrixSetDto> matrices;
     }
 }
