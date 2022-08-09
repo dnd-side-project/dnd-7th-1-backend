@@ -27,6 +27,8 @@ import java.util.Set;
  *          3. 마지막 위치 반환을 위한 컬럼 추가(각 DTO에 latitude, longitude 추가)
  *          4. 일부 생성자, 수정자 및 어노테이션 변경
  *          - 2022.08.09 박찬호
+ *          1. 랭크 변수 추가 및 칸의 수, 영역의 수 Long으로 변경
+ *          - 2022.08.09 박세헌
  */
 
 @Data
@@ -108,20 +110,26 @@ public class UserResponseDto {
     @Data
     @AllArgsConstructor
     public static class matrixRanking{
+        @ApiModelProperty(value = "랭크", example = "1위, 2위..", required = true)
+        private Integer rank;
+
         @ApiModelProperty(value = "닉네임", example = "NickA", required = true)
         private String nickname;
 
         @ApiModelProperty(value = "누적 칸의 수", example = "누적 칸의 수", required = true)
-        private Integer matrixNumber;
+        private Long matrixNumber;
     }
 
     @Data
     @AllArgsConstructor
     public static class areaRanking{
+        @ApiModelProperty(value = "랭크", example = "1위, 2위..", required = true)
+        private Integer rank;
+
         @ApiModelProperty(value = "닉네임", example = "NickA", required = true)
         private String nickname;
 
         @ApiModelProperty(value = "누적 영역의 수", example = "누적 영역의 수", required = true)
-        private Integer areaNumber;
+        private Long areaNumber;
     }
 }
