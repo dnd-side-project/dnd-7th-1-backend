@@ -30,7 +30,7 @@ import java.util.stream.Collectors;
  * @description 유저 서비스 클래스
  * @author  박세헌, 박찬호
  * @since   2022-08-01
- * @updated 2022-08-09 / 랭킹 로직 추가 - 박세헌
+ * @updated 2022-08-09 / 랭킹 오류 해결 - 박세헌
  */
 
 @Service
@@ -162,7 +162,7 @@ public class UserServiceImpl implements UserService{
         int count = 0;
         int rank = 1;
         if (!matrixCount.isEmpty()){
-            Long matrixNumber = (Long) matrixCount.get(0).get(1);
+            Long matrixNumber = (Long) matrixCount.get(0).get(1);  // 맨 처음 user의 칸 수
             for (Tuple info : matrixCount) {
                 if (Objects.equals((Long) info.get(1), matrixNumber)){  // 전 유저와 칸수가 같다면 랭크 유지
                     matrixRankings.add(new UserResponseDto.matrixRanking(rank, (String)info.get(0),
@@ -174,6 +174,7 @@ public class UserServiceImpl implements UserService{
                 rank += 1;
                 matrixRankings.add(new UserResponseDto.matrixRanking(rank, (String)info.get(0),
                         (Long)info.get(1)));
+                matrixNumber = (Long)info.get(1);  // 칸 수 update!
                 count += 1;
             }
         }
@@ -205,17 +206,17 @@ public class UserServiceImpl implements UserService{
         areaRankings.sort((a, b) -> b.getAreaNumber().compareTo(a.getAreaNumber()));
 
         // 랭크 결정
-        Long temp = areaRankings.get(0).getAreaNumber();
+        Long areaNumber = areaRankings.get(0).getAreaNumber();  // 맨 처음 user의 영역 수
         int rank = 1;
         for (int i=1; i<areaRankings.size(); i++){
-            if (Objects.equals(areaRankings.get(i).getAreaNumber(), temp)){  // 전 유저와 칸수가 같다면 랭크 유지
+            if (Objects.equals(areaRankings.get(i).getAreaNumber(), areaNumber)){  // 전 유저와 칸수가 같다면 랭크 유지
                 areaRankings.get(i).setRank(rank);
                 continue;
             }
             // 전 유저보다 칸수가 작다면 랭크+1
             rank += 1;
             areaRankings.get(i).setRank(rank);
-            temp = areaRankings.get(i).getAreaNumber();
+            areaNumber = areaRankings.get(i).getAreaNumber();  // 영역 수 update!
         }
         return new RankResponseDto.areaRankingResponseDto(areaRankings);
     }
