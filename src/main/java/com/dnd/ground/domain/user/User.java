@@ -17,6 +17,7 @@ import java.util.List;
  * @since   2022.07.28
  * @updated 1. 회원의 마지막 위치에 관한 필드 추가(latitude, longitude)
  *          2. 마지막 위치 최신화를 위한 메소드 추가(updatePosition)
+ *          3. 챌린지 관련 cascade 옵션 추가
  *          - 2022.08.09 박찬호
  */
 
@@ -60,7 +61,7 @@ public class User {
     @OneToMany(mappedBy = "friend")
     private List<Friend> friends = new ArrayList<>();
 
-    @OneToMany(mappedBy = "user")
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
     private List<UserChallenge> challenges = new ArrayList<>();
 
     @OneToMany(mappedBy = "user")

@@ -12,8 +12,8 @@ import javax.persistence.*;
  * @description User - Challenge 간 조인 테이블
  * @author  박찬호
  * @since   2022-07-27
- * @updated 1. 챌린지 생성 시, 주최자는 Master 상태로 초기화
- *          - 2022-08-08 박찬호
+ * @updated 1. 챌린지, 회원에 cascade 옵션 추가
+ *          - 2022-08-09 박찬호
  */
 
 @NoArgsConstructor(access = AccessLevel.PROTECTED)

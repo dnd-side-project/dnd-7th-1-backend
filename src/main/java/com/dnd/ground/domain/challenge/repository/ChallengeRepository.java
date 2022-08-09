@@ -1,19 +1,21 @@
 package com.dnd.ground.domain.challenge.repository;
 
 import com.dnd.ground.domain.challenge.Challenge;
+import com.dnd.ground.domain.challenge.ChallengeStatus;
 import com.dnd.ground.domain.user.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDate;
 import java.util.List;
 
 /**
  * @description 챌린지와 관련한 레포지토리
  * @author  박찬호
  * @since   2022-08-03
- * @updated 1. 진행 중인 챌린지 정보 조회 추가
- *          - 2022.08.08 박찬호
+ * @updated 1. 일주일 챌린지 시작 상태 변경 기능 추가
+ *          - 2022.08.09 박찬호
  */
 
 public interface ChallengeRepository extends JpaRepository<Challenge, Long> {
@@ -39,4 +41,9 @@ public interface ChallengeRepository extends JpaRepository<Challenge, Long> {
     @Query("select c from Challenge c where c IN (select uc.challenge from UserChallenge uc where uc.user=:user) and " +
             "c.status='Progress' and c = (select uc.challenge from UserChallenge uc where uc.challenge=c and uc.user =:friend) order by c.id ASC")
     List<Challenge> findChallengesWithFriend(@Param("user")User user, @Param("friend") User friend);
+
+    //진행 중인 챌린지를 제외하고, 모든 챌린지 조회 -> Progress가 아니면서 시작 날짜가 오늘인 챌린지 조회
+    @Query("select c from Challenge c where c.status<>'Progress' and c.started=:today")
+    List<Challenge> findChallengesNotStarted(LocalDate today);
+
 }
