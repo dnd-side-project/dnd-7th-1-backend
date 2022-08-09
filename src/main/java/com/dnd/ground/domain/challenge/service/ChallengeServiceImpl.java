@@ -28,6 +28,7 @@ import java.util.List;
  * @since   2022-08-03
  * @updated 1. 일주일 챌린지 종류 추가(type)
  *          2. 일주일 챌린지 시작 상태 변경 기능 추가(Cron)
+ *          3. 일주일 챌린지 종료 기능 추가
  *          - 2022.08.09 박찬호
  */
 
@@ -115,4 +116,25 @@ public class ChallengeServiceImpl implements ChallengeService {
         log.info("**챌린지 시작 메소드 실행** 현재 시간:{} | 삭제된 챌린지 개수:{} | 삭제된 유저 수:{} | 진행 상태로 바뀐 챌린지 개수:{}",
                 LocalDateTime.now(), countDelete, countUser, countProgress);
     }
+
+    /*일주일 챌린지 마감(매주 일요일 오후 11시 59분 50초 실행)*/
+    @Transactional
+    @Scheduled(cron = "50 59 23 * * 0")
+    public void endPeriodChallenge() {
+        //진행 중인 챌린지 모두 조회
+        List<Challenge> challenges = challengeRepository.findChallengesByStatusEquals(ChallengeStatus.Progress);
+
+        for (Challenge challenge : challenges) {
+            //챌린지 완료
+            challenge.updateStatus(ChallengeStatus.Done);
+            
+            //각 유저들도 완료 상태 변경
+            List<UserChallenge> userChallenge = userChallengeRepository.findUCByChallenge(challenge);
+            userChallenge.forEach(uc -> uc.changeStatus(ChallengeStatus.Done));
+        }
+
+        log.info("**챌린지 종료 메소드 실행** 현재 시간:{} | 종료된 챌린지 개수:{}",LocalDateTime.now(), challenges.size());
+    }
+
+
 }

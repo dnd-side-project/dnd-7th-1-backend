@@ -10,11 +10,14 @@ import org.springframework.data.repository.query.Param;
 import java.time.LocalDate;
 import java.util.List;
 
+import static com.dnd.ground.domain.challenge.ChallengeStatus.*;
+
 /**
  * @description 챌린지와 관련한 레포지토리
  * @author  박찬호
  * @since   2022-08-03
  * @updated 1. 일주일 챌린지 시작 상태 변경 기능 추가
+ *          2. 일주일 챌린지 종료 기능 추가
  *          - 2022.08.09 박찬호
  */
 
@@ -45,5 +48,8 @@ public interface ChallengeRepository extends JpaRepository<Challenge, Long> {
     //진행 중인 챌린지를 제외하고, 모든 챌린지 조회 -> Progress가 아니면서 시작 날짜가 오늘인 챌린지 조회
     @Query("select c from Challenge c where c.status<>'Progress' and c.started=:today")
     List<Challenge> findChallengesNotStarted(LocalDate today);
+
+    //진행 중인 전체 챌린지 조회
+    List<Challenge> findChallengesByStatusEquals(ChallengeStatus Progress);
 
 }

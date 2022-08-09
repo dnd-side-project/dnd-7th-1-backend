@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
  * @author  박찬호
  * @since   2022-08-03
  * @updated 1. 일주일 챌린지 시작 상태 변경 기능 추가
+ *          2. 일중리 챌린지 종료 기능 추가
  *          - 2022.08.09 박찬호
  */
 
@@ -18,5 +19,5 @@ public interface ChallengeService {
     ResponseEntity<?> createChallenge(ChallengeCreateRequestDto challengeCreateRequestDto);
     ResponseEntity<?> changeUserChallengeStatus(ChallengeRequestDto.Info requestDto, ChallengeStatus status);
     void startPeriodChallenge();
-
+    void endPeriodChallenge();
 }
