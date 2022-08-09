@@ -26,11 +26,11 @@ import java.util.Set;
 
 /**
  * @description 운동 기록 서비스 클래스
- * @author  박세헌
+ * @author  박세헌, 박찬호
  * @since   2022-08-01
- * @updated 2022-08-04 /  1. 칸의 수 조회 함수
- *                        2. 영역의 수 조회 함수
- *                        - 박세헌
+ * @updated recordEnd 메소드 변경
+ *          1. 기록 종료 시, 회원의 마지막 위치 최신화
+ *          - 2022.08.09 박찬호
  */
 
 @Service
@@ -65,10 +65,19 @@ public class ExerciseRecordServiceImpl implements ExerciseRecordService {
     // 거리, matrix 저장
     @Transactional
     public ResponseEntity<?> recordEnd(EndRequestDto endRequestDto) {
+        //기록 조회
         ExerciseRecord exerciseRecord = exerciseRecordRepository.findById(endRequestDto.getRecordId()).orElseThrow(); // 예외 처리
         exerciseRecord.endedTime(LocalDateTime.now());
         exerciseRecord.addDistance(endRequestDto.getDistance());
-        endRequestDto.getMatrices().forEach(m -> exerciseRecord.addMatrix(new Matrix(m.getLatitude(), m.getLongitude())));
+
+        //영역 저장
+        List<EndRequestDto.RequestMatrix> matrices = endRequestDto.getMatrices();
+        matrices.forEach(m -> exerciseRecord.addMatrix(new Matrix(m.getLatitude(), m.getLongitude())));
+
+        //회원 마지막 위치 최신화
+        EndRequestDto.RequestMatrix lastPosition = matrices.get(matrices.size() - 1);
+        exerciseRecord.getUser().updatePosition(lastPosition.getLatitude(), lastPosition.getLongitude());
+
         exerciseRecordRepository.save(exerciseRecord);
         return ResponseEntity.ok(HttpStatus.OK);
     }
