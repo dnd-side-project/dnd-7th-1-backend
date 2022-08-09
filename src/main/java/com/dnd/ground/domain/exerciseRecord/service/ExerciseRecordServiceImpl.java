@@ -5,6 +5,7 @@ import com.dnd.ground.domain.exerciseRecord.Repository.ExerciseRecordRepository;
 import com.dnd.ground.domain.exerciseRecord.dto.EndRequestDto;
 import com.dnd.ground.domain.exerciseRecord.dto.StartResponseDto;
 import com.dnd.ground.domain.matrix.Matrix;
+import com.dnd.ground.domain.matrix.dto.MatrixDto;
 import com.dnd.ground.domain.matrix.dto.MatrixSetDto;
 import com.dnd.ground.domain.user.User;
 import com.dnd.ground.domain.user.repository.UserRepository;
@@ -28,6 +29,7 @@ import java.util.Set;
  *          1. 기록 종료 시, 회원의 마지막 위치 최신화
  *          - 2022.08.09 박찬호
  *          1. 칸의 수, 영역의 수 반환타임 Long으로 변결
+ *          2. MatrixDto로 관리
  *          - 2022.08.09
  */
 
@@ -69,11 +71,11 @@ public class ExerciseRecordServiceImpl implements ExerciseRecordService {
         exerciseRecord.addDistance(endRequestDto.getDistance());
 
         //영역 저장
-        List<EndRequestDto.RequestMatrix> matrices = endRequestDto.getMatrices();
+        List<MatrixDto> matrices = endRequestDto.getMatrices();
         matrices.forEach(m -> exerciseRecord.addMatrix(new Matrix(m.getLatitude(), m.getLongitude())));
 
         //회원 마지막 위치 최신화
-        EndRequestDto.RequestMatrix lastPosition = matrices.get(matrices.size() - 1);
+        MatrixDto lastPosition = matrices.get(matrices.size() - 1);
         exerciseRecord.getUser().updatePosition(lastPosition.getLatitude(), lastPosition.getLongitude());
 
         exerciseRecordRepository.save(exerciseRecord);
