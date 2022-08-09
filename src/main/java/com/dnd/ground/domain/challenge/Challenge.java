@@ -6,15 +6,14 @@ import javax.persistence.*;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 /**
  * @description 챌린지 엔티티
  * @author  박찬호
  * @since   2022-07-26
- * @updated 1.stared 컬럼 데이터 타입 변경 (LocalDateTime → LocalDate)
- *          2.UUID 컬럼 생성
- *          - 2022-08-04 박찬호
+ * @updated 1.type 필드 추가(챌린지 종류)
+ *          2.챌린지 상태 업데이트 메소드 추가(updateStatus())
+ *          - 2022-08-09 박찬호
  */
 
 @Getter
@@ -50,15 +49,25 @@ public class Challenge {
     @Builder.Default
     private ChallengeStatus status = ChallengeStatus.Wait;
 
-    @OneToMany(mappedBy = "user")
+    @Enumerated(EnumType.STRING)
+    @Column(name = "challenge_type", nullable = false)
+    private ChallengeType type;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
     private List<UserChallenge> users = new ArrayList<>();
 
     @Builder(builderMethodName = "create")
-    public Challenge(String name, String uuid, LocalDate started, String message, String color) {
+    public Challenge(String name, String uuid, LocalDate started, String message, String color, ChallengeType type) {
         this.uuid = uuid;
         this.name = name;
         this.started = started;
         this.message = message;
         this.color = color;
+        this.type = type;
+    }
+
+    //챌린지 상태 업데이트
+    public void updateStatus(ChallengeStatus status) {
+        this.status = status;
     }
 }

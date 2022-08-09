@@ -4,6 +4,7 @@ import com.dnd.ground.domain.challenge.Challenge;
 import com.dnd.ground.domain.challenge.UserChallenge;
 import com.dnd.ground.domain.user.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -14,8 +15,8 @@ import java.util.Optional;
  * @description 회원-챌린지 간 조인엔티티와 관련한 레포지토리
  * @author  박찬호
  * @since   2022-08-03
- * @updated 1. 유저-챌린지 정보를 통한 UserChallenge 조회
- *          - 2022.08.08 박찬호
+ * @updated 1. 일주일 챌린지 시작 상태 변경 기능 추가
+ *          - 2022.08.09 박찬호
  */
 
 public interface UserChallengeRepository extends JpaRepository<UserChallenge, Long> {
@@ -42,4 +43,10 @@ public interface UserChallengeRepository extends JpaRepository<UserChallenge, Lo
     //유저와 챌린지를 통해 UserChallenge 조회
     Optional<UserChallenge> findByUserAndChallenge(User user, Challenge challenge);
 
+    @Query("select uc from UserChallenge uc where uc.challenge=:challenge")
+    List<UserChallenge> findUCByChallenge(@Param("challenge") Challenge challenge);
+
+    @Modifying(clearAutomatically = true)
+    @Query("delete from UserChallenge uc where uc.challenge=:challenge and (uc.status='Wait' or uc.status='Reject')")
+    int deleteUCByChallenge(@Param("challenge") Challenge challenge);
 }
