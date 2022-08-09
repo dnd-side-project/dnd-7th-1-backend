@@ -26,8 +26,10 @@ import java.util.stream.Collectors;
  * @description 유저 서비스 클래스
  * @author  박세헌, 박찬호
  * @since   2022-08-01
- * @updated 영역의 수, 칸의 수 기준 랭킹 조회
- *          - 2022.08.09 박세헌
+ * @updated showHome() 메소드 수정
+ *          1.회원이 진행 중인 전체 챌린지 개수 반환
+ *          2.각 회원의 마지막 위치 반환
+ *          - 2022.08.09 박찬호
  */
 
 @Service
@@ -52,11 +54,11 @@ public class UserServiceImpl implements UserService{
 
         /*유저의 matrix 와 정보 (userMatrix)*/
         Set<MatrixSetDto> userShowMatrices = new HashSet<>();
-        UserResponseDto.UserMatrix userMatrix = new UserResponseDto.UserMatrix(nickname, userShowMatrices);
+        UserResponseDto.UserMatrix userMatrix = new UserResponseDto.UserMatrix(user);
 
         List<ExerciseRecord> userRecordOfThisWeek = exerciseRecordRepository.findRecordOfThisWeek(user.getId());
 
-        if (!userRecordOfThisWeek.isEmpty()){
+        if (!userRecordOfThisWeek.isEmpty()) {
             List<List<Matrix>> userMatrices = userRecordOfThisWeek.stream()
                     .map(ExerciseRecord::getMatrices)
                     .collect(Collectors.toList());
@@ -70,7 +72,7 @@ public class UserServiceImpl implements UserService{
                     )
             );
 
-            userMatrix = new UserResponseDto.UserMatrix(user.getNickName(), userShowMatrices);
+            userMatrix.setProperties(nickname, userShowMatrices.size(), userShowMatrices, user.getLatitude(), user.getLongitude());
         }
 
         /*----------*/
@@ -108,8 +110,10 @@ public class UserServiceImpl implements UserService{
                         .collect(Collectors.toSet()))));
 
         List<UserResponseDto.FriendMatrix> friendMatrices = new ArrayList<>();
-        for (String s : friendHashMap.keySet()) {
-            friendMatrices.add(new UserResponseDto.FriendMatrix(s, friendHashMap.get(s)));
+        for (String friendNickname : friendHashMap.keySet()) {
+            User friend = userRepository.findByNickName(friendNickname).orElseThrow(); //예외 처리 예정
+            friendMatrices.add(new UserResponseDto.FriendMatrix(friendNickname, friend.getLatitude(), friend.getLongitude(),
+                    friendHashMap.get(friendNickname)));
         }
 
         /*챌린지를 하는 사람들의 matrix 와 정보 (challengeMatrices)*/
@@ -117,24 +121,25 @@ public class UserServiceImpl implements UserService{
 
         for (User friend : friendsWithChallenge) {
             Set<MatrixSetDto> showMatrices = new HashSet<>();
-            Integer challengeNumber = challengeRepository.findCountChallenge(user, friend); // 구현 완!
-            String challengeColor = challengeRepository.findChallengesWithFriend(user, friend).get(0).getColor();; // 구현 완!
-            List<ExerciseRecord> recordOfThisWeek = exerciseRecordRepository.findRecordOfThisWeek(friend.getId());
+            Integer challengeNumber = challengeRepository.findCountChallenge(user, friend); // 함께하는 챌린지 수
+            String challengeColor = challengeRepository.findChallengesWithFriend(user, friend).get(0).getColor(); // 챌린지 색
+            List<ExerciseRecord> recordOfThisWeek = exerciseRecordRepository.findRecordOfThisWeek(friend.getId()); //이번주 기록
             recordOfThisWeek.forEach(e ->
-                    e.getMatrices()
-                            .forEach(m -> showMatrices.add(MatrixSetDto.builder()
+                    e.getMatrices().forEach(m -> showMatrices.add(MatrixSetDto.builder()
                                     .latitude(m.getLatitude())
                                     .longitude(m.getLongitude())
                                     .build())
                             )
             );
-            challengeMatrices.add(new UserResponseDto.ChallengeMatrix(friend.getNickName(), challengeNumber, challengeColor, showMatrices));
+            challengeMatrices.add(new UserResponseDto.ChallengeMatrix(
+                    friend.getNickName(), challengeNumber, challengeColor, friend.getLatitude(), friend.getLongitude(), showMatrices));
         }
 
         return HomeResponseDto.builder()
                 .userMatrices(userMatrix)
                 .friendMatrices(friendMatrices)
                 .challengeMatrices(challengeMatrices)
+                .challengesNumber(challengeRepository.findCountChallenge(user))
                 .build();
     }
 
