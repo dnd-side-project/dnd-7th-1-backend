@@ -8,7 +8,6 @@ import com.dnd.ground.domain.matrix.Matrix;
 import com.dnd.ground.domain.matrix.dto.MatrixSetDto;
 import com.dnd.ground.domain.user.User;
 import com.dnd.ground.domain.user.repository.UserRepository;
-import com.dnd.ground.domain.user.service.UserService;
 import lombok.*;
 
 import org.springframework.http.HttpStatus;
@@ -16,12 +15,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.DayOfWeek;
 import java.time.LocalDateTime;
-import java.time.temporal.TemporalAdjusters;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -31,6 +27,8 @@ import java.util.Set;
  * @updated recordEnd 메소드 변경
  *          1. 기록 종료 시, 회원의 마지막 위치 최신화
  *          - 2022.08.09 박찬호
+ *          1. 칸의 수, 영역의 수 반환타임 Long으로 변결
+ *          - 2022.08.09
  */
 
 @Service
@@ -55,7 +53,7 @@ public class ExerciseRecordServiceImpl implements ExerciseRecordService {
         exerciseRecordRepository.save(exerciseRecord);
         List<ExerciseRecord> recordOfThisWeek = exerciseRecordRepository.findRecordOfThisWeek(user.getId());
         if (recordOfThisWeek.isEmpty()) {
-            return new StartResponseDto(exerciseRecord.getId(), 0);
+            return new StartResponseDto(exerciseRecord.getId(), 0L);
         }
 
         return new StartResponseDto(exerciseRecord.getId(), findAreaNumber(recordOfThisWeek));
@@ -83,8 +81,8 @@ public class ExerciseRecordServiceImpl implements ExerciseRecordService {
     }
 
     // 누적 칸의 수 조회
-    public Integer findMatrixNumber(List<ExerciseRecord> exerciseRecord){
-        int count = 0;
+    public Long findMatrixNumber(List<ExerciseRecord> exerciseRecord){
+        Long count = 0L;
         for (ExerciseRecord record : exerciseRecord) {
             count += record.getMatrices().size();
         }
@@ -92,7 +90,7 @@ public class ExerciseRecordServiceImpl implements ExerciseRecordService {
     }
 
     // 누적 영역의 수 조회
-    public Integer findAreaNumber(List<ExerciseRecord> exerciseRecord){
+    public Long findAreaNumber(List<ExerciseRecord> exerciseRecord){
         Set<MatrixSetDto> setMatrices = new HashSet<>();
         exerciseRecord.forEach(r -> r.getMatrices()
                 .forEach(m -> setMatrices.add(MatrixSetDto
@@ -100,6 +98,6 @@ public class ExerciseRecordServiceImpl implements ExerciseRecordService {
                         .latitude(m.getLatitude())
                         .longitude(m.getLongitude())
                         .build())));
-        return setMatrices.size();
+        return Long.valueOf(setMatrices.size());
     }
 }

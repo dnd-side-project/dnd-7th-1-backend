@@ -12,6 +12,7 @@ insert into user values(7, "F", 170.3, null, null, "G-mail@naver.com", "NickG", 
 insert into user values(8, "M", 182.1, null, null, "H-mail@dnd.com", "NickH", "UserH", "74.3");
 insert into user values(9, "M", 177.8, null, null, "I-mail@daum.com", "NickI", "UserI", "72.7");
 
+
 -- 친구 관계 생성
 insert into friend values(1, "Accept", 1, 2);
 insert into friend values(2, "Accept", 1, 3);
