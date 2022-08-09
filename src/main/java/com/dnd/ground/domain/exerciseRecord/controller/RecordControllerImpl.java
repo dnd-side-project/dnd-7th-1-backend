@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
  * @description 기록 컨트롤러 클래스
  * @author  박세헌
  * @since   2022-08-01
- * @updated 2022-08-09 / 기록 중지 api: 박세헌
+ * @updated 2022-08-05 / 기록 api 명세 추가: 박세헌
  */
 
 @Api(tags = "운동기록")
@@ -37,12 +37,5 @@ public class RecordControllerImpl implements RecordController{
     @Operation(summary = "기록 끝", description = "기록 끝: 운동기록에 거리, matrix 저장")
     public ResponseEntity<?> end(@RequestBody EndRequestDto endRequestDto){
         return exerciseRecordService.recordEnd(endRequestDto);
-    }
-
-    @PostMapping("/stop")
-    @Operation(summary = "기록 중지", description = "기록 중지: 운동 기록 삭제, 홈화면으로(?)")
-    public ResponseEntity<?> stop(@RequestParam("recordId") Long exerciseId){
-        exerciseRecordService.delete(exerciseId);
-        return ResponseEntity.ok(HttpStatus.OK);
     }
 }
