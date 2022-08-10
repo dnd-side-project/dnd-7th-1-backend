@@ -39,16 +39,16 @@ public class FriendServiceImpl implements FriendService {
         //유저 및 친구 조회
         User findUser = userRepository.findByNickName(nickname).orElseThrow(); //예외 처리 예정!
         List<Friend> findFriends = friendRepository.findFriendsById(findUser);
-        List<FriendResponseDto.Info> infos = new ArrayList<>();
+        List<FriendResponseDto.FInfo> infos = new ArrayList<>();
 
         //친구 정보 모음
         for (Friend findFriend : findFriends) {
             if (findFriend.getUser() == findUser) {
-                infos.add(FriendResponseDto.Info.of()
+                infos.add(FriendResponseDto.FInfo.of()
                         .nickname(findFriend.getFriend().getNickName())
                         .build());
             } else if (findFriend.getFriend() == findUser) {
-                infos.add(FriendResponseDto.Info.of()
+                infos.add(FriendResponseDto.FInfo.of()
                         .nickname(findFriend.getUser().getNickName())
                         .build());
             }

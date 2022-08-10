@@ -17,7 +17,7 @@ import org.springframework.http.ResponseEntity;
 public interface ChallengeService {
 
     ResponseEntity<?> createChallenge(ChallengeCreateRequestDto challengeCreateRequestDto);
-    ResponseEntity<?> changeUserChallengeStatus(ChallengeRequestDto.Info requestDto, ChallengeStatus status);
+    ResponseEntity<?> changeUserChallengeStatus(ChallengeRequestDto.CInfo requestDto, ChallengeStatus status);
     void startPeriodChallenge();
     void endPeriodChallenge();
 }

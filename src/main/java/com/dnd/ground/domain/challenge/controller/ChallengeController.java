@@ -15,6 +15,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 public interface ChallengeController {
     ResponseEntity<?> createChallenge(@RequestBody ChallengeCreateRequestDto challengeCreateRequestDto);
-    ResponseEntity<?> acceptChallenge(@RequestBody ChallengeRequestDto.Info requestDto);
-    ResponseEntity<?> rejectChallenge(@RequestBody ChallengeRequestDto.Info requestDto);
+    ResponseEntity<?> acceptChallenge(@RequestBody ChallengeRequestDto.CInfo requestDto);
+    ResponseEntity<?> rejectChallenge(@RequestBody ChallengeRequestDto.CInfo requestDto);
 }

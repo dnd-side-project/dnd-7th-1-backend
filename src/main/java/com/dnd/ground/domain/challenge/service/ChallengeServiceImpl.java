@@ -71,7 +71,7 @@ public class ChallengeServiceImpl implements ChallengeService {
 
     /*유저-챌린지 상태 변경*/
     @Transactional
-    public ResponseEntity<?> changeUserChallengeStatus(ChallengeRequestDto.Info requestDto, ChallengeStatus status) {
+    public ResponseEntity<?> changeUserChallengeStatus(ChallengeRequestDto.CInfo requestDto, ChallengeStatus status) {
         //정보 조회
         Challenge challenge = challengeRepository.findByUuid(requestDto.getUuid());
         User user = userRepository.findByNickName(requestDto.getNickname()).orElseThrow(); // 예외 처리 예정

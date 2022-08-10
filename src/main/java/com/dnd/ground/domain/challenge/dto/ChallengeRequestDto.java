@@ -19,7 +19,7 @@ public class ChallengeRequestDto {
 
     //유저-챌린지 정보를 위한 이너 클래스
     @Data
-    static public class Info {
+    static public class CInfo {
         @NotNull(message = "UUID가 필요합니다.")
         @ApiModelProperty(value="UUID", example="32개의 문자", required = true)
         private String uuid;
