@@ -1,5 +1,6 @@
 package com.dnd.ground.domain.user.dto;
 
+import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -8,54 +9,25 @@ import java.util.*;
 
 /**
  * @description 홈화면 구성 Response Dto
- *              1. 유저 매트릭스 및 정보
- *              2. 챌린지 안하는 친구들 매트릭스
- *              3. 챌린지 하는 친구들 매트릭스 및 정보
- * @author  박세헌
+ * @author  박세헌, 박찬호
  * @since   2022-08-02
- * @updated 2022-08-02 / 생성 : 박세헌
+ * @updated 1. 회원이 진행하는 전체 챌린지 개수 필드 추가(challengeNumber)
+ *          - 2022.08.09 박찬호
  */
 
 @Data @Builder
 public class HomeResponseDto {
-    private UserMatrix userMatrix;
-    private List<FriendMatrix> friendMatrices = new ArrayList<>();
-    private List<ChallengeMatrix> challengeMatrices = new ArrayList<>();
 
-    @AllArgsConstructor
-    static public class UserMatrix{
-        public String nickname;
-        public Set<ShowMatrix> matrices = new HashSet<>();
-    }
+    @ApiModelProperty(value="유저에 대한 정보")
+    private UserResponseDto.UserMatrix userMatrices;
 
-    @AllArgsConstructor
-    static public class FriendMatrix{
-        public Set<ShowMatrix> matrices;
-    }
+    @ApiModelProperty(value="(챌린지를 안하는)친구들에 대한 정보")
+    private List<UserResponseDto.FriendMatrix> friendMatrices;
 
-    @AllArgsConstructor
-    static public class ChallengeMatrix{
-        public String nickname;
-        public Set<ShowMatrix> matrices = new HashSet<>();
-        public String challengeColor;
-    }
+    @ApiModelProperty(value="(챌린지를 하는)유저들에 대한 정보")
+    private List<UserResponseDto.ChallengeMatrix> challengeMatrices;
 
-    // 중복 제거
-    @Builder
-    static public class ShowMatrix{
-        public Double latitude;
-        public Double longitude;
+    @ApiModelProperty(value="회원이 진행하는 챌린지 개수")
+    private Integer challengesNumber;
 
-        @Override
-        public int hashCode() {
-            return Objects.hash(latitude, longitude);
-        }
-
-        @Override
-        public boolean equals(Object obj) {
-            if (this.getClass() != obj.getClass()) return false;
-            return (Objects.equals(((ShowMatrix) obj).latitude, this.latitude)) &&
-                    (Objects.equals(((ShowMatrix) obj).longitude, this.longitude));
-        }
-    }
 }

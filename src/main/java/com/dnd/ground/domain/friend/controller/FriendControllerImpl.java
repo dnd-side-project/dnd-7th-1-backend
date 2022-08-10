@@ -1,14 +1,16 @@
 package com.dnd.ground.domain.friend.controller;
 
+import com.dnd.ground.domain.challenge.service.ChallengeServiceImpl;
 import com.dnd.ground.domain.friend.dto.FriendResponseDto;
 import com.dnd.ground.domain.friend.service.FriendService;
+import com.dnd.ground.domain.user.User;
+import com.dnd.ground.domain.user.repository.UserRepository;
 import io.swagger.annotations.Api;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 
 /**
  * @description 친구와 관련된 컨트롤러 구현체
@@ -32,4 +34,5 @@ public class FriendControllerImpl implements FriendController {
     public ResponseEntity<FriendResponseDto> getFriends(@PathVariable("nickname") String nickname) {
         return ResponseEntity.ok(friendService.getFriends(nickname));
     }
+
 }

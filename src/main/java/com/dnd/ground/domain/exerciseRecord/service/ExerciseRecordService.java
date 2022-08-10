@@ -1,6 +1,9 @@
 package com.dnd.ground.domain.exerciseRecord.service;
 
 import com.dnd.ground.domain.exerciseRecord.ExerciseRecord;
+import com.dnd.ground.domain.exerciseRecord.dto.EndRequestDto;
+import com.dnd.ground.domain.exerciseRecord.dto.StartResponseDto;
+import org.springframework.http.ResponseEntity;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -9,25 +12,18 @@ import java.util.List;
  * @description 운동 기록 서비스 인터페이스
  * @author  박세헌
  * @since   2022-08-01
- * @updated 2022-08-01 / 생성 : 박세헌
+ * @updated 2022-08-04 / 기록 시작, 기록 끝: 박세헌
  */
 
 public interface ExerciseRecordService {
 
-    ExerciseRecord save(ExerciseRecord exerciseRecord);
-
-    ExerciseRecord findById(Long id);
-
     void delete(Long exerciseRecordId);
 
-    List<ExerciseRecord> findRecordOfThisWeek(Long id);
+    StartResponseDto recordStart(String nickname);
 
-    List<ExerciseRecord> findRecordOfPastByDay(Long id, LocalDateTime start);
+    ResponseEntity<?> recordEnd(EndRequestDto endRequestDto);
 
-    List<ExerciseRecord> findRecordOfPastByWeek(Long id, LocalDateTime start);
+    Long findMatrixNumber(List<ExerciseRecord> exerciseRecord);
 
-    List<ExerciseRecord> findChallengeRecordOfThisWeek(Long id, LocalDateTime start);
-
-    List<ExerciseRecord> findChallengeRecordOfPast(Long id, LocalDateTime start);
-
+    Long findAreaNumber(List<ExerciseRecord> exerciseRecord);
 }
