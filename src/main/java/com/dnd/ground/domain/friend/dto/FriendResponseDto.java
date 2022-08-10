@@ -18,8 +18,8 @@ import java.util.List;
 @Data @Builder
 public class FriendResponseDto {
 
-    @ApiModelProperty(value="친구 정보", example="[nickname:nickA, ..]")
-    private List<Info> infos;
+    @ApiModelProperty(value="친구 정보 리스트", example="[nickname:nickA, ..]")
+    private List<FInfo> infos;
 
     @ApiModelProperty(value="친구 수", example="3")
     private Integer size;
@@ -27,13 +27,14 @@ public class FriendResponseDto {
     
     //친구와 관련한 정보 모음
     @Data @NoArgsConstructor
-    static public class Info {
+    static public class FInfo {
 
         @Builder(builderMethodName = "of")
-        public Info(String nickname) {
+        public FInfo(String nickname) {
             this.nickname = nickname;
         }
-
+        
+        @ApiModelProperty(value="닉네임", example="Widen | Accumulate", required = true)
         private String nickname;
     }
 
