@@ -16,8 +16,10 @@ import com.dnd.ground.domain.user.dto.UserResponseDto;
 import com.dnd.ground.domain.user.repository.UserRepository;
 import lombok.*;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StopWatch;
 
 import javax.persistence.Tuple;
 import java.time.DayOfWeek;
@@ -33,6 +35,7 @@ import java.util.stream.Collectors;
  * @updated 2022-08-09 / 랭킹 오류 해결 - 박세헌
  */
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -51,6 +54,9 @@ public class UserServiceImpl implements UserService{
     }
 
     public HomeResponseDto showHome(String nickname){
+
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
         User user = userRepository.findByNickName(nickname).orElseThrow();  // 예외 처리
 
         /*유저의 matrix 와 정보 (userMatrix)*/
@@ -135,6 +141,9 @@ public class UserServiceImpl implements UserService{
             challengeMatrices.add(new UserResponseDto.ChallengeMatrix(
                     friend.getNickName(), challengeNumber, challengeColor, friend.getLatitude(), friend.getLongitude(), showMatrices));
         }
+
+        stopWatch.stop();
+        log.info("수행시간 >> {}", stopWatch.getTotalTimeSeconds());
 
         return HomeResponseDto.builder()
                 .userMatrices(userMatrix)
