@@ -5,6 +5,8 @@ import com.dnd.ground.domain.user.User;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -22,7 +24,7 @@ import java.util.Set;
  *          4. 일부 생성자, 수정자 및 어노테이션 변경
  *          - 2022.08.09 박찬호
  *          1. 칸 정보 모두 MatrixDto로 관리
- *          2. 영역의 수 Integer로 변경
+ *          2. 영역 랭킹 어떻게 할지 고민 필요..
  *          - 2022.08.10 박세헌
  */
 
@@ -44,7 +46,7 @@ public class UserResponseDto {
         private Double longitude;
 
         @ApiModelProperty(value = "칸 꼭지점 위도, 경도 리스트", required = true)
-        private Set<MatrixDto> matrices;
+        private List<MatrixDto> matrices;
 
         //생성자
         public UserMatrix(User user) {
@@ -55,7 +57,7 @@ public class UserResponseDto {
         }
 
         //수정자 모음
-        public void setProperties(String nickname, int matricesNumber, Set<MatrixDto> matrices, Double lat, Double lon) {
+        public void setProperties(String nickname, int matricesNumber, List<MatrixDto> matrices, Double lat, Double lon) {
             this.setNickname(nickname);
             this.setMatricesNumber(matricesNumber);
             this.setMatrices(matrices);
@@ -76,7 +78,7 @@ public class UserResponseDto {
         private Double longitude;
 
         @ApiModelProperty(value = "칸 꼭지점 위도, 경도 리스트", required = true)
-        private Set<MatrixDto> matrices;
+        private List<MatrixDto> matrices;
 
     }
 
@@ -99,7 +101,7 @@ public class UserResponseDto {
         private Double longitude;
 
         @ApiModelProperty(value = "칸 꼭지점 위도, 경도 리스트", required = true)
-        private Set<MatrixDto> matrices;
+        private List<MatrixDto> matrices;
     }
 
     @Data
@@ -112,7 +114,7 @@ public class UserResponseDto {
         private String nickname;
 
         @ApiModelProperty(value = "누적 칸의 수", example = "누적 칸의 수", required = true)
-        private Integer matrixNumber;
+        private Long matrixNumber;
     }
 
     @Data
