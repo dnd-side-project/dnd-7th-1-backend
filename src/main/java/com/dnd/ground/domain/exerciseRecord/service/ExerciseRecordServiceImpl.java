@@ -57,7 +57,7 @@ public class ExerciseRecordServiceImpl implements ExerciseRecordService {
         }
 
         return new StartResponseDto(exerciseRecord.getId(),
-                matrixRepository.findMatrixSetByExercise(recordOfThisWeek).size());
+                matrixRepository.findMatrixSetByRecords(recordOfThisWeek).size());
     }
 
     // 기록 끝
