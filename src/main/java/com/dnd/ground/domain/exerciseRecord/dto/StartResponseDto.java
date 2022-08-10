@@ -17,7 +17,7 @@ import lombok.Data;
 @AllArgsConstructor
 public class StartResponseDto {
 
-    @ApiModelProperty(value="운동기록 id", example="1", required = true)
+    @ApiModelProperty(value="운동기록 id", example="시작시 생성된 운동기록 id", required = true)
     private Long recordId;
 
     @ApiModelProperty(value="누적 영역", example="20", required = true)

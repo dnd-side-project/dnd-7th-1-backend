@@ -42,10 +42,10 @@ public class UserResponseDto {
         @ApiModelProperty(value = "현재 나의 영역", example = "77", required = true)
         private Long matricesNumber;
 
-        @ApiModelProperty(value = "유저의 마지막 위치 - 위도")
+        @ApiModelProperty(value = "유저의 마지막 위치 - 위도", example = "마지막 위치(위도)")
         private Double latitude;
 
-        @ApiModelProperty(value = "유저의 마지막 위치 - 경도")
+        @ApiModelProperty(value = "유저의 마지막 위치 - 경도", example = "마지막 위치(경도)")
         private Double longitude;
 
         @ApiModelProperty(value = "칸 꼭지점 위도, 경도 리스트", required = true)
@@ -74,10 +74,10 @@ public class UserResponseDto {
         @ApiModelProperty(value = "닉네임", example = "NickB", required = true)
         private String nickname;
 
-        @ApiModelProperty(value = "친구의 마지막 위치 - 위도")
+        @ApiModelProperty(value = "친구의 마지막 위치 - 위도", example = "마지막 위치(위도)")
         private Double latitude;
 
-        @ApiModelProperty(value = "친구의 마지막 위치 - 경도")
+        @ApiModelProperty(value = "친구의 마지막 위치 - 경도", example = "마지막 위치(경도)")
         private Double longitude;
 
         @ApiModelProperty(value = "칸 꼭지점 위도, 경도 리스트", required = true)
@@ -97,10 +97,10 @@ public class UserResponseDto {
         @ApiModelProperty(value = "지도에 나타나는 챌린지 대표 색깔", example = "#ffffff", required = true)
         private String challengeColor;
 
-        @ApiModelProperty(value = "챌린지를 같이 하는 사람의 마지막 위치 - 위도", required = true)
+        @ApiModelProperty(value = "챌린지를 같이 하는 사람의 마지막 위치 - 위도", example = "마지막 위치(위도)", required = true)
         private Double latitude;
 
-        @ApiModelProperty(value = "챌린지를 같이 하는 사람의 마지막 위치 - 경도", required = true)
+        @ApiModelProperty(value = "챌린지를 같이 하는 사람의 마지막 위치 - 경도", example = "마지막 위치(경도)", required = true)
         private Double longitude;
 
         @ApiModelProperty(value = "칸 꼭지점 위도, 경도 리스트", required = true)
@@ -110,7 +110,7 @@ public class UserResponseDto {
     @Data
     @AllArgsConstructor
     public static class matrixRanking{
-        @ApiModelProperty(value = "랭크", example = "1위, 2위..", required = true)
+        @ApiModelProperty(value = "랭크", example = "1위", required = true)
         private Integer rank;
 
         @ApiModelProperty(value = "닉네임", example = "NickA", required = true)
@@ -123,7 +123,7 @@ public class UserResponseDto {
     @Data
     @AllArgsConstructor
     public static class areaRanking{
-        @ApiModelProperty(value = "랭크", example = "1위, 2위..", required = true)
+        @ApiModelProperty(value = "랭크", example = "1위", required = true)
         private Integer rank;
 
         @ApiModelProperty(value = "닉네임", example = "NickA", required = true)
