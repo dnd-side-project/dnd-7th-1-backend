@@ -12,24 +12,11 @@ import java.util.List;
  *              1. 유저(나) 매트릭스 및 정보
  *              2. 나와 챌린지 안하는 친구들 매트릭스
  *              3. 나와 챌린지 하는 친구들 매트릭스 및 정보
- *              4. 누적 칸의 수에 대한 랭킹 정보
- *  *           5. 누적 영역의 수에 대한 랭킹 정보
+ *              4. 랭킹 정보
  * @author  박세헌, 박찬호
  * @since   2022-08-08
-<<<<<<< HEAD
- * @updated 1. 클래스 주석 추가
- *          2. 회원 정보 관련 이너 클래스 생성
- *          - 2022.08.12 박찬호
-=======
- * @updated 1. 접근 제어자 변경
- *          2. 회원의 누적 영역 컬럼 추가(UserMatrix.matricesNumber)
- *          3. 마지막 위치 반환을 위한 컬럼 추가(각 DTO에 latitude, longitude 추가)
- *          4. 일부 생성자, 수정자 및 어노테이션 변경
- *          - 2022.08.09 박찬호
- *          1. 칸 정보 모두 MatrixDto로 관리
- *          2. 영역 랭킹 어떻게 할지 고민 필요..
- *          - 2022.08.10 박세헌
->>>>>>> 23ec7c15a3f091f10544e4100ca3dcefe639b917
+ * @updated  1. 랭킹 dto 하나로 통일(Ranking)
+ *           - 2022.08.12 박세헌
  */
 
 @Data
@@ -121,30 +108,17 @@ public class UserResponseDto {
         private List<MatrixDto> matrices;
     }
 
+    //랭킹과 관련된 DTO (추후 프로필 사진 필드 추가해야됨)
     @Data
     @AllArgsConstructor
-    public static class matrixRanking{
+    public static class Ranking {
         @ApiModelProperty(value = "랭크", example = "1위", required = true)
         private Integer rank;
 
         @ApiModelProperty(value = "닉네임", example = "NickA", required = true)
         private String nickname;
 
-        @ApiModelProperty(value = "누적 칸의 수", example = "누적 칸의 수", required = true)
-        private Long matrixNumber;
-    }
-
-    //랭킹과 관련된 DTO
-    @Data
-    @AllArgsConstructor
-    public static class areaRanking{
-        @ApiModelProperty(value = "랭크", example = "1위", required = true)
-        private Integer rank;
-
-        @ApiModelProperty(value = "닉네임", example = "NickA", required = true)
-        private String nickname;
-
-        @ApiModelProperty(value = "누적 영역의 수", example = "누적 영역의 수", required = true)
-        private Integer areaNumber;
+        @ApiModelProperty(value = "점수", example = "점수", required = true)
+        private Long score;
     }
 }
