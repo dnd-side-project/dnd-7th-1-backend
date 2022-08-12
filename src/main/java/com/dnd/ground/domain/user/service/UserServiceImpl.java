@@ -5,13 +5,11 @@ import com.dnd.ground.domain.challenge.repository.ChallengeRepository;
 import com.dnd.ground.domain.challenge.repository.UserChallengeRepository;
 import com.dnd.ground.domain.exerciseRecord.ExerciseRecord;
 import com.dnd.ground.domain.exerciseRecord.Repository.ExerciseRecordRepository;
-import com.dnd.ground.domain.exerciseRecord.service.ExerciseRecordService;
 import com.dnd.ground.domain.friend.service.FriendService;
 import com.dnd.ground.domain.matrix.Matrix;
 import com.dnd.ground.domain.matrix.dto.MatrixSetDto;
 import com.dnd.ground.domain.user.User;
 import com.dnd.ground.domain.user.dto.HomeResponseDto;
-import com.dnd.ground.domain.user.dto.RankResponseDto;
 import com.dnd.ground.domain.user.dto.UserResponseDto;
 import com.dnd.ground.domain.user.repository.UserRepository;
 import lombok.*;
@@ -19,10 +17,6 @@ import lombok.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.persistence.Tuple;
-import java.time.DayOfWeek;
-import java.time.LocalDateTime;
-import java.time.temporal.TemporalAdjusters;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -30,7 +24,7 @@ import java.util.stream.Collectors;
  * @description 유저 서비스 클래스
  * @author  박세헌, 박찬호
  * @since   2022-08-01
- * @updated 1. 랭킹 관련 메소드 이동(UserService -> MatrixService)
+ * @updated 1. 회원 정보 조회 메소드 추가
  *          - 2022.08.11 박찬호
  */
 
@@ -51,7 +45,7 @@ public class UserServiceImpl implements UserService{
     }
 
     public HomeResponseDto showHome(String nickname){
-        User user = userRepository.findByNickName(nickname).orElseThrow();  // 예외 처리
+        User user = userRepository.findByNickname(nickname).orElseThrow();  // 예외 처리
 
         /*유저의 matrix 와 정보 (userMatrix)*/
         Set<MatrixSetDto> userShowMatrices = new HashSet<>();
@@ -101,7 +95,7 @@ public class UserServiceImpl implements UserService{
         Map<String, Set<MatrixSetDto>> friendHashMap= new HashMap<>();
 
         friendsNotChallenge.forEach(nf -> exerciseRecordRepository.findRecordOfThisWeek(nf.getId())
-                .forEach(e -> friendHashMap.put(nf.getNickName(),
+                .forEach(e -> friendHashMap.put(nf.getNickname(),
                         e.getMatrices()
                                 .stream().map(m -> MatrixSetDto.builder()
                                         .latitude(m.getLatitude())
@@ -112,7 +106,7 @@ public class UserServiceImpl implements UserService{
 
         List<UserResponseDto.FriendMatrix> friendMatrices = new ArrayList<>();
         for (String friendNickname : friendHashMap.keySet()) {
-            User friend = userRepository.findByNickName(friendNickname).orElseThrow(); //예외 처리 예정
+            User friend = userRepository.findByNickname(friendNickname).orElseThrow(); //예외 처리 예정
             friendMatrices.add(new UserResponseDto.FriendMatrix(friendNickname, friend.getLatitude(), friend.getLongitude(),
                     friendHashMap.get(friendNickname)));
         }
@@ -133,7 +127,7 @@ public class UserServiceImpl implements UserService{
                             )
             );
             challengeMatrices.add(new UserResponseDto.ChallengeMatrix(
-                    friend.getNickName(), challengeNumber, challengeColor, friend.getLatitude(), friend.getLongitude(), showMatrices));
+                    friend.getNickname(), challengeNumber, challengeColor, friend.getLatitude(), friend.getLongitude(), showMatrices));
         }
 
         return HomeResponseDto.builder()
@@ -142,6 +136,17 @@ public class UserServiceImpl implements UserService{
                 .challengeMatrices(challengeMatrices)
                 .challengesNumber(challengeRepository.findCountChallenge(user))
                 .build();
+    }
+
+    /*회원 정보 조회*/
+    public UserResponseDto.UInfo getUserInfo(String nickname) {
+        User user = userRepository.findByNickname(nickname).orElseThrow();
+
+        return UserResponseDto.UInfo.builder()
+                .nickname(nickname)
+                .intro(user.getIntro())
+                .build();
+
     }
 
 }

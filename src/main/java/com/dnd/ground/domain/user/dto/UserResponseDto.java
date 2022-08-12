@@ -3,10 +3,7 @@ package com.dnd.ground.domain.user.dto;
 import com.dnd.ground.domain.matrix.dto.MatrixSetDto;
 import com.dnd.ground.domain.user.User;
 import io.swagger.annotations.ApiModelProperty;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -22,20 +19,26 @@ import java.util.Set;
  *  *           5. 누적 영역의 수에 대한 랭킹 정보
  * @author  박세헌, 박찬호
  * @since   2022-08-08
- * @updated 1. 접근 제어자 변경
- *          2. 회원의 누적 영역 컬럼 추가(UserMatrix.matricesNumber)
- *          3. 마지막 위치 반환을 위한 컬럼 추가(각 DTO에 latitude, longitude 추가)
- *          4. 일부 생성자, 수정자 및 어노테이션 변경
- *          - 2022.08.09 박찬호
- *          1. 랭크 변수 추가 및 칸의 수, 영역의 수 Long으로 변경
- *          - 2022.08.09 박세헌
+ * @updated 1. 클래스 주석 추가
+ *          2. 회원 정보 관련 이너 클래스 생성
+ *          - 2022.08.12 박찬호
  */
 
 @Data
 public class UserResponseDto {
 
+    //회원의 정보 관련 DTO (추후 프로필 사진 관련 필드 추가 예정)
+    @Data @Builder
+    static public class UInfo {
+        private String nickname;
+        private String intro;
+    }
+
+
+
+    //회원의 영역 정보 관련 DTO
     @Data
-    static public class UserMatrix{
+    static public class UserMatrix {
         @ApiModelProperty(value = "닉네임", example = "NickA", required = true)
         private String nickname;
 
@@ -53,7 +56,7 @@ public class UserResponseDto {
 
         //생성자
         public UserMatrix(User user) {
-            this.nickname = user.getNickName();
+            this.nickname = user.getNickname();
             this.matricesNumber = 0L;
             this.latitude = user.getLatitude();
             this.longitude = user.getLongitude();
@@ -69,6 +72,7 @@ public class UserResponseDto {
         }
     }
 
+    //친구의 영역 관련 DTO
     @Data @AllArgsConstructor
     static public class FriendMatrix{
         @ApiModelProperty(value = "닉네임", example = "NickB", required = true)
@@ -85,6 +89,7 @@ public class UserResponseDto {
 
     }
 
+    //챌린지 영역 정보 관련 DTO
     @Data
     @AllArgsConstructor
     static public class ChallengeMatrix{
@@ -120,6 +125,7 @@ public class UserResponseDto {
         private Long matrixNumber;
     }
 
+    //랭킹과 관련된 DTO
     @Data
     @AllArgsConstructor
     public static class areaRanking{

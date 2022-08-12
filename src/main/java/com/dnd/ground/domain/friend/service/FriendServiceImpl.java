@@ -37,7 +37,7 @@ public class FriendServiceImpl implements FriendService {
     public FriendResponseDto getFriends(String nickname) {
 
         //유저 및 친구 조회
-        User findUser = userRepository.findByNickName(nickname).orElseThrow(); //예외 처리 예정!
+        User findUser = userRepository.findByNickname(nickname).orElseThrow(); //예외 처리 예정!
         List<Friend> findFriends = friendRepository.findFriendsById(findUser);
         List<FriendResponseDto.FInfo> infos = new ArrayList<>();
 
@@ -45,11 +45,11 @@ public class FriendServiceImpl implements FriendService {
         for (Friend findFriend : findFriends) {
             if (findFriend.getUser() == findUser) {
                 infos.add(FriendResponseDto.FInfo.of()
-                        .nickname(findFriend.getFriend().getNickName())
+                        .nickname(findFriend.getFriend().getNickname())
                         .build());
             } else if (findFriend.getFriend() == findUser) {
                 infos.add(FriendResponseDto.FInfo.of()
-                        .nickname(findFriend.getUser().getNickName())
+                        .nickname(findFriend.getUser().getNickname())
                         .build());
             }
         }
@@ -76,6 +76,7 @@ public class FriendServiceImpl implements FriendService {
         return friends;
     }
 
+    /* 수정 필요
     //챌린지를 진행하는 친구 조회
     public List<User> getChallenge(User user) {
         //친구 조회
@@ -109,5 +110,5 @@ public class FriendServiceImpl implements FriendService {
 
         return friends;
     }
-
+     */
 }
