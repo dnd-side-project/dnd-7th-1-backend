@@ -12,6 +12,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.DayOfWeek;
+import java.time.LocalDateTime;
+import java.time.temporal.TemporalAdjusters;
+
 /**
  * @description 메인홈 구성 컨트롤러 인터페이스
  * @author  박세헌, 박찬호
@@ -29,15 +33,29 @@ public class MatrixControllerImpl implements MatrixController {
 
     private final MatrixService matrixService;
 
-    @Operation(summary = "칸의 수 랭킹", description = "칸의 수가 높은 순서대로 유저들을 조회")
     @GetMapping("/rank/accumulate")
-    public ResponseEntity<RankResponseDto.matrixRankingResponseDto> matrixRank(@RequestParam("nickname") String nickName){
-        return ResponseEntity.ok(matrixService.matrixRanking(nickName));
+    @Operation(summary = "칸의 수 랭킹", description = "칸의 수가 높은 순서대로 유저들을 조회")
+    public ResponseEntity<RankResponseDto.Matrix> matrixRank(@RequestParam("nickname") String nickName){
+
+        /* 추후 nickname, start, end를 가진 requestDto 생성 예정 */
+        LocalDateTime result = LocalDateTime.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        LocalDateTime start = LocalDateTime.of(result.getYear(), result.getMonth(), result.getDayOfMonth(), 0, 0, 0);
+        LocalDateTime end = LocalDateTime.now();
+        /* 임시로 이번주 기록 조회 */
+
+        return ResponseEntity.ok(matrixService.matrixRanking(nickName, start, end));
     }
 
-    @Operation(summary = "영역의 수 랭킹", description = "영역의 수가 높은 순서대로 유저들을 조회")
     @GetMapping("/rank/widen")
-    public ResponseEntity<RankResponseDto.areaRankingResponseDto> areaRank(@RequestParam("nickname") String nickName){
-        return ResponseEntity.ok(matrixService.areaRanking(nickName));
+    @Operation(summary = "영역의 수 랭킹", description = "영역의 수가 높은 순서대로 유저들을 조회")
+    public ResponseEntity<RankResponseDto.Area> areaRank(@RequestParam("nickname") String nickName){
+
+        /* 추후 nickname, start, end를 가진 requestDto 생성 예정 */
+        LocalDateTime result = LocalDateTime.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        LocalDateTime start = LocalDateTime.of(result.getYear(), result.getMonth(), result.getDayOfMonth(), 0, 0, 0);
+        LocalDateTime end = LocalDateTime.now();
+        /* 임시로 이번주 기록 조회 */
+
+        return ResponseEntity.ok(matrixService.areaRanking(nickName, start, end));
     }
 }
