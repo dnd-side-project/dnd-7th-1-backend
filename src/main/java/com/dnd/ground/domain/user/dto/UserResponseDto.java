@@ -1,15 +1,11 @@
 package com.dnd.ground.domain.user.dto;
 
-import com.dnd.ground.domain.matrix.dto.MatrixSetDto;
+import com.dnd.ground.domain.matrix.dto.MatrixDto;
 import com.dnd.ground.domain.user.User;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
 
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -27,8 +23,9 @@ import java.util.Set;
  *          3. 마지막 위치 반환을 위한 컬럼 추가(각 DTO에 latitude, longitude 추가)
  *          4. 일부 생성자, 수정자 및 어노테이션 변경
  *          - 2022.08.09 박찬호
- *          1. 랭크 변수 추가 및 칸의 수, 영역의 수 Long으로 변경
- *          - 2022.08.09 박세헌
+ *          1. 칸 정보 모두 MatrixDto로 관리
+ *          2. 영역 랭킹 어떻게 할지 고민 필요..
+ *          - 2022.08.10 박세헌
  */
 
 @Data
@@ -40,7 +37,7 @@ public class UserResponseDto {
         private String nickname;
 
         @ApiModelProperty(value = "현재 나의 영역", example = "77", required = true)
-        private Long matricesNumber;
+        private Integer matricesNumber;
 
         @ApiModelProperty(value = "유저의 마지막 위치 - 위도", example = "마지막 위치(위도)")
         private Double latitude;
@@ -49,20 +46,20 @@ public class UserResponseDto {
         private Double longitude;
 
         @ApiModelProperty(value = "칸 꼭지점 위도, 경도 리스트", required = true)
-        private Set<MatrixSetDto> matrices;
+        private List<MatrixDto> matrices;
 
         //생성자
         public UserMatrix(User user) {
             this.nickname = user.getNickName();
-            this.matricesNumber = 0L;
+            this.matricesNumber = 0;
             this.latitude = user.getLatitude();
             this.longitude = user.getLongitude();
         }
 
         //수정자 모음
-        public void setProperties(String nickname, int matricesNumber, Set<MatrixSetDto> matrices, Double lat, Double lon) {
+        public void setProperties(String nickname, int matricesNumber, List<MatrixDto> matrices, Double lat, Double lon) {
             this.setNickname(nickname);
-            this.setMatricesNumber((long) matricesNumber);
+            this.setMatricesNumber(matricesNumber);
             this.setMatrices(matrices);
             this.setLatitude(lat);
             this.setLongitude(lon);
@@ -81,7 +78,7 @@ public class UserResponseDto {
         private Double longitude;
 
         @ApiModelProperty(value = "칸 꼭지점 위도, 경도 리스트", required = true)
-        private Set<MatrixSetDto> matrices;
+        private List<MatrixDto> matrices;
 
     }
 
@@ -104,7 +101,7 @@ public class UserResponseDto {
         private Double longitude;
 
         @ApiModelProperty(value = "칸 꼭지점 위도, 경도 리스트", required = true)
-        private Set<MatrixSetDto> matrices;
+        private List<MatrixDto> matrices;
     }
 
     @Data
@@ -130,6 +127,6 @@ public class UserResponseDto {
         private String nickname;
 
         @ApiModelProperty(value = "누적 영역의 수", example = "누적 영역의 수", required = true)
-        private Long areaNumber;
+        private Integer areaNumber;
     }
 }
