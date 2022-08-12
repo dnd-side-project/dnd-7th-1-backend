@@ -7,6 +7,8 @@ import com.dnd.ground.domain.challenge.dto.ChallengeCreateRequestDto;
 import com.dnd.ground.domain.challenge.dto.ChallengeRequestDto;
 import com.dnd.ground.domain.challenge.repository.ChallengeRepository;
 import com.dnd.ground.domain.challenge.repository.UserChallengeRepository;
+import com.dnd.ground.domain.exerciseRecord.ExerciseRecord;
+import com.dnd.ground.domain.exerciseRecord.Repository.ExerciseRecordRepository;
 import com.dnd.ground.domain.user.User;
 import com.dnd.ground.domain.user.repository.UserRepository;
 import com.dnd.ground.global.util.UuidUtil;
@@ -40,12 +42,13 @@ public class ChallengeServiceImpl implements ChallengeService {
     private final ChallengeRepository challengeRepository;
     private final UserChallengeRepository userChallengeRepository;
     private final UserRepository userRepository;
+    private final ExerciseRecordRepository exerciseRecordRepository;
 
     /*챌린지 생성*/
     @Transactional
     public ResponseEntity<?> createChallenge(ChallengeCreateRequestDto requestDto) {
 
-        User master = userRepository.findByNickName(requestDto.getNickname()).orElseThrow(); //예외 처리 예정
+        User master = userRepository.findByNickname(requestDto.getNickname()).orElseThrow(); //예외 처리 예정
 
         Challenge challenge = Challenge.create()
                 .uuid(UuidUtil.createUUID())
@@ -59,7 +62,7 @@ public class ChallengeServiceImpl implements ChallengeService {
         challengeRepository.save(challenge);
 
         for (String nickname : requestDto.getFriends()) {
-            User user = userRepository.findByNickName(nickname).orElseThrow(); //예외 처리 예정
+            User user = userRepository.findByNickname(nickname).orElseThrow(); //예외 처리 예정
             userChallengeRepository.save(new UserChallenge(challenge, user));
         }
 
@@ -74,7 +77,7 @@ public class ChallengeServiceImpl implements ChallengeService {
     public ResponseEntity<?> changeUserChallengeStatus(ChallengeRequestDto.CInfo requestDto, ChallengeStatus status) {
         //정보 조회
         Challenge challenge = challengeRepository.findByUuid(requestDto.getUuid());
-        User user = userRepository.findByNickName(requestDto.getNickname()).orElseThrow(); // 예외 처리 예정
+        User user = userRepository.findByNickname(requestDto.getNickname()).orElseThrow(); // 예외 처리 예정
         //상태 변경
         UserChallenge userChallenge = userChallengeRepository.findByUserAndChallenge(user, challenge).orElseThrow();
         if (userChallenge.getStatus() == ChallengeStatus.Master) {
@@ -127,14 +130,12 @@ public class ChallengeServiceImpl implements ChallengeService {
         for (Challenge challenge : challenges) {
             //챌린지 완료
             challenge.updateStatus(ChallengeStatus.Done);
-            
+
             //각 유저들도 완료 상태 변경
             List<UserChallenge> userChallenge = userChallengeRepository.findUCByChallenge(challenge);
             userChallenge.forEach(uc -> uc.changeStatus(ChallengeStatus.Done));
         }
 
-        log.info("**챌린지 종료 메소드 실행** 현재 시간:{} | 종료된 챌린지 개수:{}",LocalDateTime.now(), challenges.size());
+        log.info("**챌린지 종료 메소드 실행** 현재 시간:{} | 종료된 챌린지 개수:{}", LocalDateTime.now(), challenges.size());
     }
-
-
 }

@@ -48,7 +48,7 @@ public class ExerciseRecordServiceImpl implements ExerciseRecordService {
     // 운동기록 id, 일주일 누적 영역 반환
     @Transactional
     public StartResponseDto recordStart(String nickname) {
-        User user = userRepository.findByNickName(nickname).orElseThrow();  // 예외 처리
+        User user = userRepository.findByNickname(nickname).orElseThrow();  // 예외 처리
         ExerciseRecord exerciseRecord = new ExerciseRecord(user, LocalDateTime.now());
         exerciseRecordRepository.save(exerciseRecord);
         List<ExerciseRecord> recordOfThisWeek = exerciseRecordRepository.findRecordOfThisWeek(user.getId());

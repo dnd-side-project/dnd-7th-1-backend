@@ -4,6 +4,7 @@ import com.dnd.ground.domain.challenge.ChallengeStatus;
 import com.dnd.ground.domain.challenge.dto.ChallengeCreateRequestDto;
 import com.dnd.ground.domain.challenge.dto.ChallengeRequestDto;
 import com.dnd.ground.domain.challenge.service.ChallengeService;
+import com.dnd.ground.domain.user.repository.UserRepository;
 import io.swagger.annotations.Api;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
@@ -16,8 +17,8 @@ import org.springframework.web.bind.annotation.*;
  * @description 챌린지와 관련된 컨트롤러 구현체
  * @author  박찬호
  * @since   2022-08-01
- * @updated 1. 챌린지 수락/거절 기능 구현
- *          - 2022.08.08 박찬호
+ * @updated 1. 회원 클래스 필드명 변경(userName -> username / nickName -> nickname)
+ *          - 2022.08.12 박찬호
  */
 
 @Api(tags = "챌린지")
@@ -28,6 +29,7 @@ import org.springframework.web.bind.annotation.*;
 public class ChallengeControllerImpl implements ChallengeController {
 
     private final ChallengeService challengeService;
+    private final UserRepository userRepository;
 
     @PostMapping("/")
     @Operation(summary = "챌린지 생성", description = "챌린지 생성")
@@ -46,6 +48,4 @@ public class ChallengeControllerImpl implements ChallengeController {
     public ResponseEntity<?> rejectChallenge(@RequestBody ChallengeRequestDto.CInfo requestDto) {
         return challengeService.changeUserChallengeStatus(requestDto, ChallengeStatus.Reject);
     }
-
-
 }

@@ -3,6 +3,7 @@ package com.dnd.ground.domain.challenge.service;
 import com.dnd.ground.domain.challenge.ChallengeStatus;
 import com.dnd.ground.domain.challenge.dto.ChallengeCreateRequestDto;
 import com.dnd.ground.domain.challenge.dto.ChallengeRequestDto;
+import com.dnd.ground.domain.user.User;
 import org.springframework.http.ResponseEntity;
 
 /**

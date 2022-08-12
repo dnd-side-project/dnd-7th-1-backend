@@ -39,3 +39,4 @@ out/
 ### Add by 박찬호 ###
 logs/
 application-dev.properties
+application-production.properties

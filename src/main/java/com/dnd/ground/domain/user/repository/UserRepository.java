@@ -18,9 +18,9 @@ import java.util.Optional;
 
 public interface UserRepository extends JpaRepository<User, Long> {
 
-    Optional<User> findByNickName(String nickname);
+    Optional<User> findByNickname(String nickname);
 
-    @Query("select u.nickName, count(u) from User u " +
+    @Query("select u.nickname, count(u) from User u " +
             "join u.exerciseRecords e " +
             "join e.matrices m " +
             "where u in :userAndFriends and e.started between :start and :end " +

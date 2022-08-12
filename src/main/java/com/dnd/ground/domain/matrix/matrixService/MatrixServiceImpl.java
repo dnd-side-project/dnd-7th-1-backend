@@ -26,8 +26,8 @@ import java.util.Objects;
  * @description 운동 영역 서비스 클래스
  * @author  박세헌
  * @since   2022-08-01
- * @updated 1. 랭킹 관련 메소드 이동(UserService -> MatrixService)
- *          - 2022.08.11 박찬호
+ * @updated 1. 회원 클래스 필드명 변경(userName -> username / nickName -> nickname)
+ *          - 2022.08.12 박찬호
  */
 
 @Service
@@ -48,7 +48,7 @@ public class MatrixServiceImpl implements MatrixService {
 
     // 랭킹 조회(누적 칸의 수 기준)
     public RankResponseDto.matrixRankingResponseDto matrixRanking(String nickname){
-        User user = userRepository.findByNickName(nickname).orElseThrow();
+        User user = userRepository.findByNickname(nickname).orElseThrow();
         List<User> userAndFriends = friendService.getFriends(user);  // 친구들 조회
         userAndFriends.add(0, user);  // 유저 추가
         List<UserResponseDto.matrixRanking> matrixRankings = new ArrayList<>(); // [랭킹, 닉네임, 칸의 수]
@@ -84,7 +84,7 @@ public class MatrixServiceImpl implements MatrixService {
         rank += 1;
         // 나머지 0점인 유저들 추가
         for (int i=count; i<userAndFriends.size(); i++){
-            matrixRankings.add(new UserResponseDto.matrixRanking(rank, userAndFriends.get(i).getNickName(), 0L));
+            matrixRankings.add(new UserResponseDto.matrixRanking(rank, userAndFriends.get(i).getNickname(), 0L));
         }
 
         return new RankResponseDto.matrixRankingResponseDto(matrixRankings);
@@ -92,23 +92,23 @@ public class MatrixServiceImpl implements MatrixService {
 
     // 랭킹 조회(누적 영역의 수 기준)
     public RankResponseDto.areaRankingResponseDto areaRanking(String nickname) {
-        User user = userRepository.findByNickName(nickname).orElseThrow();
+        User user = userRepository.findByNickname(nickname).orElseThrow();
         List<User> friends = friendService.getFriends(user);  // 친구들 조회
         List<UserResponseDto.areaRanking> areaRankings = new ArrayList<>();  // [랭킹, 닉네임, 영역의 수]
 
         // 유저의 닉네임과 (이번주)영역의 수 대입
-        areaRankings.add(new UserResponseDto.areaRanking(1, user.getNickName(),
-                exerciseRecordService.findAreaNumber(exerciseRecordRepository.findRecordOfThisWeek(user.getId()))));
+        areaRankings.add(new UserResponseDto.areaRanking(1, user.getNickname(),
+                matrixRepository.findMatrixSetByRecords(exerciseRecordRepository.findRecordOfThisWeek(user.getId())).size()));
 
         // 친구들의 닉네임과 (이번주)영역의 수 대입
-        friends.forEach(f -> areaRankings.add(new UserResponseDto.areaRanking(1, f.getNickName(),
-                exerciseRecordService.findAreaNumber(exerciseRecordRepository.findRecordOfThisWeek(f.getId())))));
+        friends.forEach(f -> areaRankings.add(new UserResponseDto.areaRanking(1, f.getNickname(),
+                matrixRepository.findMatrixSetByRecords(exerciseRecordRepository.findRecordOfThisWeek(f.getId())).size())));
 
         // 영역의 수를 기준으로 내림차순 정렬
         areaRankings.sort((a, b) -> b.getAreaNumber().compareTo(a.getAreaNumber()));
 
         // 랭크 결정
-        Long areaNumber = areaRankings.get(0).getAreaNumber();  // 맨 처음 user의 영역 수
+        Integer areaNumber = areaRankings.get(0).getAreaNumber();  // 맨 처음 user의 영역 수
         int rank = 1;
         for (int i=1; i<areaRankings.size(); i++){
             if (Objects.equals(areaRankings.get(i).getAreaNumber(), areaNumber)){  // 전 유저와 칸수가 같다면 랭크 유지
