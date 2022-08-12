@@ -6,7 +6,7 @@ import com.dnd.ground.domain.exerciseRecord.dto.EndRequestDto;
 import com.dnd.ground.domain.exerciseRecord.dto.StartResponseDto;
 import com.dnd.ground.domain.matrix.Matrix;
 import com.dnd.ground.domain.matrix.dto.MatrixDto;
-import com.dnd.ground.domain.matrix.dto.MatrixSetDto;
+import com.dnd.ground.domain.matrix.matrixRepository.MatrixRepository;
 import com.dnd.ground.domain.user.User;
 import com.dnd.ground.domain.user.repository.UserRepository;
 import lombok.*;
@@ -17,9 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 /**
  * @description 운동 기록 서비스 클래스
@@ -28,9 +26,8 @@ import java.util.Set;
  * @updated recordEnd 메소드 변경
  *          1. 기록 종료 시, 회원의 마지막 위치 최신화
  *          - 2022.08.09 박찬호
- *          1. 칸의 수, 영역의 수 반환타임 Long으로 변결
- *          2. MatrixDto로 관리
- *          - 2022.08.09
+ *          1. 칸의 수, 영역의 수 삭제
+ *          - 2022.08.10 박세헌
  */
 
 @Service
@@ -40,6 +37,7 @@ public class ExerciseRecordServiceImpl implements ExerciseRecordService {
 
     private final ExerciseRecordRepository exerciseRecordRepository;
     private final UserRepository userRepository;
+    private final MatrixRepository matrixRepository;
 
     @Transactional
     public void delete(Long exerciseRecordId) {
@@ -55,10 +53,11 @@ public class ExerciseRecordServiceImpl implements ExerciseRecordService {
         exerciseRecordRepository.save(exerciseRecord);
         List<ExerciseRecord> recordOfThisWeek = exerciseRecordRepository.findRecordOfThisWeek(user.getId());
         if (recordOfThisWeek.isEmpty()) {
-            return new StartResponseDto(exerciseRecord.getId(), 0L);
+            return new StartResponseDto(exerciseRecord.getId(), 0);
         }
 
-        return new StartResponseDto(exerciseRecord.getId(), findAreaNumber(recordOfThisWeek));
+        return new StartResponseDto(exerciseRecord.getId(),
+                matrixRepository.findMatrixSetByRecords(recordOfThisWeek).size());
     }
 
     // 기록 끝
@@ -80,26 +79,5 @@ public class ExerciseRecordServiceImpl implements ExerciseRecordService {
 
         exerciseRecordRepository.save(exerciseRecord);
         return ResponseEntity.ok(HttpStatus.OK);
-    }
-
-    // 누적 칸의 수 조회
-    public Long findMatrixNumber(List<ExerciseRecord> exerciseRecord){
-        Long count = 0L;
-        for (ExerciseRecord record : exerciseRecord) {
-            count += record.getMatrices().size();
-        }
-        return count;
-    }
-
-    // 누적 영역의 수 조회
-    public Long findAreaNumber(List<ExerciseRecord> exerciseRecord){
-        Set<MatrixSetDto> setMatrices = new HashSet<>();
-        exerciseRecord.forEach(r -> r.getMatrices()
-                .forEach(m -> setMatrices.add(MatrixSetDto
-                        .builder()
-                        .latitude(m.getLatitude())
-                        .longitude(m.getLongitude())
-                        .build())));
-        return Long.valueOf(setMatrices.size());
     }
 }
