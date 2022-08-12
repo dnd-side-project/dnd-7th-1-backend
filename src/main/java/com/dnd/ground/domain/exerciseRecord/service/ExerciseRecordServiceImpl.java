@@ -26,8 +26,8 @@ import java.util.List;
  * @updated recordEnd 메소드 변경
  *          1. 기록 종료 시, 회원의 마지막 위치 최신화
  *          - 2022.08.09 박찬호
- *          1. 칸의 수, 영역의 수 삭제
- *          - 2022.08.10 박세헌
+ *          1. 거리, 걸음수, 운동시간 추가
+ *          - 2022.08.12 박세헌
  */
 
 @Service
@@ -61,13 +61,13 @@ public class ExerciseRecordServiceImpl implements ExerciseRecordService {
     }
 
     // 기록 끝
-    // 거리, matrix 저장
     @Transactional
     public ResponseEntity<?> recordEnd(EndRequestDto endRequestDto) {
         //기록 조회
         ExerciseRecord exerciseRecord = exerciseRecordRepository.findById(endRequestDto.getRecordId()).orElseThrow(); // 예외 처리
-        exerciseRecord.endedTime(LocalDateTime.now());
-        exerciseRecord.addDistance(endRequestDto.getDistance());
+
+        // 정보 update(ended, 거리, 걸음수, 운동시간)
+        exerciseRecord.updateInfo(endRequestDto.getDistance(), endRequestDto.getStepCount(), endRequestDto.getMinute(), endRequestDto.getSecond());
 
         //영역 저장
         List<MatrixDto> matrices = endRequestDto.getMatrices();

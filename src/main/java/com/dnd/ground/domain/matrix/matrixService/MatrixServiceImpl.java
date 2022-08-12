@@ -26,6 +26,8 @@ import java.util.Objects;
  * @description 운동 영역 서비스 클래스
  * @author  박세헌
  * @since   2022-08-01
+ * @updated 1. 칸 랭킹 메소드 오류 정정(전부 다 0점인경우 rank:2로 나왔음)
+ *          - 2022.08.12 박세헌
  * @updated 1. 회원 클래스 필드명 변경(userName -> username / nickName -> nickname)
  *          - 2022.08.12 박찬호
  */
@@ -37,7 +39,6 @@ public class MatrixServiceImpl implements MatrixService {
     private final MatrixRepository matrixRepository;
     private final UserRepository userRepository;
     private final FriendService friendService;
-    private final ExerciseRecordService exerciseRecordService;
     private final ExerciseRecordRepository exerciseRecordRepository;
 
     @Transactional
@@ -45,9 +46,8 @@ public class MatrixServiceImpl implements MatrixService {
         return matrixRepository.save(matrix);
     }
 
-
-    // 랭킹 조회(누적 칸의 수 기준)
-    public RankResponseDto.matrixRankingResponseDto matrixRanking(String nickname){
+    // 랭킹 조회(누적 칸의 수 기준)(보류)
+    public RankResponseDto.matrixRankingResponseDto matrixRanking(String nickname) {
         User user = userRepository.findByNickname(nickname).orElseThrow();
         List<User> userAndFriends = friendService.getFriends(user);  // 친구들 조회
         userAndFriends.add(0, user);  // 유저 추가
@@ -63,31 +63,39 @@ public class MatrixServiceImpl implements MatrixService {
 
         int count = 0;
         int rank = 1;
-        if (!matrixCount.isEmpty()){
+
+        // 1명이라도 0점이 아니라면
+        if (!matrixCount.isEmpty()) {
             Long matrixNumber = (Long) matrixCount.get(0).get(1);  // 맨 처음 user의 칸 수
             for (Tuple info : matrixCount) {
-                if (Objects.equals((Long) info.get(1), matrixNumber)){  // 전 유저와 칸수가 같다면 랭크 유지
-                    matrixRankings.add(new UserResponseDto.matrixRanking(rank, (String)info.get(0),
-                            (Long)info.get(1)));
+                if (Objects.equals((Long) info.get(1), matrixNumber)) {  // 전 유저와 칸수가 같다면 랭크 유지
+                    matrixRankings.add(new UserResponseDto.matrixRanking(rank, (String) info.get(0),
+                            (Long) info.get(1)));
                     count += 1;
                     continue;
                 }
                 // 전 유저보다 작다면 랭크+1
                 rank += 1;
-                matrixRankings.add(new UserResponseDto.matrixRanking(rank, (String)info.get(0),
-                        (Long)info.get(1)));
-                matrixNumber = (Long)info.get(1);  // 칸 수 update!
+                matrixRankings.add(new UserResponseDto.matrixRanking(rank, (String) info.get(0),
+                        (Long) info.get(1)));
+                matrixNumber = (Long) info.get(1);  // 칸 수 update!
                 count += 1;
             }
+            rank += 1;
+            // 나머지 0점인 유저들 추가
+            for (int i = count; i < userAndFriends.size(); i++) {
+                matrixRankings.add(new UserResponseDto.matrixRanking(rank, userAndFriends.get(i).getNickname(), 0L));
+            }
+            return new RankResponseDto.matrixRankingResponseDto(matrixRankings);
         }
 
-        rank += 1;
-        // 나머지 0점인 유저들 추가
-        for (int i=count; i<userAndFriends.size(); i++){
-            matrixRankings.add(new UserResponseDto.matrixRanking(rank, userAndFriends.get(i).getNickname(), 0L));
+        // 전부다 0점이라면
+        else {
+            for (int i = count; i < userAndFriends.size(); i++) {
+                matrixRankings.add(new UserResponseDto.matrixRanking(rank, userAndFriends.get(i).getNickname(), 0L));
+            }
+            return new RankResponseDto.matrixRankingResponseDto(matrixRankings);
         }
-
-        return new RankResponseDto.matrixRankingResponseDto(matrixRankings);
     }
 
     // 랭킹 조회(누적 영역의 수 기준)

@@ -15,15 +15,15 @@ class FriendTest {
     public void 친구() {
 
         User userA = User.builder()
-                .userName("nameA")
-                .nickName("nickA")
+                .username("nameA")
+                .nickname("nickA")
                 .friends(new ArrayList<>())
                 .challenges(new ArrayList<>())
                 .build();
 
         User userC = User.builder()
-                .userName("nameC")
-                .nickName("nickC")
+                .username("nameC")
+                .nickname("nickC")
                 .friends(new ArrayList<>())
                 .challenges(new ArrayList<>())
                 .build();

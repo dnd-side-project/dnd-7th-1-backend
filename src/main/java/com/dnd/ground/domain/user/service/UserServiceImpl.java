@@ -27,6 +27,7 @@ import java.util.*;
  * @updated 1. 랭킹 관련 메소드 이동(UserService -> MatrixService)
  *          - 2022.08.11 박찬호
  */
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -119,6 +120,5 @@ public class UserServiceImpl implements UserService{
                 .nickname(nickname)
                 .intro(user.getIntro())
                 .build();
-
     }
 }
