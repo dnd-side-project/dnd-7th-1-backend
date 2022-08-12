@@ -59,7 +59,7 @@ public class UserServiceImpl implements UserService{
 
         /*----------*/
         //진행 중인 챌린지 목록 조회 List<UserChallenge>
-        List<Challenge> challenges = challengeRepository.findChallenge(user);
+        List<Challenge> challenges = challengeRepository.findProgressChallenge(user);
 
         //챌린지를 함께하지 않는 친구 목록
         List<User> friendsNotChallenge = friendService.getFriends(user);

@@ -8,8 +8,6 @@ import com.dnd.ground.domain.challenge.dto.ChallengeRequestDto;
 import com.dnd.ground.domain.challenge.dto.ChallengeResponseDto;
 import com.dnd.ground.domain.challenge.repository.ChallengeRepository;
 import com.dnd.ground.domain.challenge.repository.UserChallengeRepository;
-import com.dnd.ground.domain.exerciseRecord.ExerciseRecord;
-import com.dnd.ground.domain.exerciseRecord.Repository.ExerciseRecordRepository;
 import com.dnd.ground.domain.user.User;
 import com.dnd.ground.domain.user.repository.UserRepository;
 import com.dnd.ground.global.util.UuidUtil;
@@ -23,17 +21,16 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * @description 챌린지와 관련된 서비스의 역할을 분리한 구현체
  * @author  박찬호
  * @since   2022-08-03
- * @updated 1. 일주일 챌린지 종류 추가(type)
- *          2. 일주일 챌린지 시작 상태 변경 기능 추가(Cron)
- *          3. 일주일 챌린지 종료 기능 추가
- *          - 2022.08.09 박찬호
+ * @updated 1. 진행 대기 상태의 챌린지 조회 기능 구현
+ *          2. 초대 받은 챌린지 목록 조회 기능 구현
+ *          - 2022.08.13 박찬호
  */
 
 @Slf4j
@@ -44,7 +41,6 @@ public class ChallengeServiceImpl implements ChallengeService {
     private final ChallengeRepository challengeRepository;
     private final UserChallengeRepository userChallengeRepository;
     private final UserRepository userRepository;
-    private final ExerciseRecordRepository exerciseRecordRepository;
 
     /*챌린지 생성*/
     @Transactional
@@ -140,24 +136,46 @@ public class ChallengeServiceImpl implements ChallengeService {
 
         log.info("**챌린지 종료 메소드 실행** 현재 시간:{} | 종료된 챌린지 개수:{}", LocalDateTime.now(), challenges.size());
     }
+    
+    /*초대 받은 챌린지 조회*/
+    public List<ChallengeResponseDto.Invite> findInviteChallenge(String nickname) {
+        User user = userRepository.findByNickname(nickname).orElseThrow(); //예외 처리 예정
 
-    public void findProgressChallenge(User user) {
-        List<Challenge> challenges = challengeRepository.findProgressChallenge(user);
+        List<Challenge> challenges = challengeRepository.findChallengeInWait(user);
+        List<ChallengeResponseDto.Invite> response = new ArrayList<>();
 
         for (Challenge challenge : challenges) {
-            List<User> users = userChallengeRepository.findChallengeUsers(challenge);
 
-            for (User u : users) {
-                List<ExerciseRecord> exerciseRecordByPeriod = exerciseRecordRepository.findExerciseRecordByPeriod(u, LocalDateTime.now());
-                //영역 개수 조회 (중복X)
-            }
-
+            response.add(
+                    ChallengeResponseDto.Invite.builder()
+                            .name(challenge.getName())
+                            .InviterNickname(userChallengeRepository.findMasterInChallenge(challenge).getNickname())
+                            .message(challenge.getMessage())
+                            .created(challenge.getCreated().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")))
+                            .build()
+            );
         }
+
+        return response;
     }
+
+//    public void findProgressChallenge(User user) {
+//        List<Challenge> challenges = challengeRepository.findProgressChallenge(user);
+//
+//        for (Challenge challenge : challenges) {
+//            List<User> users = userChallengeRepository.findChallengeUsers(challenge);
+//
+//            for (User u : users) {
+//                List<ExerciseRecord> exerciseRecordByPeriod = exerciseRecordRepository.findExerciseRecordByPeriod(u, LocalDateTime.now());
+//                //영역 개수 조회 (중복X)
+//            }
+//
+//        }
+//    }
 
     /*진행 대기 중인 챌린지 리스트 조회*/
     public List<ChallengeResponseDto.Wait> findWaitChallenge(String nickname) {
-        User user = userRepository.findByNickname(nickname).orElseThrow();
+        User user = userRepository.findByNickname(nickname).orElseThrow(); //예외 처리 예정
 
         List<Challenge> waitChallenge = challengeRepository.findWaitChallenge(user);
         List<ChallengeResponseDto.Wait> response = new ArrayList<>();

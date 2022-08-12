@@ -14,7 +14,8 @@ import java.util.List;
  * @author  박찬호
  * @since   2022-08-01
  * @updated 1. 진행 대기 상태의 챌린지 조회 기능 구현
- *          - 2022.08.12 박찬호
+ *          2. 초대 받은 챌린지 목록 조회 기능 구현
+ *          - 2022.08.13 박찬호
  */
 
 public interface ChallengeController {
@@ -22,4 +23,5 @@ public interface ChallengeController {
     ResponseEntity<?> acceptChallenge(@RequestBody ChallengeRequestDto.CInfo requestDto);
     ResponseEntity<?> rejectChallenge(@RequestBody ChallengeRequestDto.CInfo requestDto);
     ResponseEntity<List<ChallengeResponseDto.Wait>> findWaitChallenges(@RequestParam("nickname") String nickname);
+    ResponseEntity<List<ChallengeResponseDto.Invite>> findInviteChallenge(@RequestParam("nickname") String nickname);
 }

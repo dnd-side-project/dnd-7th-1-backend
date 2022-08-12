@@ -10,15 +10,12 @@ import org.springframework.data.repository.query.Param;
 import java.time.LocalDate;
 import java.util.List;
 
-import static com.dnd.ground.domain.challenge.ChallengeStatus.*;
-
 /**
  * @description 챌린지와 관련한 레포지토리
  * @author  박찬호
  * @since   2022-08-03
- * @updated 1. 일주일 챌린지 시작 상태 변경 기능 추가
- *          2. 일주일 챌린지 종료 기능 추가
- *          - 2022.08.09 박찬호
+ * @updated 1. 초대 받은 챌린지 조회
+ *          - 2022.08.13 박찬호
  */
 
 public interface ChallengeRepository extends JpaRepository<Challenge, Long> {
@@ -27,14 +24,13 @@ public interface ChallengeRepository extends JpaRepository<Challenge, Long> {
     Challenge findByUuid(@Param("uuid") String uuid);
 
     //진행 중인 챌린지 정보 조회
-    @Query("select c from Challenge c inner join UserChallenge uc on uc.challenge=c where uc.user=:user and c.status='Progress'")
+    @Query("select c from Challenge c inner join UserChallenge uc on uc.challenge=c where uc.user=:user and c.status='Progress' order by c.started ASC")
     List<Challenge> findProgressChallenge(@Param("user") User user);
 
     //진행대기 중인 챌린지 정보 조회
-    @Query("select c from Challenge c inner join UserChallenge uc on uc.challenge=c where uc.user=:user and c.status='Wait'")
+    @Query("select c from Challenge c inner join UserChallenge uc on uc.challenge=c where uc.user=:user and c.status='Wait' order by c.started ASC")
     List<Challenge> findWaitChallenge(@Param("user") User user);
-
-
+     
     //진행 중인 챌린지 개수
     @Query("select count(c) from Challenge c inner join UserChallenge uc on uc.challenge=c where " +
             "uc.user=:user and c.status='Progress'")
@@ -52,9 +48,12 @@ public interface ChallengeRepository extends JpaRepository<Challenge, Long> {
 
     //진행 중인 챌린지를 제외하고, 모든 챌린지 조회 -> Progress가 아니면서 시작 날짜가 오늘인 챌린지 조회
     @Query("select c from Challenge c where c.status<>'Progress' and c.started=:today")
-    List<Challenge> findChallengesNotStarted(LocalDate today);
+    List<Challenge> findChallengesNotStarted(@Param("today") LocalDate today);
 
     //진행 중인 전체 챌린지 조회
     List<Challenge> findChallengesByStatusEquals(ChallengeStatus Progress);
 
+    //초대 받은 챌린지 조회(UC가 Wait 상태인 챌린지 조회)
+    @Query("select c from Challenge c inner join UserChallenge uc on uc.user=:user where uc.status='Wait' order by c.created ASC")
+    List<Challenge> findChallengeInWait(@Param("user") User user);
 }

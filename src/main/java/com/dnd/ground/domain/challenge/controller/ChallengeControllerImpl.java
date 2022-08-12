@@ -21,7 +21,8 @@ import java.util.List;
  * @author  박찬호
  * @since   2022-08-01
  * @updated 1. 진행 대기 상태의 챌린지 조회 기능 구현
- *          - 2022.08.12 박찬호
+ *          2. 초대 받은 챌린지 목록 조회 기능 구현
+ *          - 2022.08.13 박찬호
  */
 
 @Api(tags = "챌린지")
@@ -52,14 +53,20 @@ public class ChallengeControllerImpl implements ChallengeController {
         return challengeService.changeUserChallengeStatus(requestDto, ChallengeStatus.Reject);
     }
 
-    @GetMapping("/progress")
-    @Operation(summary = "진행 중인 챌린지 리스트 조회", description = "진행 중인 챌린지 리스트+현재 순위")
-    public void findProgressChallenges(@RequestParam("nickname") String nickname) {
-        challengeService.findProgressChallenge(userRepository.findByNickname(nickname).orElseThrow());
+    @GetMapping("/invite")
+    @Operation(summary = "초대받은 챌린지 목록", description = "초대 받은 챌린지와 관련한 정보 목록")
+    public ResponseEntity<List<ChallengeResponseDto.Invite>> findInviteChallenge(@RequestParam("nickname") String nickname) {
+        return ResponseEntity.ok().body(challengeService.findInviteChallenge(nickname));
     }
 
+//    @GetMapping("/progress")
+//    @Operation(summary = "진행 중인 챌린지 리스트 조회", description = "진행 중인 챌린지 리스트+현재 순위")
+//    public void findProgressChallenges(@RequestParam("nickname") String nickname) {
+//        challengeService.findProgressChallenge(userRepository.findByNickname(nickname).orElseThrow());
+//    }
+
     @GetMapping("/wait")
-    @Operation(summary = "진행 대기 중인 챌린지 리스트 조회", description = "대기 중 챌린지와 관련한 정보 리스트")
+    @Operation(summary = "진행 대기 중인 챌린지 목록 조회", description = "대기 중 챌린지와 관련한 정보 목록")
     public ResponseEntity<List<ChallengeResponseDto.Wait>> findWaitChallenges(@RequestParam("nickname") String nickname) {
         return ResponseEntity.ok().body(challengeService.findWaitChallenge(nickname));
     }

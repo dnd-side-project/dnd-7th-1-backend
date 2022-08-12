@@ -4,6 +4,7 @@ import lombok.*;
 
 import javax.persistence.*;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -11,9 +12,8 @@ import java.util.List;
  * @description 챌린지 엔티티
  * @author  박찬호
  * @since   2022-07-26
- * @updated 1.type 필드 추가(챌린지 종류)
- *          2.챌린지 상태 업데이트 메소드 추가(updateStatus())
- *          - 2022-08-09 박찬호
+ * @updated 1.생성 시간 필드 추가 (created)
+ *          - 2022-08-12 박찬호
  */
 
 @Getter
@@ -37,6 +37,10 @@ public class Challenge {
 
     @Column(name = "challenge_started", nullable = false)
     private LocalDate started;
+
+    @Column(name = "challenge_created", nullable = false)
+    @Builder.Default
+    private LocalDateTime created = LocalDateTime.now();
 
     @Column(name = "challenge_message", nullable = false)
     private String message;

@@ -16,7 +16,8 @@ import java.util.Optional;
  * @author  박찬호
  * @since   2022-08-03
  * @updated 1. 챌린지 상태에 따른 UserChallenge 조회
- *          - 2022.08.12 박찬호
+ *          2. 챌린지 주최자 조회 쿼리 추가
+ *          - 2022.08.13 박찬호
  */
 
 public interface UserChallengeRepository extends JpaRepository<UserChallenge, Long> {
@@ -60,5 +61,8 @@ public interface UserChallengeRepository extends JpaRepository<UserChallenge, Lo
     @Query("delete from UserChallenge uc where uc.challenge=:challenge and (uc.status='Wait' or uc.status='Reject')")
     int deleteUCByChallenge(@Param("challenge") Challenge challenge);
 
+    //챌린지의 주최자 조회
+    @Query("select uc.user from UserChallenge uc where uc.challenge=:challenge and uc.status='Master'")
+    User findMasterInChallenge(@Param("challenge") Challenge challenge);
 
 }
