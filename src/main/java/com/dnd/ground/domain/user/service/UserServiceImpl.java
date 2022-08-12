@@ -30,8 +30,9 @@ import java.util.*;
  * @description 유저 서비스 클래스
  * @author  박세헌, 박찬호
  * @since   2022-08-01
- * @updated 2022-08-10 / 홈화면 조회 코드 가독성 개선 - 박세헌
- */
+
+ * @updated 1. 랭킹 관련 메소드 이동(UserService -> MatrixService)
+ *          - 2022.08.11 박찬호
 
 @Slf4j
 @Service
@@ -45,7 +46,6 @@ public class UserServiceImpl implements UserService{
     private final UserChallengeRepository userChallengeRepository;
     private final MatrixRepository matrixRepository;
     private final FriendService friendService;
-    private final ExerciseRecordService exerciseRecordService;
 
     @Transactional
     public User save(User user){
@@ -117,6 +117,7 @@ public class UserServiceImpl implements UserService{
                 .challengesNumber(challengeRepository.findCountChallenge(user))
                 .build();
     }
+
 
     // 랭킹 조회(누적 칸의 수 기준)
     public RankResponseDto.matrixRankingResponseDto matrixRanking(String nickname){
