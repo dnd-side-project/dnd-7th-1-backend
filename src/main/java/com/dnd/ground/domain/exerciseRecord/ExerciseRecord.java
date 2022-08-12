@@ -2,6 +2,7 @@ package com.dnd.ground.domain.exerciseRecord;
 
 import com.dnd.ground.domain.matrix.Matrix;
 import com.dnd.ground.domain.user.User;
+
 import lombok.*;
 
 import javax.persistence.*;
@@ -13,7 +14,9 @@ import java.util.List;
  * @description 운동 기록 엔티티
  * @author  박찬호, 박세헌
  * @since   2022-07-27
- * @updated 2022-08-04 / cascade 조건 추가 : 박세헌
+ * @updated 2022-08-12 / 1. 거리, 운동시간, 걸음 수 추가
+ *                       2. 비즈니스 로직 변경
+ *                       - 박세헌
  */
 
 @Getter
@@ -34,7 +37,13 @@ public class ExerciseRecord {
     private LocalDateTime ended;
 
     @Column(nullable = false)
-    private Double distance;
+    private Integer distance;
+
+    @Column(nullable = false)
+    private Integer exerciseTime;
+
+    @Column(nullable = false)
+    private Integer stepCount;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
@@ -44,25 +53,26 @@ public class ExerciseRecord {
     private List<Matrix> matrices = new ArrayList<>();
 
     public ExerciseRecord(User user, LocalDateTime started) {
-        this.distance = 0.0;
+        this.distance = 0;
+        this.exerciseTime = 0;
+        this.stepCount = 0;
         this.ended = LocalDateTime.now();
         this.user = user;
         this.started = started;
     }
 
-    // setMatrix
+    // 칸 추가
     public void addMatrix(Matrix matrix){
         this.matrices.add(matrix);
         matrix.belongRecord(this);
     }
 
-    // setEnded
-    public void endedTime(LocalDateTime ended){
-        this.ended = ended;
+    // 정보 추가
+    public void updateInfo(Integer distance, Integer stepCount, Integer minute, Integer second){
+        this.ended = LocalDateTime.now();
+        this.distance = distance;
+        this.stepCount = stepCount;
+        this.exerciseTime = 60*minute + second;
     }
 
-    // setDistance
-    public void addDistance(Double distance){
-        this.distance = distance;
-    }
 }
