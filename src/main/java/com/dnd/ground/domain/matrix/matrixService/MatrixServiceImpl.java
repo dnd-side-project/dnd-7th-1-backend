@@ -28,6 +28,8 @@ import java.util.Objects;
  * @since   2022-08-01
  * @updated 1. 랭킹 관련 메소드 이동(UserService -> MatrixService)
  *          - 2022.08.11 박찬호
+ *          1. 칸 랭킹 메소드 오류 정정(전부 다 0점인경우 rank:2로 나왔음)
+ *          - 2022.08.12 박세헌
  */
 
 @Service
@@ -37,7 +39,6 @@ public class MatrixServiceImpl implements MatrixService {
     private final MatrixRepository matrixRepository;
     private final UserRepository userRepository;
     private final FriendService friendService;
-    private final ExerciseRecordService exerciseRecordService;
     private final ExerciseRecordRepository exerciseRecordRepository;
 
     @Transactional
@@ -45,8 +46,7 @@ public class MatrixServiceImpl implements MatrixService {
         return matrixRepository.save(matrix);
     }
 
-
-    // 랭킹 조회(누적 칸의 수 기준)
+    // 랭킹 조회(누적 칸의 수 기준)(보류)
     public RankResponseDto.matrixRankingResponseDto matrixRanking(String nickname){
         User user = userRepository.findByNickName(nickname).orElseThrow();
         List<User> userAndFriends = friendService.getFriends(user);  // 친구들 조회
@@ -63,6 +63,8 @@ public class MatrixServiceImpl implements MatrixService {
 
         int count = 0;
         int rank = 1;
+
+        // 1명이라도 0점이 아니라면
         if (!matrixCount.isEmpty()){
             Long matrixNumber = (Long) matrixCount.get(0).get(1);  // 맨 처음 user의 칸 수
             for (Tuple info : matrixCount) {
@@ -79,15 +81,21 @@ public class MatrixServiceImpl implements MatrixService {
                 matrixNumber = (Long)info.get(1);  // 칸 수 update!
                 count += 1;
             }
+            rank += 1;
+            // 나머지 0점인 유저들 추가
+            for (int i=count; i<userAndFriends.size(); i++){
+                matrixRankings.add(new UserResponseDto.matrixRanking(rank, userAndFriends.get(i).getNickName(), 0L));
+            }
+            return new RankResponseDto.matrixRankingResponseDto(matrixRankings);
         }
 
-        rank += 1;
-        // 나머지 0점인 유저들 추가
-        for (int i=count; i<userAndFriends.size(); i++){
-            matrixRankings.add(new UserResponseDto.matrixRanking(rank, userAndFriends.get(i).getNickName(), 0L));
+        // 전부다 0점이라면
+        else{
+            for (int i=count; i<userAndFriends.size(); i++){
+                matrixRankings.add(new UserResponseDto.matrixRanking(rank, userAndFriends.get(i).getNickName(), 0L));
+            }
+            return new RankResponseDto.matrixRankingResponseDto(matrixRankings);
         }
-
-        return new RankResponseDto.matrixRankingResponseDto(matrixRankings);
     }
 
     // 랭킹 조회(누적 영역의 수 기준)
@@ -98,17 +106,17 @@ public class MatrixServiceImpl implements MatrixService {
 
         // 유저의 닉네임과 (이번주)영역의 수 대입
         areaRankings.add(new UserResponseDto.areaRanking(1, user.getNickName(),
-                exerciseRecordService.findAreaNumber(exerciseRecordRepository.findRecordOfThisWeek(user.getId()))));
+                matrixRepository.findMatrixSetByRecords(exerciseRecordRepository.findRecordOfThisWeek(user.getId())).size()));
 
         // 친구들의 닉네임과 (이번주)영역의 수 대입
         friends.forEach(f -> areaRankings.add(new UserResponseDto.areaRanking(1, f.getNickName(),
-                exerciseRecordService.findAreaNumber(exerciseRecordRepository.findRecordOfThisWeek(f.getId())))));
+                matrixRepository.findMatrixSetByRecords(exerciseRecordRepository.findRecordOfThisWeek(f.getId())).size())));
 
         // 영역의 수를 기준으로 내림차순 정렬
         areaRankings.sort((a, b) -> b.getAreaNumber().compareTo(a.getAreaNumber()));
 
         // 랭크 결정
-        Long areaNumber = areaRankings.get(0).getAreaNumber();  // 맨 처음 user의 영역 수
+        Integer areaNumber = areaRankings.get(0).getAreaNumber();  // 맨 처음 user의 영역 수
         int rank = 1;
         for (int i=1; i<areaRankings.size(); i++){
             if (Objects.equals(areaRankings.get(i).getAreaNumber(), areaNumber)){  // 전 유저와 칸수가 같다면 랭크 유지
