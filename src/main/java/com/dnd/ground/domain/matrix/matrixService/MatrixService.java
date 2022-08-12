@@ -3,6 +3,8 @@ package com.dnd.ground.domain.matrix.matrixService;
 import com.dnd.ground.domain.matrix.Matrix;
 import com.dnd.ground.domain.user.dto.RankResponseDto;
 
+import java.time.LocalDateTime;
+
 /**
  * @description 운동 영역 서비스 인터페이스
  * @author  박세헌
@@ -13,6 +15,6 @@ import com.dnd.ground.domain.user.dto.RankResponseDto;
 
 public interface MatrixService {
     Matrix save(Matrix matrix);
-    RankResponseDto.matrixRankingResponseDto matrixRanking(String nickname);
-    RankResponseDto.areaRankingResponseDto areaRanking(String nickname);
+    RankResponseDto.Matrix matrixRanking(String nickname, LocalDateTime start, LocalDateTime end);
+    RankResponseDto.Area areaRanking(String nickname, LocalDateTime start, LocalDateTime end);
 }
