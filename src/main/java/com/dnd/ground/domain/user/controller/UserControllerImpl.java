@@ -1,7 +1,7 @@
 package com.dnd.ground.domain.user.controller;
 
 import com.dnd.ground.domain.user.dto.HomeResponseDto;
-import com.dnd.ground.domain.user.dto.RankResponseDto;
+import com.dnd.ground.domain.user.dto.UserResponseDto;
 import com.dnd.ground.domain.user.service.UserService;
 import io.swagger.annotations.Api;
 import io.swagger.v3.oas.annotations.Operation;
@@ -14,10 +14,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * @description 메인홈 구성 컨트롤러 클래스
- * @author  박세헌
+ * @description 회원 관련 컨트롤러 구현체
+ * @author  박세헌, 박찬호
  * @since   2022-08-02
- * @updated 2022-08-09 / 랭킹 조회 api 추가: 박세헌
+ * @updated 1. 회원 정보 조회 기능 구현
+ *          - 2022.08.12 박찬호
  */
 
 @Api(tags = "유저")
@@ -38,16 +39,10 @@ public class UserControllerImpl implements UserController {
         return ResponseEntity.ok(userService.showHome(nickName));
     }
 
-    @Operation(summary = "칸의 수 랭킹", description = "칸의 수가 높은 순서대로 유저들을 조회")
-    @GetMapping("/rank/matrix")
-    public ResponseEntity<RankResponseDto.matrixRankingResponseDto> matrixRank(@RequestParam("nickname") String nickName){
-        return ResponseEntity.ok(userService.matrixRanking(nickName));
-    }
-
-    @Operation(summary = "영역의 수 랭킹", description = "영역의 수가 높은 순서대로 유저들을 조회")
-    @GetMapping("/rank/area")
-    public ResponseEntity<RankResponseDto.areaRankingResponseDto> areaRank(@RequestParam("nickname") String nickName){
-        return ResponseEntity.ok(userService.areaRanking(nickName));
+    @GetMapping("/info")
+    @Operation(summary = "회원 정보 조회", description = "회원의 닉네임, 소개 메시지 정보 (추후 프로필 등 추가 예정)")
+    public ResponseEntity<UserResponseDto.UInfo> getUserInfo(@RequestParam("nickname") String nickname) {
+        return ResponseEntity.ok().body(userService.getUserInfo(nickname));
     }
 
 }
