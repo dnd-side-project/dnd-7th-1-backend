@@ -5,6 +5,7 @@ import com.dnd.ground.domain.challenge.ChallengeStatus;
 import com.dnd.ground.domain.challenge.UserChallenge;
 import com.dnd.ground.domain.challenge.dto.ChallengeCreateRequestDto;
 import com.dnd.ground.domain.challenge.dto.ChallengeRequestDto;
+import com.dnd.ground.domain.challenge.dto.ChallengeResponseDto;
 import com.dnd.ground.domain.challenge.repository.ChallengeRepository;
 import com.dnd.ground.domain.challenge.repository.UserChallengeRepository;
 import com.dnd.ground.domain.exerciseRecord.ExerciseRecord;
@@ -22,7 +23,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @description 챌린지와 관련된 서비스의 역할을 분리한 구현체
@@ -138,4 +140,44 @@ public class ChallengeServiceImpl implements ChallengeService {
 
         log.info("**챌린지 종료 메소드 실행** 현재 시간:{} | 종료된 챌린지 개수:{}", LocalDateTime.now(), challenges.size());
     }
+
+    public void findProgressChallenge(User user) {
+        List<Challenge> challenges = challengeRepository.findProgressChallenge(user);
+
+        for (Challenge challenge : challenges) {
+            List<User> users = userChallengeRepository.findChallengeUsers(challenge);
+
+            for (User u : users) {
+                List<ExerciseRecord> exerciseRecordByPeriod = exerciseRecordRepository.findExerciseRecordByPeriod(u, LocalDateTime.now());
+                //영역 개수 조회 (중복X)
+            }
+
+        }
+    }
+
+    /*진행 대기 중인 챌린지 리스트 조회*/
+    public List<ChallengeResponseDto.Wait> findWaitChallenge(String nickname) {
+        User user = userRepository.findByNickname(nickname).orElseThrow();
+
+        List<Challenge> waitChallenge = challengeRepository.findWaitChallenge(user);
+        List<ChallengeResponseDto.Wait> response = new ArrayList<>();
+
+        for (Challenge challenge : waitChallenge) {
+
+            LocalDate started = challenge.getStarted();
+
+            response.add(
+                    ChallengeResponseDto.Wait.builder()
+                            .name(challenge.getName())
+                            .started(started)
+                            .ended(started.plusDays(7-started.getDayOfWeek().getValue()))
+                            .totalCount(userChallengeRepository.findUCCount(challenge)) //챌린지에 참여하는 전체 인원 수
+                            .readyCount(userChallengeRepository.findUCWaitCount(challenge) + 1) //Progress 상태 회원 수 + 주최자
+                            .build()
+            );
+        }
+
+        return response;
+    }
+
 }

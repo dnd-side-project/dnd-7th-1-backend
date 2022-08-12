@@ -3,6 +3,7 @@ package com.dnd.ground.domain.challenge.controller;
 import com.dnd.ground.domain.challenge.ChallengeStatus;
 import com.dnd.ground.domain.challenge.dto.ChallengeCreateRequestDto;
 import com.dnd.ground.domain.challenge.dto.ChallengeRequestDto;
+import com.dnd.ground.domain.challenge.dto.ChallengeResponseDto;
 import com.dnd.ground.domain.challenge.service.ChallengeService;
 import com.dnd.ground.domain.user.repository.UserRepository;
 import io.swagger.annotations.Api;
@@ -12,12 +13,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 
 /**
  * @description 챌린지와 관련된 컨트롤러 구현체
  * @author  박찬호
  * @since   2022-08-01
- * @updated 1. 회원 클래스 필드명 변경(userName -> username / nickName -> nickname)
+ * @updated 1. 진행 대기 상태의 챌린지 조회 기능 구현
  *          - 2022.08.12 박찬호
  */
 
@@ -48,4 +51,17 @@ public class ChallengeControllerImpl implements ChallengeController {
     public ResponseEntity<?> rejectChallenge(@RequestBody ChallengeRequestDto.CInfo requestDto) {
         return challengeService.changeUserChallengeStatus(requestDto, ChallengeStatus.Reject);
     }
+
+    @GetMapping("/progress")
+    @Operation(summary = "진행 중인 챌린지 리스트 조회", description = "진행 중인 챌린지 리스트+현재 순위")
+    public void findProgressChallenges(@RequestParam("nickname") String nickname) {
+        challengeService.findProgressChallenge(userRepository.findByNickname(nickname).orElseThrow());
+    }
+
+    @GetMapping("/wait")
+    @Operation(summary = "진행 대기 중인 챌린지 리스트 조회", description = "대기 중 챌린지와 관련한 정보 리스트")
+    public ResponseEntity<List<ChallengeResponseDto.Wait>> findWaitChallenges(@RequestParam("nickname") String nickname) {
+        return ResponseEntity.ok().body(challengeService.findWaitChallenge(nickname));
+    }
+
 }

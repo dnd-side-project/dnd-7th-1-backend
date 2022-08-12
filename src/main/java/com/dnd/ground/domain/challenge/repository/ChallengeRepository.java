@@ -28,7 +28,12 @@ public interface ChallengeRepository extends JpaRepository<Challenge, Long> {
 
     //진행 중인 챌린지 정보 조회
     @Query("select c from Challenge c inner join UserChallenge uc on uc.challenge=c where uc.user=:user and c.status='Progress'")
-    List<Challenge> findChallenge(@Param("user") User user);
+    List<Challenge> findProgressChallenge(@Param("user") User user);
+
+    //진행대기 중인 챌린지 정보 조회
+    @Query("select c from Challenge c inner join UserChallenge uc on uc.challenge=c where uc.user=:user and c.status='Wait'")
+    List<Challenge> findWaitChallenge(@Param("user") User user);
+
 
     //진행 중인 챌린지 개수
     @Query("select count(c) from Challenge c inner join UserChallenge uc on uc.challenge=c where " +
