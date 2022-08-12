@@ -1,6 +1,7 @@
 package com.dnd.ground.domain.matrix.dto;
 
 import io.swagger.annotations.ApiModelProperty;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 
 /**
@@ -10,7 +11,7 @@ import lombok.Data;
  * @updated 2022-08-09 / 생성: 박세헌
  */
 
-@Data
+@Data @AllArgsConstructor
 public class MatrixDto{
     @ApiModelProperty(value = "위도", example = "37.123123")
     private Double latitude;

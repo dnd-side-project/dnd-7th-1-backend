@@ -7,8 +7,8 @@ import com.dnd.ground.domain.exerciseRecord.ExerciseRecord;
 import com.dnd.ground.domain.exerciseRecord.Repository.ExerciseRecordRepository;
 import com.dnd.ground.domain.exerciseRecord.service.ExerciseRecordService;
 import com.dnd.ground.domain.friend.service.FriendService;
-import com.dnd.ground.domain.matrix.Matrix;
-import com.dnd.ground.domain.matrix.dto.MatrixSetDto;
+import com.dnd.ground.domain.matrix.dto.MatrixDto;
+import com.dnd.ground.domain.matrix.matrixRepository.MatrixRepository;
 import com.dnd.ground.domain.user.User;
 import com.dnd.ground.domain.user.dto.HomeResponseDto;
 import com.dnd.ground.domain.user.dto.RankResponseDto;
@@ -16,6 +16,7 @@ import com.dnd.ground.domain.user.dto.UserResponseDto;
 import com.dnd.ground.domain.user.repository.UserRepository;
 import lombok.*;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,15 +25,15 @@ import java.time.DayOfWeek;
 import java.time.LocalDateTime;
 import java.time.temporal.TemporalAdjusters;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * @description 유저 서비스 클래스
  * @author  박세헌, 박찬호
  * @since   2022-08-01
- * @updated 2022-08-09 / 랭킹 오류 해결 - 박세헌
+ * @updated 2022-08-10 / 홈화면 조회 코드 가독성 개선 - 박세헌
  */
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -42,6 +43,7 @@ public class UserServiceImpl implements UserService{
     private final ExerciseRecordRepository exerciseRecordRepository;
     private final ChallengeRepository challengeRepository;
     private final UserChallengeRepository userChallengeRepository;
+    private final MatrixRepository matrixRepository;
     private final FriendService friendService;
     private final ExerciseRecordService exerciseRecordService;
 
@@ -54,27 +56,12 @@ public class UserServiceImpl implements UserService{
         User user = userRepository.findByNickName(nickname).orElseThrow();  // 예외 처리
 
         /*유저의 matrix 와 정보 (userMatrix)*/
-        Set<MatrixSetDto> userShowMatrices = new HashSet<>();
         UserResponseDto.UserMatrix userMatrix = new UserResponseDto.UserMatrix(user);
 
-        List<ExerciseRecord> userRecordOfThisWeek = exerciseRecordRepository.findRecordOfThisWeek(user.getId());
+        List<ExerciseRecord> userRecordOfThisWeek = exerciseRecordRepository.findRecordOfThisWeek(user.getId()); // 이번주 운동기록 조회
+        List<MatrixDto> userMatrixSet = matrixRepository.findMatrixSetByRecords(userRecordOfThisWeek);  // 운동 기록의 영역 조회
 
-        if (!userRecordOfThisWeek.isEmpty()) {
-            List<List<Matrix>> userMatrices = userRecordOfThisWeek.stream()
-                    .map(ExerciseRecord::getMatrices)
-                    .collect(Collectors.toList());
-
-            userMatrices.forEach(ms -> ms.forEach(m ->
-                    userShowMatrices.add(
-                            MatrixSetDto.builder()
-                            .latitude(m.getLatitude())
-                            .longitude(m.getLongitude())
-                            .build())
-                    )
-            );
-
-            userMatrix.setProperties(nickname, userShowMatrices.size(), userShowMatrices, user.getLatitude(), user.getLongitude());
-        }
+        userMatrix.setProperties(nickname, userMatrixSet.size(), userMatrixSet, user.getLatitude(), user.getLongitude());
 
         /*----------*/
         //진행 중인 챌린지 목록 조회 List<UserChallenge>
@@ -98,17 +85,10 @@ public class UserServiceImpl implements UserService{
         /*----------*/
 
         /*챌린지를 안하는 친구들의 matrix 와 정보 (friendMatrices)*/
-        Map<String, Set<MatrixSetDto>> friendHashMap= new HashMap<>();
+        Map<String, List<MatrixDto>> friendHashMap= new HashMap<>();
 
-        friendsNotChallenge.forEach(nf -> exerciseRecordRepository.findRecordOfThisWeek(nf.getId())
-                .forEach(e -> friendHashMap.put(nf.getNickName(),
-                        e.getMatrices()
-                                .stream().map(m -> MatrixSetDto.builder()
-                                        .latitude(m.getLatitude())
-                                        .longitude(m.getLongitude())
-                                        .build()
-                        )
-                        .collect(Collectors.toSet()))));
+        friendsNotChallenge.forEach(nf -> friendHashMap.put(nf.getNickName(),
+                matrixRepository.findMatrixSetByRecords(exerciseRecordRepository.findRecordOfThisWeek(nf.getId()))));  // 이번주 운동기록 조회하여 영역 대입
 
         List<UserResponseDto.FriendMatrix> friendMatrices = new ArrayList<>();
         for (String friendNickname : friendHashMap.keySet()) {
@@ -121,19 +101,13 @@ public class UserServiceImpl implements UserService{
         List<UserResponseDto.ChallengeMatrix> challengeMatrices = new ArrayList<>();
 
         for (User friend : friendsWithChallenge) {
-            Set<MatrixSetDto> showMatrices = new HashSet<>();
             Integer challengeNumber = challengeRepository.findCountChallenge(user, friend); // 함께하는 챌린지 수
             String challengeColor = challengeRepository.findChallengesWithFriend(user, friend).get(0).getColor(); // 챌린지 색
-            List<ExerciseRecord> recordOfThisWeek = exerciseRecordRepository.findRecordOfThisWeek(friend.getId()); //이번주 기록
-            recordOfThisWeek.forEach(e ->
-                    e.getMatrices().forEach(m -> showMatrices.add(MatrixSetDto.builder()
-                                    .latitude(m.getLatitude())
-                                    .longitude(m.getLongitude())
-                                    .build())
-                            )
-            );
+            List<ExerciseRecord> challengeRecordOfThisWeek = exerciseRecordRepository.findRecordOfThisWeek(friend.getId()); // 이번주 운동기록 조회
+            List<MatrixDto> challengeMatrixSetDto = matrixRepository.findMatrixSetByRecords(challengeRecordOfThisWeek); // 운동 기록의 영역 조회
+
             challengeMatrices.add(new UserResponseDto.ChallengeMatrix(
-                    friend.getNickName(), challengeNumber, challengeColor, friend.getLatitude(), friend.getLongitude(), showMatrices));
+                    friend.getNickName(), challengeNumber, challengeColor, friend.getLatitude(), friend.getLongitude(), challengeMatrixSetDto));
         }
 
         return HomeResponseDto.builder()
@@ -196,17 +170,17 @@ public class UserServiceImpl implements UserService{
 
         // 유저의 닉네임과 (이번주)영역의 수 대입
         areaRankings.add(new UserResponseDto.areaRanking(1, user.getNickName(),
-                exerciseRecordService.findAreaNumber(exerciseRecordRepository.findRecordOfThisWeek(user.getId()))));
+                matrixRepository.findMatrixSetByRecords(exerciseRecordRepository.findRecordOfThisWeek(user.getId())).size()));
 
         // 친구들의 닉네임과 (이번주)영역의 수 대입
         friends.forEach(f -> areaRankings.add(new UserResponseDto.areaRanking(1, f.getNickName(),
-                exerciseRecordService.findAreaNumber(exerciseRecordRepository.findRecordOfThisWeek(f.getId())))));
+                matrixRepository.findMatrixSetByRecords(exerciseRecordRepository.findRecordOfThisWeek(f.getId())).size())));
 
         // 영역의 수를 기준으로 내림차순 정렬
         areaRankings.sort((a, b) -> b.getAreaNumber().compareTo(a.getAreaNumber()));
 
         // 랭크 결정
-        Long areaNumber = areaRankings.get(0).getAreaNumber();  // 맨 처음 user의 영역 수
+        Integer areaNumber = areaRankings.get(0).getAreaNumber();  // 맨 처음 user의 영역 수
         int rank = 1;
         for (int i=1; i<areaRankings.size(); i++){
             if (Objects.equals(areaRankings.get(i).getAreaNumber(), areaNumber)){  // 전 유저와 칸수가 같다면 랭크 유지

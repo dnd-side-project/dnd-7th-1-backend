@@ -23,7 +23,4 @@ public interface ExerciseRecordService {
 
     ResponseEntity<?> recordEnd(EndRequestDto endRequestDto);
 
-    Long findMatrixNumber(List<ExerciseRecord> exerciseRecord);
-
-    Long findAreaNumber(List<ExerciseRecord> exerciseRecord);
 }
