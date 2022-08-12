@@ -98,17 +98,17 @@ public class MatrixServiceImpl implements MatrixService {
 
         // 유저의 닉네임과 (이번주)영역의 수 대입
         areaRankings.add(new UserResponseDto.areaRanking(1, user.getNickname(),
-                exerciseRecordService.findAreaNumber(exerciseRecordRepository.findRecordOfThisWeek(user.getId()))));
+                matrixRepository.findMatrixSetByRecords(exerciseRecordRepository.findRecordOfThisWeek(user.getId())).size()));
 
         // 친구들의 닉네임과 (이번주)영역의 수 대입
         friends.forEach(f -> areaRankings.add(new UserResponseDto.areaRanking(1, f.getNickname(),
-                exerciseRecordService.findAreaNumber(exerciseRecordRepository.findRecordOfThisWeek(f.getId())))));
+                matrixRepository.findMatrixSetByRecords(exerciseRecordRepository.findRecordOfThisWeek(f.getId())).size())));
 
         // 영역의 수를 기준으로 내림차순 정렬
         areaRankings.sort((a, b) -> b.getAreaNumber().compareTo(a.getAreaNumber()));
 
         // 랭크 결정
-        Long areaNumber = areaRankings.get(0).getAreaNumber();  // 맨 처음 user의 영역 수
+        Integer areaNumber = areaRankings.get(0).getAreaNumber();  // 맨 처음 user의 영역 수
         int rank = 1;
         for (int i=1; i<areaRankings.size(); i++){
             if (Objects.equals(areaRankings.get(i).getAreaNumber(), areaNumber)){  // 전 유저와 칸수가 같다면 랭크 유지
