@@ -5,6 +5,7 @@ import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 import lombok.Getter;
 
+import javax.persistence.Lob;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -35,6 +36,9 @@ public class EndRequestDto {
 
     @ApiModelProperty(value="걸음수", example="100(걸음)", required = true)
     private Integer stepCount;
+
+    @ApiModelProperty(value="상세기록", example="문자열", required = true)
+    private String message;
 
     @ApiModelProperty(value="칸 꼭지점 위도, 경도 리스트", required = true)
     private List<MatrixDto> matrices = new ArrayList<>();

@@ -29,8 +29,7 @@ import java.util.Objects;
  * @description 운동 기록 서비스 클래스
  * @author  박세헌, 박찬호
  * @since   2022-08-01
- * @updated  걸음수 랭킹 조회 함수
- *           - 2022.08.12 박세헌
+ * @updated 2022-08-13 / 운동기록 추가 - 박세헌
  */
 
 @Service
@@ -71,7 +70,8 @@ public class ExerciseRecordServiceImpl implements ExerciseRecordService {
         ExerciseRecord exerciseRecord = exerciseRecordRepository.findById(endRequestDto.getRecordId()).orElseThrow(); // 예외 처리
 
         // 정보 update(ended, 거리, 걸음수, 운동시간)
-        exerciseRecord.updateInfo(endRequestDto.getDistance(), endRequestDto.getStepCount(), endRequestDto.getMinute(), endRequestDto.getSecond());
+        exerciseRecord.updateInfo(endRequestDto.getDistance(), endRequestDto.getStepCount(),
+                endRequestDto.getMinute(), endRequestDto.getSecond(), endRequestDto.getMessage());
 
         //영역 저장
         List<MatrixDto> matrices = endRequestDto.getMatrices();
