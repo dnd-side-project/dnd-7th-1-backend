@@ -8,7 +8,10 @@ import com.dnd.ground.domain.challenge.dto.ChallengeRequestDto;
 import com.dnd.ground.domain.challenge.dto.ChallengeResponseDto;
 import com.dnd.ground.domain.challenge.repository.ChallengeRepository;
 import com.dnd.ground.domain.challenge.repository.UserChallengeRepository;
+import com.dnd.ground.domain.matrix.matrixService.MatrixService;
 import com.dnd.ground.domain.user.User;
+import com.dnd.ground.domain.user.dto.RankResponseDto;
+import com.dnd.ground.domain.user.dto.UserResponseDto;
 import com.dnd.ground.domain.user.repository.UserRepository;
 import com.dnd.ground.global.util.UuidUtil;
 import lombok.RequiredArgsConstructor;
@@ -28,9 +31,9 @@ import java.util.*;
  * @description 챌린지와 관련된 서비스의 역할을 분리한 구현체
  * @author  박찬호
  * @since   2022-08-03
- * @updated 1. 진행 대기 상태의 챌린지 조회 기능 구현
- *          2. 초대 받은 챌린지 목록 조회 기능 구현
- *          - 2022.08.13 박찬호
+ * @updated 1. 진행 중 상태의 챌린지 조회 기능 구현
+ *          2. 완료된 챌린지 조회 기능 구현
+ *          - 2022.08.15 박찬호
  */
 
 @Slf4j
@@ -41,6 +44,7 @@ public class ChallengeServiceImpl implements ChallengeService {
     private final ChallengeRepository challengeRepository;
     private final UserChallengeRepository userChallengeRepository;
     private final UserRepository userRepository;
+    private final MatrixService matrixService;
 
     /*챌린지 생성*/
     @Transactional
@@ -159,20 +163,6 @@ public class ChallengeServiceImpl implements ChallengeService {
         return response;
     }
 
-//    public void findProgressChallenge(User user) {
-//        List<Challenge> challenges = challengeRepository.findProgressChallenge(user);
-//
-//        for (Challenge challenge : challenges) {
-//            List<User> users = userChallengeRepository.findChallengeUsers(challenge);
-//
-//            for (User u : users) {
-//                List<ExerciseRecord> exerciseRecordByPeriod = exerciseRecordRepository.findExerciseRecordByPeriod(u, LocalDateTime.now());
-//                //영역 개수 조회 (중복X)
-//            }
-//
-//        }
-//    }
-
     /*진행 대기 중인 챌린지 리스트 조회*/
     public List<ChallengeResponseDto.Wait> findWaitChallenge(String nickname) {
         User user = userRepository.findByNickname(nickname).orElseThrow(); //예외 처리 예정
@@ -191,6 +181,74 @@ public class ChallengeServiceImpl implements ChallengeService {
                             .ended(started.plusDays(7-started.getDayOfWeek().getValue()))
                             .totalCount(userChallengeRepository.findUCCount(challenge)) //챌린지에 참여하는 전체 인원 수
                             .readyCount(userChallengeRepository.findUCWaitCount(challenge) + 1) //Progress 상태 회원 수 + 주최자
+                            .build()
+            );
+        }
+
+        return response;
+    }
+
+    /*진행 중인 챌린지 리스트 조회*/
+    public List<ChallengeResponseDto.Progress> findProgressChallenge(String nickname) {
+        User user = userRepository.findByNickname(nickname).orElseThrow(); //예외 처리 예정
+
+        List<Challenge> progressChallenge = challengeRepository.findProgressChallenge(user);
+        List<ChallengeResponseDto.Progress> response = new ArrayList<>();
+
+        for (Challenge challenge : progressChallenge) {
+            Integer rank = -1; //랭킹
+            LocalDate started = challenge.getStarted(); //챌린지 시작 날짜
+
+            //해당 회원의 랭킹 추출
+            RankResponseDto.Area rankList = matrixService.challengeRank(challenge, started.atStartOfDay(), LocalDateTime.now());
+
+            for (UserResponseDto.Ranking ranking : rankList.getAreaRankings()) {
+                if (ranking.getNickname().equals(nickname)) {
+                    rank = ranking.getRank();
+                    break;
+                }
+            }
+
+            response.add(
+                    ChallengeResponseDto.Progress.builder()
+                            .name(challenge.getName())
+                            .started(started)
+                            .ended(started.plusDays(7-started.getDayOfWeek().getValue()))
+                            .rank(rank) //!!랭킹 == -1에 대한 예외 처리 필요
+                            .build()
+            );
+        }
+
+        return response;
+    }
+
+    /*진행 완료된 챌린지 리스트 조회*/
+    public List<ChallengeResponseDto.Done> findDoneChallenge(String nickname) {
+        User user = userRepository.findByNickname(nickname).orElseThrow(); //예외 처리 예정
+
+        List<Challenge> doneChallenge = challengeRepository.findDoneChallenge(user);
+        List<ChallengeResponseDto.Done> response = new ArrayList<>();
+
+        for (Challenge challenge : doneChallenge) {
+            Integer rank = -1; //랭킹
+            LocalDate started = challenge.getStarted(); //챌린지 시작 날짜
+
+            //해당 회원의 랭킹 추출
+            RankResponseDto.Area rankList = matrixService.challengeRank(challenge, started.atStartOfDay(), LocalDateTime.now());
+
+            for (UserResponseDto.Ranking ranking : rankList.getAreaRankings()) {
+                if (ranking.getNickname().equals(nickname)) {
+                    rank = ranking.getRank();
+                    break;
+                }
+            }
+
+            response.add(
+                    ChallengeResponseDto.Done.builder()
+                            .name(challenge.getName())
+                            .started(started)
+                            .ended(started.plusDays(7-started.getDayOfWeek().getValue()))
+                            .rank(rank) //!!랭킹 == -1에 대한 예외 처리 필요
                             .build()
             );
         }

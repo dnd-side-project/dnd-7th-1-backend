@@ -12,9 +12,9 @@ import java.util.List;
  * @description 챌린지와 관련된 서비스의 역할을 분리한 인터페이스
  * @author  박찬호
  * @since   2022-08-03
- * @updated 1. 진행 대기 상태의 챌린지 조회 기능 구현
- *          2. 초대 받은 챌린지 목록 조회 기능 구현
- *          - 2022.08.13 박찬호
+ * @updated 1. 진행 중 상태의 챌린지 조회 기능 구현
+ *          2. 완료된 챌린지 조회 기능 구현
+ *          - 2022.08.15 박찬호
  */
 
 public interface ChallengeService {
@@ -25,7 +25,8 @@ public interface ChallengeService {
     void startPeriodChallenge();
     void endPeriodChallenge();
 
-//    void findProgressChallenge(User user);
     List<ChallengeResponseDto.Wait> findWaitChallenge(String nickname);
+    List<ChallengeResponseDto.Progress> findProgressChallenge(String nickname);
+    List<ChallengeResponseDto.Done> findDoneChallenge(String nickname);
     List<ChallengeResponseDto.Invite> findInviteChallenge(String nickname);
 }

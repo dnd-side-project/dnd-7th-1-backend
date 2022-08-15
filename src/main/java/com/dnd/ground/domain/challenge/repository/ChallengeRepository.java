@@ -14,8 +14,8 @@ import java.util.List;
  * @description 챌린지와 관련한 레포지토리
  * @author  박찬호
  * @since   2022-08-03
- * @updated 1. 초대 받은 챌린지 조회
- *          - 2022.08.13 박찬호
+ * @updated 1. 완료된 상태의 챌린지 조회 쿼리 작성
+ *          - 2022.08.15 박찬호
  */
 
 public interface ChallengeRepository extends JpaRepository<Challenge, Long> {
@@ -23,13 +23,17 @@ public interface ChallengeRepository extends JpaRepository<Challenge, Long> {
     //UUID로 챌린지 조회
     Challenge findByUuid(@Param("uuid") String uuid);
 
-    //진행 중인 챌린지 정보 조회
+    //진행 중인 챌린지 목록 정보 조회
     @Query("select c from Challenge c inner join UserChallenge uc on uc.challenge=c where uc.user=:user and c.status='Progress' order by c.started ASC")
     List<Challenge> findProgressChallenge(@Param("user") User user);
 
-    //진행대기 중인 챌린지 정보 조회
+    //진행대기 중인 챌린지 목록 정보 조회
     @Query("select c from Challenge c inner join UserChallenge uc on uc.challenge=c where uc.user=:user and c.status='Wait' order by c.started ASC")
     List<Challenge> findWaitChallenge(@Param("user") User user);
+
+    //완료된 챌린지 목록 정보 조회
+    @Query("select c from Challenge c inner join UserChallenge uc on uc.challenge=c where uc.user=:user and c.status='Done' order by c.started ASC")
+    List<Challenge> findDoneChallenge(@Param("user") User user);
      
     //진행 중인 챌린지 개수
     @Query("select count(c) from Challenge c inner join UserChallenge uc on uc.challenge=c where " +

@@ -11,9 +11,9 @@ import java.time.LocalDate;
  * @description 챌린지와 관련한 Response DTO
  * @author  박찬호
  * @since   2022-08-12
- * @updated 1. 진행 대기 상태의 챌린지 조회 기능 구현
- *          2. 초대 받은 챌린지 목록 조회 기능 구현
- *          - 2022.08.13 박찬호
+ * @updated 1. 진행 중 상태의 챌린지 조회 기능 구현
+ *          2. 완료된 챌린지 조회 기능 구현
+ *          - 2022.08.15 박찬호
  */
 
 
@@ -46,6 +46,40 @@ public class ChallengeResponseDto {
 
         @ApiModelProperty(value="챌린지를 수락한 인원(주최자 포함)", example="2")
         private Integer readyCount;
+    }
+
+    /*진행 중 상태의 챌린지 정보*/
+    @Data
+    @Builder
+    static public class Progress {
+        @ApiModelProperty(value="챌린지 이름", example="챌린지A")
+        private String name;
+
+        @ApiModelProperty(value="챌린지 시작 날짜", example="2022-08-15")
+        private LocalDate started;
+
+        @ApiModelProperty(value="챌린지 종료 날짜(시작 날짜 주의 일요일)", example="2022-08-15")
+        private LocalDate ended;
+
+        @ApiModelProperty(value="챌린지 내 랭킹(영역)", example="2")
+        private Integer rank;
+    }
+
+    /*진행 완료 상태의 챌린지 정보*/
+    @Data
+    @Builder
+    static public class Done {
+        @ApiModelProperty(value="챌린지 이름", example="챌린지A")
+        private String name;
+
+        @ApiModelProperty(value="챌린지 시작 날짜", example="2022-08-15")
+        private LocalDate started;
+
+        @ApiModelProperty(value="챌린지 종료 날짜(시작 날짜 주의 일요일)", example="2022-08-15")
+        private LocalDate ended;
+
+        @ApiModelProperty(value="챌린지 내 랭킹(영역)", example="2")
+        private Integer rank;
     }
 
     /*초대 받은 챌린지 정보*/
