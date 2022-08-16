@@ -32,7 +32,7 @@ import java.util.*;
  * @author  박세헌, 박찬호
  * @since   2022-08-01
  * @updated 1. 친구 프로필 조회 기능 구현 - 박찬호
- *          2. 마이페이지 API 개발 - 박세헌
+ *          2. 친구 영역의 수 조회 수정 - 박세헌
  *          - 2022.08.16
  */
 
@@ -191,15 +191,8 @@ public class UserServiceImpl implements UserService{
         }
 
         //이번주 영역 정보
-        LocalDateTime now = LocalDateTime.now();
-        int day = now.getDayOfWeek().getValue(); //오늘 요일
-        RankResponseDto.Area area = matrixService.areaRanking(friendNickname, now.plusDays(1 - day), now.plusDays(7 - day));
-
-        for (UserResponseDto.Ranking weekRankInfo : area.getAreaRankings()) {
-            if (weekRankInfo.getNickname().equals(friendNickname)) {
-                areas = weekRankInfo.getScore();
-            }
-        }
+        areas = (long)matrixRepository.findMatrixSetByRecords(
+                exerciseRecordRepository.findRecordOfThisWeek(friend.getId())).size();
 
         //함께 진행하는 챌린지 정보
         List<ChallengeResponseDto.Progress> challenges = challengeService.findProgressChallenge(userNickname, friendNickname);
