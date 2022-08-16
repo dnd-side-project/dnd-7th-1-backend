@@ -71,7 +71,7 @@ public class ExerciseRecordServiceImpl implements ExerciseRecordService {
 
         // 정보 update(ended, 거리, 걸음수, 운동시간)
         exerciseRecord.updateInfo(endRequestDto.getDistance(), endRequestDto.getStepCount(),
-                endRequestDto.getMinute(), endRequestDto.getSecond(), endRequestDto.getMessage());
+                endRequestDto.getExerciseTime(), endRequestDto.getMessage());
 
         //영역 저장
         List<MatrixDto> matrices = endRequestDto.getMatrices();

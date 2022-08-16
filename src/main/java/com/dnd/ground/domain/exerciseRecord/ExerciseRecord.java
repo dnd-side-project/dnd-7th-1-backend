@@ -14,7 +14,7 @@ import java.util.List;
  * @description 운동 기록 엔티티
  * @author  박찬호, 박세헌
  * @since   2022-07-27
- * @updated 2022-08-13 / 상세기록 필드 추가 : 박세헌
+ * @updated 2022-08-16 / minute(분) 삭세 - 박세헌
  */
 
 @Getter
@@ -69,11 +69,11 @@ public class ExerciseRecord {
     }
 
     // 정보 추가
-    public void updateInfo(Integer distance, Integer stepCount, Integer minute, Integer second, String message){
+    public void updateInfo(Integer distance, Integer stepCount, Integer second, String message){
         this.ended = LocalDateTime.now();
         this.distance = distance;
         this.stepCount = stepCount;
-        this.exerciseTime = 60*minute + second;
+        this.exerciseTime = second;
         this.message = message;
     }
 
