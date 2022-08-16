@@ -1,5 +1,6 @@
 package com.dnd.ground.domain.user.controller;
 
+import com.dnd.ground.domain.user.dto.UserResponseDto;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestParam;
 
@@ -13,4 +14,5 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 public interface UserController {
     ResponseEntity<?> home(@RequestParam("nickName") String nickName);
+    ResponseEntity<UserResponseDto.UInfo> getUserInfo(@RequestParam("nickname") String nickname);
 }
