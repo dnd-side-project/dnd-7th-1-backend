@@ -1,7 +1,8 @@
 package com.dnd.ground.domain.matrix.matrixService;
 
+import com.dnd.ground.domain.challenge.Challenge;
+import com.dnd.ground.domain.challenge.repository.UserChallengeRepository;
 import com.dnd.ground.domain.exerciseRecord.Repository.ExerciseRecordRepository;
-import com.dnd.ground.domain.exerciseRecord.service.ExerciseRecordService;
 import com.dnd.ground.domain.friend.service.FriendService;
 import com.dnd.ground.domain.matrix.Matrix;
 import com.dnd.ground.domain.matrix.matrixRepository.MatrixRepository;
@@ -15,9 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.Tuple;
-import java.time.DayOfWeek;
 import java.time.LocalDateTime;
-import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -26,8 +25,8 @@ import java.util.Objects;
  * @description 운동 영역 서비스 클래스
  * @author  박세헌
  * @since   2022-08-01
- * @updated 랭킹 조회 함수 파라미터 start, end 추가 및 재구성
- *          - 2022.08.12 박세헌
+ * @updated 1. 챌린지 내 랭킹 결정 메소드 생성
+ *          - 2022.08.15 박찬호
  */
 
 @Service
@@ -38,6 +37,7 @@ public class MatrixServiceImpl implements MatrixService {
     private final UserRepository userRepository;
     private final FriendService friendService;
     private final ExerciseRecordRepository exerciseRecordRepository;
+    private final UserChallengeRepository userChallengeRepository;
 
     @Transactional
     public Matrix save(Matrix matrix){
@@ -124,4 +124,37 @@ public class MatrixServiceImpl implements MatrixService {
         return new RankResponseDto.Area(areaRankings);
     }
 
+    /*챌린지 랭킹 조회*/
+    public RankResponseDto.Area challengeRank(Challenge challenge, LocalDateTime start, LocalDateTime end) {
+        List<User> member = userChallengeRepository.findChallengeUsers(challenge);//챌린지에 참여하는 회원 리스트
+        List<UserResponseDto.Ranking> areaRankings = new ArrayList<>();
+
+        for (User m : member) {
+            areaRankings.add(
+                    new UserResponseDto.Ranking(
+                            1,
+                            m.getNickname(),
+                            (long) matrixRepository.findMatrixSetByRecords(exerciseRecordRepository.findRecord(m.getId(), start, end)).size())
+            );
+        }
+
+        //내림차순 정렬
+        areaRankings.sort((a, b) -> b.getScore().compareTo(a.getScore()));
+
+        //순위 결정
+        Long areaNumber = areaRankings.get(0).getScore();  // 맨 처음 user의 영역 수
+        int rank = 1;
+        for (int i=1; i<areaRankings.size(); i++){
+            if (Objects.equals(areaRankings.get(i).getScore(), areaNumber)){  // 전 유저와 영역 수가 같다면 랭크 유지
+                areaRankings.get(i).setRank(rank);
+                continue;
+            }
+            // 전 유저보다 영역 수가 작다면 랭크+1
+            rank += 1;
+            areaRankings.get(i).setRank(rank);
+            areaNumber = areaRankings.get(i).getScore();  // 영역 수 update!
+        }
+
+        return new RankResponseDto.Area(areaRankings);
+    }
 }

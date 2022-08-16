@@ -5,11 +5,13 @@ import com.dnd.ground.domain.challenge.ChallengeStatus;
 import com.dnd.ground.domain.challenge.UserChallenge;
 import com.dnd.ground.domain.challenge.dto.ChallengeCreateRequestDto;
 import com.dnd.ground.domain.challenge.dto.ChallengeRequestDto;
+import com.dnd.ground.domain.challenge.dto.ChallengeResponseDto;
 import com.dnd.ground.domain.challenge.repository.ChallengeRepository;
 import com.dnd.ground.domain.challenge.repository.UserChallengeRepository;
-import com.dnd.ground.domain.exerciseRecord.ExerciseRecord;
-import com.dnd.ground.domain.exerciseRecord.Repository.ExerciseRecordRepository;
+import com.dnd.ground.domain.matrix.matrixService.MatrixService;
 import com.dnd.ground.domain.user.User;
+import com.dnd.ground.domain.user.dto.RankResponseDto;
+import com.dnd.ground.domain.user.dto.UserResponseDto;
 import com.dnd.ground.domain.user.repository.UserRepository;
 import com.dnd.ground.global.util.UuidUtil;
 import lombok.RequiredArgsConstructor;
@@ -22,16 +24,16 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 
 /**
  * @description 챌린지와 관련된 서비스의 역할을 분리한 구현체
  * @author  박찬호
  * @since   2022-08-03
- * @updated 1. 일주일 챌린지 종류 추가(type)
- *          2. 일주일 챌린지 시작 상태 변경 기능 추가(Cron)
- *          3. 일주일 챌린지 종료 기능 추가
- *          - 2022.08.09 박찬호
+ * @updated 1. 진행 중 상태의 챌린지 조회 기능 구현
+ *          2. 완료된 챌린지 조회 기능 구현
+ *          - 2022.08.15 박찬호
  */
 
 @Slf4j
@@ -42,7 +44,7 @@ public class ChallengeServiceImpl implements ChallengeService {
     private final ChallengeRepository challengeRepository;
     private final UserChallengeRepository userChallengeRepository;
     private final UserRepository userRepository;
-    private final ExerciseRecordRepository exerciseRecordRepository;
+    private final MatrixService matrixService;
 
     /*챌린지 생성*/
     @Transactional
@@ -138,4 +140,120 @@ public class ChallengeServiceImpl implements ChallengeService {
 
         log.info("**챌린지 종료 메소드 실행** 현재 시간:{} | 종료된 챌린지 개수:{}", LocalDateTime.now(), challenges.size());
     }
+    
+    /*초대 받은 챌린지 조회*/
+    public List<ChallengeResponseDto.Invite> findInviteChallenge(String nickname) {
+        User user = userRepository.findByNickname(nickname).orElseThrow(); //예외 처리 예정
+
+        List<Challenge> challenges = challengeRepository.findChallengeInWait(user);
+        List<ChallengeResponseDto.Invite> response = new ArrayList<>();
+
+        for (Challenge challenge : challenges) {
+
+            response.add(
+                    ChallengeResponseDto.Invite.builder()
+                            .name(challenge.getName())
+                            .InviterNickname(userChallengeRepository.findMasterInChallenge(challenge).getNickname())
+                            .message(challenge.getMessage())
+                            .created(challenge.getCreated().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")))
+                            .build()
+            );
+        }
+
+        return response;
+    }
+
+    /*진행 대기 중인 챌린지 리스트 조회*/
+    public List<ChallengeResponseDto.Wait> findWaitChallenge(String nickname) {
+        User user = userRepository.findByNickname(nickname).orElseThrow(); //예외 처리 예정
+
+        List<Challenge> waitChallenge = challengeRepository.findWaitChallenge(user);
+        List<ChallengeResponseDto.Wait> response = new ArrayList<>();
+
+        for (Challenge challenge : waitChallenge) {
+
+            LocalDate started = challenge.getStarted();
+
+            response.add(
+                    ChallengeResponseDto.Wait.builder()
+                            .name(challenge.getName())
+                            .started(started)
+                            .ended(started.plusDays(7-started.getDayOfWeek().getValue()))
+                            .totalCount(userChallengeRepository.findUCCount(challenge)) //챌린지에 참여하는 전체 인원 수
+                            .readyCount(userChallengeRepository.findUCWaitCount(challenge) + 1) //Progress 상태 회원 수 + 주최자
+                            .build()
+            );
+        }
+
+        return response;
+    }
+
+    /*진행 중인 챌린지 리스트 조회*/
+    public List<ChallengeResponseDto.Progress> findProgressChallenge(String nickname) {
+        User user = userRepository.findByNickname(nickname).orElseThrow(); //예외 처리 예정
+
+        List<Challenge> progressChallenge = challengeRepository.findProgressChallenge(user);
+        List<ChallengeResponseDto.Progress> response = new ArrayList<>();
+
+        for (Challenge challenge : progressChallenge) {
+            Integer rank = -1; //랭킹
+            LocalDate started = challenge.getStarted(); //챌린지 시작 날짜
+
+            //해당 회원의 랭킹 추출
+            RankResponseDto.Area rankList = matrixService.challengeRank(challenge, started.atStartOfDay(), LocalDateTime.now());
+
+            for (UserResponseDto.Ranking ranking : rankList.getAreaRankings()) {
+                if (ranking.getNickname().equals(nickname)) {
+                    rank = ranking.getRank();
+                    break;
+                }
+            }
+
+            response.add(
+                    ChallengeResponseDto.Progress.builder()
+                            .name(challenge.getName())
+                            .started(started)
+                            .ended(started.plusDays(7-started.getDayOfWeek().getValue()))
+                            .rank(rank) //!!랭킹 == -1에 대한 예외 처리 필요
+                            .build()
+            );
+        }
+
+        return response;
+    }
+
+    /*진행 완료된 챌린지 리스트 조회*/
+    public List<ChallengeResponseDto.Done> findDoneChallenge(String nickname) {
+        User user = userRepository.findByNickname(nickname).orElseThrow(); //예외 처리 예정
+
+        List<Challenge> doneChallenge = challengeRepository.findDoneChallenge(user);
+        List<ChallengeResponseDto.Done> response = new ArrayList<>();
+
+        for (Challenge challenge : doneChallenge) {
+            Integer rank = -1; //랭킹
+            LocalDate started = challenge.getStarted(); //챌린지 시작 날짜
+
+            //해당 회원의 랭킹 추출
+            RankResponseDto.Area rankList = matrixService.challengeRank(challenge, started.atStartOfDay(), LocalDateTime.now());
+
+            for (UserResponseDto.Ranking ranking : rankList.getAreaRankings()) {
+                if (ranking.getNickname().equals(nickname)) {
+                    rank = ranking.getRank();
+                    break;
+                }
+            }
+
+            response.add(
+                    ChallengeResponseDto.Done.builder()
+                            .name(challenge.getName())
+                            .started(started)
+                            .ended(started.plusDays(7-started.getDayOfWeek().getValue()))
+                            .rank(rank) //!!랭킹 == -1에 대한 예외 처리 필요
+                            .build()
+            );
+        }
+
+        return response;
+    }
+
 }
