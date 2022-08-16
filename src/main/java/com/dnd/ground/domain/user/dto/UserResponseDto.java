@@ -15,8 +15,8 @@ import java.util.List;
  *              4. 랭킹 정보
  * @author  박세헌, 박찬호
  * @since   2022-08-08
- * @updated  1. 랭킹 dto 하나로 통일(Ranking)
- *           - 2022.08.12 박세헌
+ * @updated 마이페이지 필드 추가
+ *          2020-08-16 - 박세헌
  */
 
 @Data
@@ -27,6 +27,11 @@ public class UserResponseDto {
     static public class UInfo {
         private String nickname;
         private String intro;
+        private Long areaNumber;
+        private Integer stepCount;
+        private Integer distance;
+        private Integer friendNumber;
+        private Long allMatrixNumber;
     }
 
 
