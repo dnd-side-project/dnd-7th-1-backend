@@ -8,7 +8,6 @@ import io.swagger.annotations.Api;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,7 +19,7 @@ import java.time.temporal.TemporalAdjusters;
  * @description 기록 컨트롤러 클래스
  * @author  박세헌
  * @since   2022-08-01
- * @updated 2022-08-12 / 걸음 수 랭킹 api: 박세헌
+ * @updated 2022-08-16 / 기록 중지 api 삭제 - 박세헌
  */
 
 @Api(tags = "운동기록")
@@ -42,13 +41,6 @@ public class RecordControllerImpl implements RecordController{
     @Operation(summary = "기록 끝", description = "기록 끝: 운동기록에 거리, matrix 저장")
     public ResponseEntity<?> end(@RequestBody EndRequestDto endRequestDto){
         return exerciseRecordService.recordEnd(endRequestDto);
-    }
-
-    @PostMapping("/stop")
-    @Operation(summary = "기록 중지", description = "기록 중지: 운동기록 삭제")
-    public ResponseEntity<?> stop(@RequestParam("recordId") Long recordId){
-        exerciseRecordService.delete(recordId);
-        return ResponseEntity.ok(HttpStatus.OK);
     }
 
     @GetMapping("/rank/step")
