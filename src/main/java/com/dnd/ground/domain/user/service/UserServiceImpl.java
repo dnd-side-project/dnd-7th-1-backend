@@ -1,6 +1,7 @@
 package com.dnd.ground.domain.user.service;
 
 import com.dnd.ground.domain.challenge.Challenge;
+import com.dnd.ground.domain.challenge.ChallengeColor;
 import com.dnd.ground.domain.challenge.dto.ChallengeResponseDto;
 import com.dnd.ground.domain.challenge.repository.ChallengeRepository;
 import com.dnd.ground.domain.challenge.repository.UserChallengeRepository;
@@ -33,6 +34,7 @@ import java.util.*;
  * @since   2022-08-01
  * @updated 1. 친구 프로필 조회 기능 구현 - 박찬호
  *          2. 친구 영역의 수 조회 수정 - 박세헌
+ *          3. 챌린지 색깔 관련 수정 - 박찬호
  *          - 2022.08.16
  */
 
@@ -107,12 +109,19 @@ public class UserServiceImpl implements UserService{
 
         for (User friend : friendsWithChallenge) {
             Integer challengeNumber = challengeRepository.findCountChallenge(user, friend); // 함께하는 챌린지 수
-            String challengeColor = challengeRepository.findChallengesWithFriend(user, friend).get(0).getColor(); // 챌린지 색
+
+            //색깔 처리
+            Challenge challengeWithFriend = challengeRepository.findChallengesWithFriend(user, friend).get(0);//함께하는 첫번째 챌린지 조회
+            ChallengeColor challengeColor = userChallengeRepository.findChallengeColor(user, challengeWithFriend);//회원 기준 해당 챌린지 색깔
+
             List<ExerciseRecord> challengeRecordOfThisWeek = exerciseRecordRepository.findRecordOfThisWeek(friend.getId()); // 이번주 운동기록 조회
             List<MatrixDto> challengeMatrixSetDto = matrixRepository.findMatrixSetByRecords(challengeRecordOfThisWeek); // 운동 기록의 영역 조회
 
-            challengeMatrices.add(new UserResponseDto.ChallengeMatrix(
-                    friend.getNickname(), challengeNumber, challengeColor, friend.getLatitude(), friend.getLongitude(), challengeMatrixSetDto));
+            challengeMatrices.add(
+                    new UserResponseDto.ChallengeMatrix(
+                    friend.getNickname(), challengeNumber, challengeColor,
+                            friend.getLatitude(), friend.getLongitude(), challengeMatrixSetDto)
+            );
         }
 
         return HomeResponseDto.builder()

@@ -1,6 +1,7 @@
 package com.dnd.ground.domain.challenge.service;
 
 import com.dnd.ground.domain.challenge.Challenge;
+import com.dnd.ground.domain.challenge.ChallengeColor;
 import com.dnd.ground.domain.challenge.ChallengeStatus;
 import com.dnd.ground.domain.challenge.UserChallenge;
 import com.dnd.ground.domain.challenge.dto.ChallengeCreateRequestDto;
@@ -32,6 +33,8 @@ import java.util.*;
  * @author  박찬호
  * @since   2022-08-03
  * @updated 1. 친구와 함께 진행 중인 챌린지 리스트 조회 기능 구현
+ *          2. 챌린지 생성 과정에 색상 추가
+ *          3. 챌린지 색깔 관련 수정
  *          - 2022.08.16 박찬호
  */
 
@@ -56,19 +59,33 @@ public class ChallengeServiceImpl implements ChallengeService {
                 .name(requestDto.getName())
                 .started(requestDto.getStarted())
                 .message(requestDto.getMessage()) //메시지 처리 방식 결과에 따라 수정 요망
-                .color(requestDto.getColor())
                 .type(requestDto.getType())
                 .build();
 
         challengeRepository.save(challenge);
 
-        for (String nickname : requestDto.getFriends()) {
-            User user = userRepository.findByNickname(nickname).orElseThrow(); //예외 처리 예정
-            userChallengeRepository.save(new UserChallenge(challenge, user));
-        }
+        //챌린지 개수에 따른 색상 결정
+        ChallengeColor[] color = {ChallengeColor.Red, ChallengeColor.Pink, ChallengeColor.Yellow};
 
-        UserChallenge masterChallenge = userChallengeRepository.save(new UserChallenge(challenge, master));
+        //주최자의 챌린지 생성 과정
+        int challengeCount = userChallengeRepository.findCountChallenge(master); //참여한 챌린지 개수 (챌린지 상태 상관X)
+        UserChallenge masterChallenge = userChallengeRepository.save(new UserChallenge(challenge, master, color[challengeCount]));
         masterChallenge.changeStatus(ChallengeStatus.Master);
+        
+        //챌린지 멤버의 챌린지 생성 과정
+        for (String nickname : requestDto.getFriends()) {
+            User member = userRepository.findByNickname(nickname).orElseThrow(); //예외 처리 예정
+
+            challengeCount = userChallengeRepository.findCountChallenge(member);
+
+            //챌린지가 3개 이상이면 챌린지 생성 거부
+            if (challengeCount > 3) {
+                challengeRepository.deleteById(challenge.getId()); //롤백 구현 필요
+                return new ResponseEntity(HttpStatus.BAD_REQUEST); //구체적인 예외처리 필요
+            }
+
+            userChallengeRepository.save(new UserChallenge(challenge, member, color[challengeCount]));
+        }
 
         return new ResponseEntity(HttpStatus.CREATED);
     }
@@ -180,6 +197,7 @@ public class ChallengeServiceImpl implements ChallengeService {
                             .ended(started.plusDays(7-started.getDayOfWeek().getValue()))
                             .totalCount(userChallengeRepository.findUCCount(challenge)) //챌린지에 참여하는 전체 인원 수
                             .readyCount(userChallengeRepository.findUCWaitCount(challenge) + 1) //Progress 상태 회원 수 + 주최자
+                            .color(userChallengeRepository.findChallengeColor(user, challenge))
                             .build()
             );
         }
@@ -214,6 +232,7 @@ public class ChallengeServiceImpl implements ChallengeService {
                             .started(started)
                             .ended(started.plusDays(7-started.getDayOfWeek().getValue()))
                             .rank(rank) //!!랭킹 == -1에 대한 예외 처리 필요
+                            .color(userChallengeRepository.findChallengeColor(user, challenge))
                             .build()
             );
         }
@@ -249,6 +268,7 @@ public class ChallengeServiceImpl implements ChallengeService {
                             .started(started)
                             .ended(started.plusDays(7-started.getDayOfWeek().getValue()))
                             .rank(rank) //!!랭킹 == -1에 대한 예외 처리 필요
+                            .color(userChallengeRepository.findChallengeColor(user, challenge))
                             .build()
             );
         }
@@ -283,11 +303,11 @@ public class ChallengeServiceImpl implements ChallengeService {
                             .started(started)
                             .ended(started.plusDays(7-started.getDayOfWeek().getValue()))
                             .rank(rank) //!!랭킹 == -1에 대한 예외 처리 필요
+                            .color(userChallengeRepository.findChallengeColor(user, challenge))
                             .build()
             );
         }
 
         return response;
     }
-
 }
