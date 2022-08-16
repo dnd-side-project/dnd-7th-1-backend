@@ -17,8 +17,8 @@ import java.util.Set;
  * @description 챌린지 생성과 관련한 Request DTO
  * @author  박찬호
  * @since   2022-08-03
- * @updated 1. 챌린지 종류 필드 생성
- *          - 2022.08.09 박찬호
+ * @updated 1. 챌린지 색깔 제거
+ *          - 2022.08.16 박찬호
  */
 
 @Data
@@ -39,10 +39,6 @@ public class ChallengeCreateRequestDto {
 
     @ApiModelProperty(value="신청 메시지", example="챌린지 신청 메시지")
     private String message;
-
-    @NotNull(message = "챌린지 색상이 필요합니다.")
-    @ApiModelProperty(value="챌린지 색상", example="#FFFFFF", required = true)
-    private String color;
 
     @JsonDeserialize(using= LocalDateDeserializer.class)
     @JsonSerialize(using= LocalDateSerializer.class)
