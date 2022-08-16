@@ -18,14 +18,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.*;
 
 /**
  * @description 유저 서비스 클래스
  * @author  박세헌, 박찬호
  * @since   2022-08-01
- * @updated 1. 랭킹 관련 메소드 이동(UserService -> MatrixService)
- *          - 2022.08.11 박찬호
+ * @updated 1. 마이페이지 api 개발
+ *          2022-08-16 - 박세헌
  */
 
 @Slf4j
@@ -116,9 +117,34 @@ public class UserServiceImpl implements UserService{
     public UserResponseDto.UInfo getUserInfo(String nickname) {
         User user = userRepository.findByNickname(nickname).orElseThrow();
 
+        // 이번주 운동기록
+        List<ExerciseRecord> recordOfThisWeek = exerciseRecordRepository.findRecordOfThisWeek(user.getId());
+
+        // 이번주 영역의 수
+        Long areaNumber = (long) matrixRepository.findMatrixSetByRecords(recordOfThisWeek).size();
+
+        // 이번주 걸음수
+        Integer stepCount = exerciseRecordRepository.findUserStepCount(user, recordOfThisWeek);
+
+        // 이번주 거리합
+        Integer distance = exerciseRecordRepository.findUserDistance(user, recordOfThisWeek);
+
+        // 친구 수
+        Integer friendNumber = friendService.getFriends(user).size();
+
+        // 역대 누적 운동기록(가입날짜 ~ 지금)
+        List<ExerciseRecord> record = exerciseRecordRepository.findRecord(user.getId(), user.getCreated(), LocalDateTime.now());
+        // 역대 누적 칸수
+        Long allMatrixNumber = (long) matrixRepository.findMatrixByRecords(record).size();
+
         return UserResponseDto.UInfo.builder()
                 .nickname(nickname)
                 .intro(user.getIntro())
+                .areaNumber(areaNumber)
+                .stepCount(stepCount)
+                .distance(distance)
+                .friendNumber(friendNumber)
+                .allMatrixNumber(allMatrixNumber)
                 .build();
     }
 }

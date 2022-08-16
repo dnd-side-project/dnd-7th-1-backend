@@ -8,6 +8,7 @@ import lombok.*;
 import javax.persistence.*;
 import javax.validation.constraints.Email;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,9 +16,8 @@ import java.util.List;
  * @description 회원 엔티티
  * @author  박찬호, 박세헌
  * @since   2022.07.28
- * @updated 1. 키, 몸무게, 성별 필드 삭제
- *          2. 소개 메시지 필드 생성
- *          - 2022.08.12 박찬호
+ * @updated 1. 회원 생성 시간 필드 추가
+ *          -2022.08.16 박찬호
  */
 
 @Getter
@@ -50,6 +50,9 @@ public class User {
 
     @Column(name = "user_longitude")
     private Double longitude;
+
+    @Column(nullable = false)
+    private LocalDateTime created;
 
     @OneToMany(mappedBy = "friend")
     private List<Friend> friends = new ArrayList<>();

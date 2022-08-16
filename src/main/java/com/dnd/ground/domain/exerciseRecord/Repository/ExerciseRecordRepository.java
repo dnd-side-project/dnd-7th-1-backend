@@ -14,9 +14,9 @@ import java.util.List;
  * @description 운동 기록 리포지토리 클래스
  * @author  박세헌
  * @since   2022-08-01
- * @updated 2022-08-012 / 1. findMatrixCount함수 ExerciseRecord단으로 이동
- *                        2. 유저와 친구들의 닉네임과 (start-end)사이 운동기록의 걸음 수 조회 함수
- *                         - 박세헌
+ * @updated 2022-08-16 / 1. 운동 기록들의 걸음 수의 합 조회 함수
+ *                       2. 운동 기록들의 거리의 합 조회 함수
+ *                       - 박세헌
  */
 
 public interface ExerciseRecordRepository extends JpaRepository<ExerciseRecord, Long>, ExerciseRecordQueryRepository {
@@ -38,4 +38,13 @@ public interface ExerciseRecordRepository extends JpaRepository<ExerciseRecord, 
             "order by sum(e.stepCount) desc ")
     List<Tuple> findStepCount(List<User> userAndFriends, LocalDateTime start, LocalDateTime end);
 
+    // 운동기록들의 걸음 수의 합 조회 함수
+    @Query("select sum(e.stepCount) from User u join u.exerciseRecords e " +
+            "where e in :exerciseRecords and u = :user")
+    Integer findUserStepCount(User user, List<ExerciseRecord> exerciseRecords);
+
+    // 운동기록들의 거리의 합 조회 함수
+    @Query("select sum(e.distance) from User u join u.exerciseRecords e " +
+            "where e in :exerciseRecords and u = :user")
+    Integer findUserDistance(User user, List<ExerciseRecord> exerciseRecords);
 }
