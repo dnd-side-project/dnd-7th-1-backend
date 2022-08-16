@@ -1,15 +1,20 @@
 package com.dnd.ground.domain.user.service;
 
 import com.dnd.ground.domain.challenge.Challenge;
+import com.dnd.ground.domain.challenge.dto.ChallengeResponseDto;
 import com.dnd.ground.domain.challenge.repository.ChallengeRepository;
 import com.dnd.ground.domain.challenge.repository.UserChallengeRepository;
+import com.dnd.ground.domain.challenge.service.ChallengeService;
 import com.dnd.ground.domain.exerciseRecord.ExerciseRecord;
 import com.dnd.ground.domain.exerciseRecord.Repository.ExerciseRecordRepository;
+import com.dnd.ground.domain.friend.repository.FriendRepository;
 import com.dnd.ground.domain.friend.service.FriendService;
 import com.dnd.ground.domain.matrix.dto.MatrixDto;
 import com.dnd.ground.domain.matrix.matrixRepository.MatrixRepository;
+import com.dnd.ground.domain.matrix.matrixService.MatrixService;
 import com.dnd.ground.domain.user.User;
 import com.dnd.ground.domain.user.dto.HomeResponseDto;
+import com.dnd.ground.domain.user.dto.RankResponseDto;
 import com.dnd.ground.domain.user.dto.UserResponseDto;
 import com.dnd.ground.domain.user.repository.UserRepository;
 import lombok.*;
@@ -18,14 +23,16 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 /**
  * @description 유저 서비스 클래스
  * @author  박세헌, 박찬호
  * @since   2022-08-01
- * @updated 1. 랭킹 관련 메소드 이동(UserService -> MatrixService)
- *          - 2022.08.11 박찬호
+ * @updated 1. 친구 프로필 조회 기능 구현
+ *          - 2022.08.16 박찬호
  */
 
 @Slf4j
@@ -35,11 +42,14 @@ import java.util.*;
 public class UserServiceImpl implements UserService{
 
     private final UserRepository userRepository;
-    private final ExerciseRecordRepository exerciseRecordRepository;
+    private final ChallengeService challengeService;
     private final ChallengeRepository challengeRepository;
     private final UserChallengeRepository userChallengeRepository;
-    private final MatrixRepository matrixRepository;
+    private final ExerciseRecordRepository exerciseRecordRepository;
     private final FriendService friendService;
+    private final FriendRepository friendRepository;
+    private final MatrixRepository matrixRepository;
+    private final MatrixService matrixService;
 
     @Transactional
     public User save(User user){
@@ -112,7 +122,7 @@ public class UserServiceImpl implements UserService{
                 .build();
     }
 
-    /*회원 정보 조회*/
+    /*회원 정보 조회(마이페이지)*/
     public UserResponseDto.UInfo getUserInfo(String nickname) {
         User user = userRepository.findByNickname(nickname).orElseThrow();
 
@@ -121,4 +131,63 @@ public class UserServiceImpl implements UserService{
                 .intro(user.getIntro())
                 .build();
     }
+
+    /*회원 프로필 조회*/
+    public UserResponseDto.Profile getUserProfile(String userNickname, String friendNickname) {
+        User user = userRepository.findByNickname(userNickname).orElseThrow(); //예외 처리 예정
+        User friend = userRepository.findByNickname(friendNickname).orElseThrow(); //예외 처리 예정
+
+        //마지막 활동 시간
+        LocalDateTime lastRecord = exerciseRecordRepository.findLastRecord(friend).orElseThrow(); //예외 처리 예정
+        String lasted = lastRecord.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")); //친구의 마지막 활동 시간
+
+        //친구 관계 확인
+        Boolean isFriend = false;
+
+        if (friendRepository.findFriendRelation(user, friend).isPresent()
+                || friendRepository.findFriendRelation(friend, user).isPresent()) {
+            isFriend = true;
+        }
+
+        //랭킹 추출 (이번 주 영역, 역대 누적 칸수, 랭킹)
+        Integer rank = -1;
+        Long allMatrixNumber = -1L;
+        Long areas = -1L;
+
+        RankResponseDto.Matrix matrixRanking = matrixService.matrixRanking(friendNickname, friend.getCreated(), LocalDateTime.now());
+
+        //역대 누적 칸수 및 랭킹 정보
+        for (UserResponseDto.Ranking allRankInfo: matrixRanking.getMatrixRankings()) {
+            if (allRankInfo.getNickname().equals(friendNickname)) {
+                rank = allRankInfo.getRank();
+                allMatrixNumber = allRankInfo.getScore();
+            }
+        }
+
+        //이번주 영역 정보
+        LocalDateTime now = LocalDateTime.now();
+        int day = now.getDayOfWeek().getValue(); //오늘 요일
+        RankResponseDto.Area area = matrixService.areaRanking(friendNickname, now.plusDays(1 - day), now.plusDays(7 - day));
+
+        for (UserResponseDto.Ranking weekRankInfo : area.getAreaRankings()) {
+            if (weekRankInfo.getNickname().equals(friendNickname)) {
+                areas = weekRankInfo.getScore();
+            }
+        }
+
+        //함께 진행하는 챌린지 정보
+        List<ChallengeResponseDto.Progress> challenges = challengeService.findProgressChallenge(userNickname, friendNickname);
+
+        return UserResponseDto.Profile.builder()
+                .nickname(friendNickname)
+                .lasted(lasted)
+                .intro(friend.getIntro())
+                .isFriend(isFriend)
+                .areas(areas)
+                .allMatrixNumber(allMatrixNumber)
+                .rank(rank)
+                .challenges(challenges)
+                .build();
+    }
+
 }

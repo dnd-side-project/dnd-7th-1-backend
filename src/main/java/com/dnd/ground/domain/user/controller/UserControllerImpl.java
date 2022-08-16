@@ -4,6 +4,7 @@ import com.dnd.ground.domain.user.dto.HomeResponseDto;
 import com.dnd.ground.domain.user.dto.UserResponseDto;
 import com.dnd.ground.domain.user.service.UserService;
 import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiParam;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,8 +18,8 @@ import org.springframework.web.bind.annotation.RestController;
  * @description 회원 관련 컨트롤러 구현체
  * @author  박세헌, 박찬호
  * @since   2022-08-02
- * @updated 1. 회원 정보 조회 기능 구현
- *          - 2022.08.12 박찬호
+ * @updated 1. 친구 프로필 조회 기능 구현
+ *          - 2022.08.16 박찬호
  */
 
 @Api(tags = "유저")
@@ -40,9 +41,18 @@ public class UserControllerImpl implements UserController {
     }
 
     @GetMapping("/info")
-    @Operation(summary = "회원 정보 조회", description = "회원의 닉네임, 소개 메시지 정보 (추후 프로필 등 추가 예정)")
+    @Operation(summary = "회원 정보 조회(마이페이지)", description = "회원의 닉네임, 소개 메시지 정보 (추후 프로필 등 추가 예정)")
     public ResponseEntity<UserResponseDto.UInfo> getUserInfo(@RequestParam("nickname") String nickname) {
         return ResponseEntity.ok().body(userService.getUserInfo(nickname));
+    }
+
+    @GetMapping("/profile")
+    @Operation(summary = "프로필 조회", description = "회원의 닉네임, 소개 메시지 정보 (추후 프로필 등 추가 예정)")
+    public ResponseEntity<UserResponseDto.Profile> getUserProfile(
+                            @ApiParam(value = "회원 닉네임", required = true) @RequestParam("user") String userNickname,
+                            @ApiParam(value = "대상 닉네임", required = true) @RequestParam("friend") String friendNickname) {
+
+        return ResponseEntity.ok().body(userService.getUserProfile(userNickname, friendNickname));
     }
 
 }

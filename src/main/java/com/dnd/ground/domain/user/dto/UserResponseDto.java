@@ -1,5 +1,6 @@
 package com.dnd.ground.domain.user.dto;
 
+import com.dnd.ground.domain.challenge.dto.ChallengeResponseDto;
 import com.dnd.ground.domain.matrix.dto.MatrixDto;
 import com.dnd.ground.domain.user.User;
 import io.swagger.annotations.ApiModelProperty;
@@ -15,23 +16,54 @@ import java.util.List;
  *              4. 랭킹 정보
  * @author  박세헌, 박찬호
  * @since   2022-08-08
- * @updated  1. 랭킹 dto 하나로 통일(Ranking)
- *           - 2022.08.12 박세헌
+ * @updated 1. 친구 프로필 조회 기능 구현을 위한 Profile 클래스 생성
+ *          - 2022.08.16 박찬호
  */
 
 @Data
 public class UserResponseDto {
 
-    //회원의 정보 관련 DTO (추후 프로필 사진 관련 필드 추가 예정)
+    /*회원의 정보 관련 DTO (추후 프로필 사진 관련 필드 추가 예정)*/
     @Data @Builder
     static public class UInfo {
+        @ApiModelProperty(value = "닉네임", example = "NickA")
         private String nickname;
+
+        @ApiModelProperty(value = "소개 메시지", example = "소개 메시지 예시입니다.")
         private String intro;
     }
 
+    /*회원 프로필 관련 DTO*/
+    @Data
+    @Builder
+    static public class Profile {
+        @ApiModelProperty(value = "친구 닉네임", example = "NickA")
+        private String nickname;
 
+        @ApiModelProperty(value = "친구의 마지막 접속 시간", example = "2022-08-16 17:40")
+        private String lasted;
 
-    //회원의 영역 정보 관련 DTO
+        @ApiModelProperty(value = "친구의 소개 메시지", example = "친구의 소개 메시지 예시입니다.")
+        private String intro;
+
+        @ApiModelProperty(value = "회원과 친구 관계인지 나타내는 Boolean", example = "true or false")
+        private Boolean isFriend;
+
+        @ApiModelProperty(value = "이번 주 영역 개수", example = "9")
+        private Long areas;
+
+        @ApiModelProperty(value = "역대 누적 칸수", example = "1030")
+        private Long allMatrixNumber;
+
+        @ApiModelProperty(value = "역대 누적 랭킹", example = "1")
+        private Integer rank;
+
+        @ApiModelProperty(value = "회원과 함께 하는 챌린지 리스트"
+                , example = "[\"name\": \"챌린지1\", \"started\": \"2022-08-14\", \"ended\": \"2022-08-14\", \"rank\": 1]")
+        List<ChallengeResponseDto.Progress> challenges; // Progress로 들어가면 필요 없는게 너무 많이 들어갈듯 ;
+    }
+
+    /*회원의 영역 정보 관련 DTO*/
     @Data
     static public class UserMatrix {
         @ApiModelProperty(value = "닉네임", example = "NickA", required = true)
@@ -68,7 +100,7 @@ public class UserResponseDto {
         }
     }
 
-    //친구의 영역 관련 DTO
+    /*친구의 영역 관련 DTO*/
     @Data @AllArgsConstructor
     static public class FriendMatrix{
         @ApiModelProperty(value = "닉네임", example = "NickB", required = true)
@@ -85,7 +117,7 @@ public class UserResponseDto {
 
     }
 
-    //챌린지 영역 정보 관련 DTO
+    /*챌린지 영역 정보 관련 DTO*/
     @Data
     @AllArgsConstructor
     static public class ChallengeMatrix{
@@ -108,7 +140,7 @@ public class UserResponseDto {
         private List<MatrixDto> matrices;
     }
 
-    //랭킹과 관련된 DTO (추후 프로필 사진 필드 추가해야됨)
+    /*랭킹과 관련된 DTO (추후 프로필 사진 필드 추가해야됨)*/
     @Data
     @AllArgsConstructor
     public static class Ranking {

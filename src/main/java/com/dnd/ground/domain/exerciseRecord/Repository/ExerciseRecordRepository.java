@@ -9,14 +9,14 @@ import org.springframework.data.repository.query.Param;
 import javax.persistence.Tuple;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * @description 운동 기록 리포지토리 클래스
  * @author  박세헌
  * @since   2022-08-01
- * @updated 2022-08-012 / 1. findMatrixCount함수 ExerciseRecord단으로 이동
- *                        2. 유저와 친구들의 닉네임과 (start-end)사이 운동기록의 걸음 수 조회 함수
- *                         - 박세헌
+ * @updated 2022-08-16 / 1.유저의 마지막 활동 조회
+ *                         - 박찬호
  */
 
 public interface ExerciseRecordRepository extends JpaRepository<ExerciseRecord, Long>, ExerciseRecordQueryRepository {
@@ -38,4 +38,7 @@ public interface ExerciseRecordRepository extends JpaRepository<ExerciseRecord, 
             "order by sum(e.stepCount) desc ")
     List<Tuple> findStepCount(List<User> userAndFriends, LocalDateTime start, LocalDateTime end);
 
+    // 유저의 최근 활동 시간 조회
+    @Query("select max(r.ended) from ExerciseRecord r where r.user=:user")
+    Optional<LocalDateTime> findLastRecord(@Param("user") User user);
 }
