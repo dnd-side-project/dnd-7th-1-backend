@@ -32,10 +32,20 @@ public class UserResponseDto {
 
         @ApiModelProperty(value = "소개 메시지", example = "소개 메시지 예시입니다.")
         private String intro;
+
+        @ApiModelProperty(value = "이번주 영역 수", example = "9")
         private Long areaNumber;
+
+        @ApiModelProperty(value = "이번주 걸음 수", example = "1030")
         private Integer stepCount;
+
+        @ApiModelProperty(value = "이번주 거리", example = "200")
         private Integer distance;
+
+        @ApiModelProperty(value = "친구 수", example = "2")
         private Integer friendNumber;
+
+        @ApiModelProperty(value = "역대 누적 칸 수", example = "3000")
         private Long allMatrixNumber;
     }
 
