@@ -31,9 +31,8 @@ import java.util.*;
  * @description 챌린지와 관련된 서비스의 역할을 분리한 구현체
  * @author  박찬호
  * @since   2022-08-03
- * @updated 1. 진행 중 상태의 챌린지 조회 기능 구현
- *          2. 완료된 챌린지 조회 기능 구현
- *          - 2022.08.15 박찬호
+ * @updated 1. 친구와 함께 진행 중인 챌린지 리스트 조회 기능 구현
+ *          - 2022.08.16 박찬호
  */
 
 @Slf4j
@@ -204,6 +203,41 @@ public class ChallengeServiceImpl implements ChallengeService {
 
             for (UserResponseDto.Ranking ranking : rankList.getAreaRankings()) {
                 if (ranking.getNickname().equals(nickname)) {
+                    rank = ranking.getRank();
+                    break;
+                }
+            }
+
+            response.add(
+                    ChallengeResponseDto.Progress.builder()
+                            .name(challenge.getName())
+                            .started(started)
+                            .ended(started.plusDays(7-started.getDayOfWeek().getValue()))
+                            .rank(rank) //!!랭킹 == -1에 대한 예외 처리 필요
+                            .build()
+            );
+        }
+
+        return response;
+    }
+
+    /*친구와 함께 진행 중인 챌린지 리스트 조회*/
+    public List<ChallengeResponseDto.Progress> findProgressChallenge(String userNickname, String friendNickname) {
+        User user = userRepository.findByNickname(userNickname).orElseThrow(); //예외 처리 예정
+        User friend = userRepository.findByNickname(friendNickname).orElseThrow(); //예외 처리 예정
+
+        List<Challenge> progressChallenge = challengeRepository.findChallengesWithFriend(user, friend);
+        List<ChallengeResponseDto.Progress> response = new ArrayList<>();
+
+        for (Challenge challenge : progressChallenge) {
+            Integer rank = -1; //랭킹
+            LocalDate started = challenge.getStarted(); //챌린지 시작 날짜
+
+            //해당 회원의 랭킹 추출
+            RankResponseDto.Area rankList = matrixService.challengeRank(challenge, started.atStartOfDay(), LocalDateTime.now());
+
+            for (UserResponseDto.Ranking ranking : rankList.getAreaRankings()) {
+                if (ranking.getNickname().equals(friendNickname)) {
                     rank = ranking.getRank();
                     break;
                 }
