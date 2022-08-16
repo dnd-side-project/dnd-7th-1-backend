@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 -- 회원 생성
 insert into user values(1,"2022-08-01 01:00", "A-Intro", null, null, "A-mail@gmail.com", "NickA", "UserA");
 insert into user values(2,"2022-08-02 02:00", "B-Intro", null, null, "B-mail@naver.com", "NickB", "UserB");

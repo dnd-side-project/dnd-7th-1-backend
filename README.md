@@ -7,4 +7,4 @@
 - MySQL
 - WebSocket
 - AWS EC2
-- ETC ...
+- ETC ..

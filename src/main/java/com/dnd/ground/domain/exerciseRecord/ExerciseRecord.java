@@ -14,9 +14,7 @@ import java.util.List;
  * @description 운동 기록 엔티티
  * @author  박찬호, 박세헌
  * @since   2022-07-27
- * @updated 2022-08-12 / 1. 거리, 운동시간, 걸음 수 추가
- *                       2. 비즈니스 로직 변경
- *                       - 박세헌
+ * @updated 2022-08-16 / minute(분) 삭세 - 박세헌
  */
 
 @Getter
@@ -45,8 +43,11 @@ public class ExerciseRecord {
     @Column(nullable = false)
     private Integer stepCount;
 
+    @Column(name = "record_message", columnDefinition = "varchar(100)")
+    private String message;
+
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
     @OneToMany(mappedBy = "exerciseRecord", cascade = CascadeType.ALL)
@@ -68,11 +69,12 @@ public class ExerciseRecord {
     }
 
     // 정보 추가
-    public void updateInfo(Integer distance, Integer stepCount, Integer minute, Integer second){
+    public void updateInfo(Integer distance, Integer stepCount, Integer second, String message){
         this.ended = LocalDateTime.now();
         this.distance = distance;
         this.stepCount = stepCount;
-        this.exerciseTime = 60*minute + second;
+        this.exerciseTime = second;
+        this.message = message;
     }
 
 }

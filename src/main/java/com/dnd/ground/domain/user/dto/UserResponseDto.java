@@ -16,8 +16,9 @@ import java.util.List;
  *              4. 랭킹 정보
  * @author  박세헌, 박찬호
  * @since   2022-08-08
- * @updated 1. 친구 프로필 조회 기능 구현을 위한 Profile 클래스 생성
- *          - 2022.08.16 박찬호
+ * @updated 1. 친구 프로필 조회 기능 구현을 위한 Profile 클래스 생성 - 박찬호
+ *          2. 마이페이지 필드 추가 - 박세헌
+ *          - 2022.08.16
  */
 
 @Data
@@ -31,6 +32,11 @@ public class UserResponseDto {
 
         @ApiModelProperty(value = "소개 메시지", example = "소개 메시지 예시입니다.")
         private String intro;
+        private Long areaNumber;
+        private Integer stepCount;
+        private Integer distance;
+        private Integer friendNumber;
+        private Long allMatrixNumber;
     }
 
     /*회원 프로필 관련 DTO*/

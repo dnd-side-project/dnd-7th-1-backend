@@ -16,7 +16,11 @@ import java.util.Optional;
  * @author  박세헌
  * @since   2022-08-01
  * @updated 2022-08-16 / 1.유저의 마지막 활동 조회
- *                         - 박찬호
+ *                       - 박찬호
+ *                       2. 운동 기록들의 걸음 수의 합 조회 함수
+ *                       3. 운동 기록들의 거리의 합 조회 함수
+ *                       - 박세헌
+ *
  */
 
 public interface ExerciseRecordRepository extends JpaRepository<ExerciseRecord, Long>, ExerciseRecordQueryRepository {
@@ -41,4 +45,14 @@ public interface ExerciseRecordRepository extends JpaRepository<ExerciseRecord, 
     // 유저의 최근 활동 시간 조회
     @Query("select max(r.ended) from ExerciseRecord r where r.user=:user")
     Optional<LocalDateTime> findLastRecord(@Param("user") User user);
+
+    // 운동기록들의 걸음 수의 합 조회 함수
+    @Query("select sum(e.stepCount) from User u join u.exerciseRecords e " +
+            "where e in :exerciseRecords and u = :user")
+    Integer findUserStepCount(User user, List<ExerciseRecord> exerciseRecords);
+
+    // 운동기록들의 거리의 합 조회 함수
+    @Query("select sum(e.distance) from User u join u.exerciseRecords e " +
+            "where e in :exerciseRecords and u = :user")
+    Integer findUserDistance(User user, List<ExerciseRecord> exerciseRecords);
 }
