@@ -7,12 +7,14 @@ import com.dnd.ground.domain.challenge.repository.UserChallengeRepository;
 import com.dnd.ground.domain.challenge.service.ChallengeService;
 import com.dnd.ground.domain.exerciseRecord.ExerciseRecord;
 import com.dnd.ground.domain.exerciseRecord.Repository.ExerciseRecordRepository;
+import com.dnd.ground.domain.exerciseRecord.dto.RecordResponseDto;
 import com.dnd.ground.domain.friend.repository.FriendRepository;
 import com.dnd.ground.domain.friend.service.FriendService;
 import com.dnd.ground.domain.matrix.dto.MatrixDto;
 import com.dnd.ground.domain.matrix.matrixRepository.MatrixRepository;
 import com.dnd.ground.domain.matrix.matrixService.MatrixService;
 import com.dnd.ground.domain.user.User;
+import com.dnd.ground.domain.user.dto.ActivityRecordResponseDto;
 import com.dnd.ground.domain.user.dto.HomeResponseDto;
 import com.dnd.ground.domain.user.dto.RankResponseDto;
 import com.dnd.ground.domain.user.dto.UserResponseDto;
@@ -32,7 +34,7 @@ import java.util.*;
  * @author  박세헌, 박찬호
  * @since   2022-08-01
  * @updated 1. 친구 프로필 조회 기능 구현 - 박찬호
- *          2. 친구 영역의 수 조회 수정 - 박세헌
+ *          2. 활동 기록 조회 - 박세헌
  *          - 2022.08.16
  */
 
@@ -130,8 +132,8 @@ public class UserServiceImpl implements UserService{
         // 이번주 운동기록
         List<ExerciseRecord> recordOfThisWeek = exerciseRecordRepository.findRecordOfThisWeek(user.getId());
 
-        // 이번주 영역의 수
-        Long areaNumber = (long) matrixRepository.findMatrixSetByRecords(recordOfThisWeek).size();
+        // 이번주 채운 칸의 수
+        Long areaNumber = (long) matrixRepository.findMatrixByRecords(recordOfThisWeek).size();
 
         // 이번주 걸음수
         Integer stepCount = exerciseRecordRepository.findUserStepCount(user, recordOfThisWeek);
@@ -206,6 +208,41 @@ public class UserServiceImpl implements UserService{
                 .allMatrixNumber(allMatrixNumber)
                 .rank(rank)
                 .challenges(challenges)
+                .build();
+    }
+
+    /* 나의 활동 기록 보기 */
+    public ActivityRecordResponseDto getActivityRecord(String nickname, LocalDateTime start, LocalDateTime end) {
+        User user = userRepository.findByNickname(nickname).orElseThrow();  // 예외처리 예정
+        List<ExerciseRecord> record = exerciseRecordRepository.findRecord(user.getId(), start, end);  // start~end 사이 운동기록 조회
+        List<RecordResponseDto.activityRecord> activityRecords = new ArrayList<>();
+
+        Integer totalDistance = 0;  // 총 거리
+        Integer totalExerciseTime = 0;  // 총 운동 시간
+        Long totalMatrixNumber = 0L;  // 총 채운 칸의 수
+
+        // 활동 내역 정보
+        for (ExerciseRecord exerciseRecord : record) {
+            activityRecords.add(RecordResponseDto.activityRecord
+                    .builder()
+                    .exerciseId(exerciseRecord.getId())
+                    .matrixNumber((long) exerciseRecord.getMatrices().size())
+                    .stepCount(exerciseRecord.getStepCount())
+                    .distance(exerciseRecord.getDistance())
+                    .exerciseTime(exerciseRecord.getExerciseTime())
+                    .started(exerciseRecord.getStarted())
+                    .build());
+            totalDistance += exerciseRecord.getDistance();
+            totalExerciseTime += exerciseRecord.getExerciseTime();
+            totalMatrixNumber += (long) exerciseRecord.getMatrices().size();
+        }
+
+        return ActivityRecordResponseDto
+                .builder()
+                .activityRecords(activityRecords)
+                .totalMatrixNumber(totalMatrixNumber)
+                .totalDistance(totalDistance)
+                .totalExerciseTime(totalExerciseTime)
                 .build();
     }
 
