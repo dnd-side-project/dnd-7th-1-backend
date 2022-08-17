@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
  * @description 운동 기록 엔티티
  * @author  박세헌
  * @since   2022-07-27
- * @updated 2022-08-13 / nullable 추가 : 박세헌
+ * @updated 2022-08-17 / 위도, 경도 필드 Double형으로 변경 : 박세헌
  */
 
 @Getter
@@ -25,10 +25,10 @@ public class Matrix {
     private Long id;
 
     @Column(nullable = false)
-    private double latitude;
+    private Double latitude;
 
     @Column(nullable = false)
-    private double longitude;
+    private Double longitude;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "exercise_record_id", nullable = false)

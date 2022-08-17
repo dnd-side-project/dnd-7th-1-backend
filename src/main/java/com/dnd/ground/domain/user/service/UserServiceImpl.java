@@ -33,10 +33,7 @@ import java.util.*;
  * @description 유저 서비스 클래스
  * @author  박세헌, 박찬호
  * @since   2022-08-01
- * @updated 1. 친구 프로필 조회 기능 구현 - 박찬호
- *          2. 활동 기록 조회
- *          3. 운동 기록에 대한 정보 조회
- *          - 박세헌 2022.08.16
+ * @updated 1. 상세 지도 보기 - 202.08.17 박세헌
  */
 
 @Slf4j
@@ -262,6 +259,19 @@ public class UserServiceImpl implements UserService{
                 .message(exerciseRecord.getMessage())
                 .matrices(matrixRepository.findMatrixSetByRecord(exerciseRecord))
                 .build();
+    }
+
+    /* 상세 지도 보기 */
+    public UserResponseDto.DetailMap getDetailMap(Long recordId){
+        // 운동 기록 찾기
+        ExerciseRecord exerciseRecord = exerciseRecordRepository.findById(recordId).orElseThrow();  // 예외 처리
+        // 유저 찾기
+        User user = userRepository.findByExerciseRecord(exerciseRecord).orElseThrow();  // 예외 처리
+        // 운동기록의 칸 찾기
+        List<MatrixDto> matrices = matrixRepository.findMatrixSetByRecord(exerciseRecord);
+
+        return new UserResponseDto.DetailMap(user.getLatitude(),
+                user.getLongitude(), matrices);
     }
 
 }

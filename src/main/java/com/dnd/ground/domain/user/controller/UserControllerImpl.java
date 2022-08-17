@@ -28,6 +28,7 @@ import java.time.temporal.TemporalAdjusters;
  *          - 2022.08.16 박찬호
  *          2. 활동 기록 조회 기능 구현
  *          3. 운동 기록에 대한 정보 조회 기능 구현
+ *          4. 상세 지도 보기 기능 구현
  *          - 2022.08.17 박세헌
  */
 
@@ -81,6 +82,12 @@ public class UserControllerImpl implements UserController {
     @Operation(summary = "운동 기록 정보", description = "선택한 운동기록에 대한 정보")
     public ResponseEntity<RecordResponseDto.EInfo> getRecordInfo(@RequestParam("recordId") Long recordId){
         return ResponseEntity.ok().body(userService.getExerciseInfo(recordId));
+    }
+
+    @GetMapping("/detail/map")
+    @Operation(summary = "상세 지도", description = "기록 끝 혹은 나의 활동 기록에서 볼 수 있는 해당 기록의 상세 지도")
+    public ResponseEntity<UserResponseDto.DetailMap> getDetailMap(@RequestParam("recordId") Long recordId){
+        return ResponseEntity.ok().body(userService.getDetailMap(recordId));
     }
 
 }
