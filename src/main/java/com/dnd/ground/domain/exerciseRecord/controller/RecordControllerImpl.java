@@ -19,7 +19,7 @@ import java.time.temporal.TemporalAdjusters;
  * @description 기록 컨트롤러 클래스
  * @author  박세헌
  * @since   2022-08-01
- * @updated 2022-08-16 / 기록 중지 api 삭제 - 박세헌
+ * @updated 2022-08-17 / api 명세 수정 - 박세헌
  */
 
 @Api(tags = "운동기록")
@@ -44,7 +44,7 @@ public class RecordControllerImpl implements RecordController{
     }
 
     @GetMapping("/rank/step")
-    @Operation(summary = "걸음수 랭킹", description = "걸음수가 높은 순서대로 유저들을 조회")
+    @Operation(summary = "걸음수 랭킹", description = "해당 유저를 기준으로 start-end(기간) 사이 걸음수가 높은 순서대로 유저와 친구들을 조회(추후 nickname, start, end를 가진 requestDto 생성 예정)유저들을 조회")
     public ResponseEntity<RankResponseDto.Step> matrixRank(@RequestParam("nickname") String nickName){
 
         /* 추후 nickname, start, end를 가진 requestDto 생성 예정 */

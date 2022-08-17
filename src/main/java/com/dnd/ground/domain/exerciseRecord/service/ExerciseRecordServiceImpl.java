@@ -29,7 +29,7 @@ import java.util.Objects;
  * @description 운동 기록 서비스 클래스
  * @author  박세헌, 박찬호
  * @since   2022-08-01
- * @updated 2022-08-13 / 운동기록 추가 - 박세헌
+ * @updated 2022-08-17 / 누적 영역 필드 Long으로 변경 - 박세헌
  */
 
 @Service
@@ -56,11 +56,11 @@ public class ExerciseRecordServiceImpl implements ExerciseRecordService {
         exerciseRecordRepository.save(exerciseRecord);
         List<ExerciseRecord> recordOfThisWeek = exerciseRecordRepository.findRecordOfThisWeek(user.getId());
         if (recordOfThisWeek.isEmpty()) {
-            return new StartResponseDto(exerciseRecord.getId(), 0);
+            return new StartResponseDto(exerciseRecord.getId(), 0L);
         }
 
         return new StartResponseDto(exerciseRecord.getId(),
-                matrixRepository.findMatrixSetByRecords(recordOfThisWeek).size());
+                (long) matrixRepository.findMatrixSetByRecords(recordOfThisWeek).size());
     }
 
     // 기록 끝

@@ -32,13 +32,13 @@ public class UserResponseDto {
         @ApiModelProperty(value = "소개 메시지", example = "소개 메시지 예시입니다.")
         private String intro;
 
-        @ApiModelProperty(value = "이번주 영역 수", example = "9")
-        private Long areaNumber;
+        @ApiModelProperty(value = "이번주 채운 칸의 수", example = "9")
+        private Long matrixNumber;
 
-        @ApiModelProperty(value = "이번주 걸음 수", example = "1030")
+        @ApiModelProperty(value = "이번주 총 걸음 수", example = "1030")
         private Integer stepCount;
 
-        @ApiModelProperty(value = "이번주 거리", example = "200")
+        @ApiModelProperty(value = "이번주 총 거리", example = "200")
         private Integer distance;
 
         @ApiModelProperty(value = "친구 수", example = "2")
@@ -165,7 +165,7 @@ public class UserResponseDto {
         @ApiModelProperty(value = "닉네임", example = "NickA", required = true)
         private String nickname;
 
-        @ApiModelProperty(value = "점수(영역수/걸음수/역대누적칸수)", example = "50", required = true)
+        @ApiModelProperty(value = "점수(영역수 or 걸음수 or 역대누적칸수)", example = "50", required = true)
         private Long score;
     }
 
