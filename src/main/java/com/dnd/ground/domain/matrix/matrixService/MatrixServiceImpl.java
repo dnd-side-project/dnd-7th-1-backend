@@ -25,8 +25,8 @@ import java.util.Objects;
  * @description 운동 영역 서비스 클래스
  * @author  박세헌
  * @since   2022-08-01
- * @updated 1. 챌린지 내 랭킹 결정 메소드 생성
- *          - 2022.08.15 박찬호
+ * @updated 1. 랭킹 계산 메소드 모듈화
+ *          - 2022.08.17 박찬호
  */
 
 @Service
@@ -49,46 +49,14 @@ public class MatrixServiceImpl implements MatrixService {
         User user = userRepository.findByNickname(nickname).orElseThrow();
         List<User> userAndFriends = friendService.getFriends(user);  // 친구들 조회
         userAndFriends.add(0, user);  // 유저 추가
-        List<UserResponseDto.Ranking> matrixRankings = new ArrayList<>(); // [랭킹, 닉네임, 칸의 수]
 
         // [Tuple(닉네임, 이번주 누적 칸수)] 칸수 기준 내림차순 정렬
         List<Tuple> matrixCount = exerciseRecordRepository.findMatrixCount(userAndFriends, start, end);
 
-        int count = 0;
-        int rank = 1;
+        // 랭킹 계산[랭킹, 닉네임, 칸의 수]
+        List<UserResponseDto.Ranking> matrixRankings = calculateMatrixRank(matrixCount, userAndFriends);
 
-        // 1명이라도 0점이 아니라면
-        if (!matrixCount.isEmpty()) {
-            Long matrixNumber = (Long) matrixCount.get(0).get(1);  // 맨 처음 user의 칸 수
-            for (Tuple info : matrixCount) {
-                if (Objects.equals((Long) info.get(1), matrixNumber)) {  // 전 유저와 칸수가 같다면 랭크 유지
-                    matrixRankings.add(new UserResponseDto.Ranking(rank, (String) info.get(0),
-                            (Long) info.get(1)));
-                    count += 1;
-                    continue;
-                }
-                // 전 유저보다 작다면 랭크+1
-                rank += 1;
-                matrixRankings.add(new UserResponseDto.Ranking(rank, (String) info.get(0),
-                        (Long) info.get(1)));
-                matrixNumber = (Long) info.get(1);  // 칸 수 update!
-                count += 1;
-            }
-            rank += 1;
-            // 나머지 0점인 유저들 추가
-            for (int i = count; i < userAndFriends.size(); i++) {
-                matrixRankings.add(new UserResponseDto.Ranking(rank, userAndFriends.get(i).getNickname(), 0L));
-            }
-            return new RankResponseDto.Matrix(matrixRankings);
-        }
-
-        // 전부다 0점이라면
-        else {
-            for (int i = count; i < userAndFriends.size(); i++) {
-                matrixRankings.add(new UserResponseDto.Ranking(rank, userAndFriends.get(i).getNickname(), 0L));
-            }
-            return new RankResponseDto.Matrix(matrixRankings);
-        }
+        return new RankResponseDto.Matrix(matrixRankings);
     }
 
     // 랭킹 조회(누적 영역의 수 기준)
@@ -104,24 +72,9 @@ public class MatrixServiceImpl implements MatrixService {
         // 친구들의 닉네임과 영역의 수 대입
         friends.forEach(f -> areaRankings.add(new UserResponseDto.Ranking(1, f.getNickname(),
                 (long) matrixRepository.findMatrixSetByRecords(exerciseRecordRepository.findRecord(f.getId(), start, end)).size())));
-
-        // 영역의 수를 기준으로 내림차순 정렬
-        areaRankings.sort((a, b) -> b.getScore().compareTo(a.getScore()));
-
-        // 랭크 결정
-        Long areaNumber = areaRankings.get(0).getScore();  // 맨 처음 user의 영역 수
-        int rank = 1;
-        for (int i=1; i<areaRankings.size(); i++){
-            if (Objects.equals(areaRankings.get(i).getScore(), areaNumber)){  // 전 유저와 영역 수가 같다면 랭크 유지
-                areaRankings.get(i).setRank(rank);
-                continue;
-            }
-            // 전 유저보다 영역 수가 작다면 랭크+1
-            rank += 1;
-            areaRankings.get(i).setRank(rank);
-            areaNumber = areaRankings.get(i).getScore();  // 영역 수 update!
-        }
-        return new RankResponseDto.Area(areaRankings);
+        
+        // 랭킹 계산 후 반환
+        return new RankResponseDto.Area(calculateAreaRank(areaRankings));
     }
 
     /*챌린지 랭킹 조회*/
@@ -138,12 +91,58 @@ public class MatrixServiceImpl implements MatrixService {
             );
         }
 
+        //랭킹 계산 후 반환
+        return new RankResponseDto.Area(calculateAreaRank(areaRankings));
+    }
+
+    /*칸 수 기준 랭킹 계산*/
+    public List<UserResponseDto.Ranking> calculateMatrixRank(List<Tuple> matrixCount, List<User> member) {
+        List<UserResponseDto.Ranking> matrixRankings = new ArrayList<>();
+        int count = 0;
+        int rank = 1;
+
+        // 1명이라도 0점이 아니라면
+        if (!matrixCount.isEmpty()) {
+            Long matrixNumber = (Long) matrixCount.get(0).get(1);  // 맨 처음 user의 칸 수
+            for (Tuple info : matrixCount) {
+                if (Objects.equals(info.get(1), matrixNumber)) {  // 전 유저와 칸수가 같다면 랭크 유지
+                    matrixRankings.add(new UserResponseDto.Ranking(rank, (String) info.get(0),
+                            (Long) info.get(1)));
+                    count += 1;
+                    continue;
+                }
+                // 전 유저보다 작다면 랭크+1
+                rank += 1;
+                matrixRankings.add(new UserResponseDto.Ranking(rank, (String) info.get(0),
+                        (Long) info.get(1)));
+                matrixNumber = (Long) info.get(1);  // 칸 수 update!
+                count += 1;
+            }
+            rank += 1;
+            // 나머지 0점인 유저들 추가
+            for (int i = count; i < member.size(); i++) {
+                matrixRankings.add(new UserResponseDto.Ranking(rank, member.get(i).getNickname(), 0L));
+            }
+        }
+
+        // 전부다 0점이라면
+        else {
+            for (int i = count; i < member.size(); i++) {
+                matrixRankings.add(new UserResponseDto.Ranking(rank, member.get(i).getNickname(), 0L));
+            }
+        }
+
+        return matrixRankings;
+    }
+
+    /*영역 기준 랭킹 계산*/
+    public List<UserResponseDto.Ranking> calculateAreaRank(List<UserResponseDto.Ranking> areaRankings) {
         //내림차순 정렬
         areaRankings.sort((a, b) -> b.getScore().compareTo(a.getScore()));
 
-        //순위 결정
         Long areaNumber = areaRankings.get(0).getScore();  // 맨 처음 user의 영역 수
         int rank = 1;
+
         for (int i=1; i<areaRankings.size(); i++){
             if (Objects.equals(areaRankings.get(i).getScore(), areaNumber)){  // 전 유저와 영역 수가 같다면 랭크 유지
                 areaRankings.get(i).setRank(rank);
@@ -155,6 +154,6 @@ public class MatrixServiceImpl implements MatrixService {
             areaNumber = areaRankings.get(i).getScore();  // 영역 수 update!
         }
 
-        return new RankResponseDto.Area(areaRankings);
+        return areaRankings;
     }
 }

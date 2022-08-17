@@ -19,9 +19,8 @@ import java.util.List;
  * @description 챌린지와 관련된 컨트롤러 구현체
  * @author  박찬호
  * @since   2022-08-01
- * @updated 1. 진행 중 상태의 챌린지 조회 기능 구현
- *          2. 완료된 챌린지 조회 기능 구현
- *          - 2022.08.15 박찬호
+ * @updated 1. 챌린지 상세 조회 기능 구현
+ *          - 2022.08.17 박찬호
  */
 
 @Api(tags = "챌린지")
@@ -53,26 +52,31 @@ public class ChallengeControllerImpl implements ChallengeController {
 
     @GetMapping("/invite")
     @Operation(summary = "초대받은 챌린지 목록", description = "초대 받은 챌린지와 관련한 정보 목록")
-    public ResponseEntity<List<ChallengeResponseDto.Invite>> findInviteChallenge(@RequestParam("nickname") String nickname) {
+    public ResponseEntity<List<ChallengeResponseDto.Invite>> getInviteChallenge(@RequestParam("nickname") String nickname) {
         return ResponseEntity.ok().body(challengeService.findInviteChallenge(nickname));
     }
 
     @GetMapping("/wait")
     @Operation(summary = "진행 대기 중인 챌린지 목록 조회", description = "대기 중 챌린지와 관련한 정보 목록")
-    public ResponseEntity<List<ChallengeResponseDto.Wait>> findWaitChallenges(@RequestParam("nickname") String nickname) {
+    public ResponseEntity<List<ChallengeResponseDto.Wait>> getWaitChallenges(@RequestParam("nickname") String nickname) {
         return ResponseEntity.ok().body(challengeService.findWaitChallenge(nickname));
     }
 
     @GetMapping("/progress")
     @Operation(summary = "진행 중인 챌린지 리스트 조회", description = "진행 중인 챌린지 리스트+현재 순위")
-    public ResponseEntity<List<ChallengeResponseDto.Progress>> findProgressChallenges(@RequestParam("nickname") String nickname) {
+    public ResponseEntity<List<ChallengeResponseDto.Progress>> getProgressChallenges(@RequestParam("nickname") String nickname) {
         return ResponseEntity.ok().body(challengeService.findProgressChallenge(nickname));
     }
 
     @GetMapping("/done")
     @Operation(summary = "완료된 챌린지 리스트 조회", description = "완료된 챌린지 리스트+현재 순위")
-    public ResponseEntity<List<ChallengeResponseDto.Done>> findDoneChallenges(@RequestParam("nickname") String nickname) {
+    public ResponseEntity<List<ChallengeResponseDto.Done>> getDoneChallenges(@RequestParam("nickname") String nickname) {
         return ResponseEntity.ok().body(challengeService.findDoneChallenge(nickname));
+    }
+
+    @GetMapping("/detail/progress")
+    public ResponseEntity<ChallengeResponseDto.Detail> getDetailProgressChallenge(@ModelAttribute ChallengeRequestDto.CInfo requestDto) {
+        return ResponseEntity.ok().body(challengeService.getDetailProgress(requestDto));
     }
 
 }
