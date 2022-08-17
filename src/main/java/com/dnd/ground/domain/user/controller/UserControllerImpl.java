@@ -1,5 +1,6 @@
 package com.dnd.ground.domain.user.controller;
 
+import com.dnd.ground.domain.exerciseRecord.dto.RecordResponseDto;
 import com.dnd.ground.domain.user.dto.ActivityRecordResponseDto;
 import com.dnd.ground.domain.user.dto.HomeResponseDto;
 import com.dnd.ground.domain.user.dto.UserResponseDto;
@@ -26,7 +27,8 @@ import java.time.temporal.TemporalAdjusters;
  * @updated 1. 친구 프로필 조회 기능 구현
  *          - 2022.08.16 박찬호
  *          2. 활동 기록 조회 기능 구현
- *          - 2022.08.16 박세헌
+ *          3. 운동 기록에 대한 정보 조회 기능 구현
+ *          - 2022.08.17 박세헌
  */
 
 @Api(tags = "유저")
@@ -63,7 +65,7 @@ public class UserControllerImpl implements UserController {
     }
 
     @GetMapping("/info/activityRecord")
-    @Operation(summary = "나이 활동 기록 조회", description = "start-end 사이 활동기록 조회(추후 nickname, start, end를 가진 requestDto 생성 예정)")
+    @Operation(summary = "나의 활동 기록 조회", description = "start-end 사이 활동기록 조회(추후 nickname, start, end를 가진 requestDto 생성 예정)")
     public ResponseEntity<ActivityRecordResponseDto> getActivityRecord(@RequestParam("nickname") String nickname){
 
         /* 추후 nickname, start, end를 가진 requestDto 생성 예정 */
@@ -73,6 +75,12 @@ public class UserControllerImpl implements UserController {
         /* 임시로 이번주 기록 */
 
         return ResponseEntity.ok().body(userService.getActivityRecord(nickname, start, end));
+    }
+
+    @GetMapping("/info/activityRecord/recordInfo")
+    @Operation(summary = "운동 기록 정보", description = "선택한 운동기록에 대한 정보")
+    public ResponseEntity<RecordResponseDto.EInfo> getRecordInfo(@RequestParam("recordId") Long recordId){
+        return ResponseEntity.ok().body(userService.getExerciseInfo(recordId));
     }
 
 }

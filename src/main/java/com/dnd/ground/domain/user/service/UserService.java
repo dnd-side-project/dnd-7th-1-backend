@@ -1,5 +1,6 @@
 package com.dnd.ground.domain.user.service;
 
+import com.dnd.ground.domain.exerciseRecord.dto.RecordResponseDto;
 import com.dnd.ground.domain.user.User;
 import com.dnd.ground.domain.user.dto.ActivityRecordResponseDto;
 import com.dnd.ground.domain.user.dto.HomeResponseDto;
@@ -26,4 +27,6 @@ public interface UserService {
     UserResponseDto.Profile getUserProfile(String userNickname, String friendNickname);
 
     ActivityRecordResponseDto getActivityRecord(String nickname, LocalDateTime start, LocalDateTime end);
+
+    RecordResponseDto.EInfo getExerciseInfo(Long exerciseId);
 }

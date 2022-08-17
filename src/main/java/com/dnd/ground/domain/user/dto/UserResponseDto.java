@@ -17,7 +17,7 @@ import java.util.List;
  * @author  박세헌, 박찬호
  * @since   2022-08-08
  * @updated 1. 친구 프로필 조회 기능 구현을 위한 Profile 클래스 생성 - 박찬호
- *          2. api 명세 수정- 박세헌
+ *          2. api 명세 수정 - 박세헌
  *          - 2022.08.16
  */
 

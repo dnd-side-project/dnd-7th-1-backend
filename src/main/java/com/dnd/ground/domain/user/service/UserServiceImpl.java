@@ -34,8 +34,9 @@ import java.util.*;
  * @author  박세헌, 박찬호
  * @since   2022-08-01
  * @updated 1. 친구 프로필 조회 기능 구현 - 박찬호
- *          2. 활동 기록 조회 - 박세헌
- *          - 2022.08.16
+ *          2. 활동 기록 조회
+ *          3. 운동 기록에 대한 정보 조회
+ *          - 박세헌 2022.08.16
  */
 
 @Slf4j
@@ -211,7 +212,7 @@ public class UserServiceImpl implements UserService{
                 .build();
     }
 
-    /* 나의 활동 기록 보기 */
+    /* 나의 활동 기록 조회 */
     public ActivityRecordResponseDto getActivityRecord(String nickname, LocalDateTime start, LocalDateTime end) {
         User user = userRepository.findByNickname(nickname).orElseThrow();  // 예외처리 예정
         List<ExerciseRecord> record = exerciseRecordRepository.findRecord(user.getId(), start, end);  // start~end 사이 운동기록 조회
@@ -243,6 +244,23 @@ public class UserServiceImpl implements UserService{
                 .totalMatrixNumber(totalMatrixNumber)
                 .totalDistance(totalDistance)
                 .totalExerciseTime(totalExerciseTime)
+                .build();
+    }
+
+    /* 나의 운동기록에 대한 정보 조회 */
+    public RecordResponseDto.EInfo getExerciseInfo(Long exerciseId){
+        ExerciseRecord exerciseRecord = exerciseRecordRepository.findById(exerciseId).orElseThrow();  // 예외 처리
+        return RecordResponseDto.EInfo
+                .builder()
+                .recordId(exerciseRecord.getId())
+                .started(exerciseRecord.getStarted())
+                .ended(exerciseRecord.getEnded())
+                .matrixNumber((long) exerciseRecord.getMatrices().size())
+                .distance(exerciseRecord.getDistance())
+                .exerciseTime(exerciseRecord.getExerciseTime())
+                .stepCount(exerciseRecord.getStepCount())
+                .message(exerciseRecord.getMessage())
+                .matrices(matrixRepository.findMatrixSetByRecord(exerciseRecord))
                 .build();
     }
 

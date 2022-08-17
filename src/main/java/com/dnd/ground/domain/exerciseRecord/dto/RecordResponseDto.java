@@ -23,7 +23,7 @@ public class RecordResponseDto {
     @Data @Builder
     static public class EInfo {
         @ApiModelProperty(value = "운동기록 id", example = "1")
-        private Long exerciseId;
+        private Long recordId;
 
         @ApiModelProperty(value="운동 기록 시작 시간", example="2022-08-16T22:30:06.424146")
         private LocalDateTime started;
@@ -48,6 +48,9 @@ public class RecordResponseDto {
 
         @ApiModelProperty(value="해당 기록의 칸 정보")
         private List<MatrixDto> matrices;
+
+        /*참여한 챌린지 추가 예정*/
+
     }
 
     @Data @Builder
