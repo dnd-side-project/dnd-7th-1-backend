@@ -1,11 +1,10 @@
 package com.dnd.ground.domain.user.repository;
 
+import com.dnd.ground.domain.exerciseRecord.ExerciseRecord;
 import com.dnd.ground.domain.user.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
-import javax.persistence.Tuple;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -13,12 +12,14 @@ import java.util.Optional;
  * @description 유저 리포지토리 인터페이스
  * @author  박세헌
  * @since   2022-08-01
- * @updated 2022-08-12 / findMatrixCount함수 ExerciseRecord단으로 이동
- *                       - 박세헌
+ * @updated 2022-08-17 / 운동기록을 통해 유저 조회 - 박세헌
  */
 
 public interface UserRepository extends JpaRepository<User, Long> {
 
     Optional<User> findByNickname(String nickname);
+
+    @Query("select u from User u join u.exerciseRecords e where e = :exerciseRecord")
+    Optional<User> findByExerciseRecord(ExerciseRecord exerciseRecord);
 
 }
