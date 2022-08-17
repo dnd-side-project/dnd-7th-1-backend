@@ -1,6 +1,7 @@
 package com.dnd.ground.domain.challenge.repository;
 
 import com.dnd.ground.domain.challenge.Challenge;
+import com.dnd.ground.domain.challenge.ChallengeColor;
 import com.dnd.ground.domain.challenge.UserChallenge;
 import com.dnd.ground.domain.user.User;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -15,9 +16,8 @@ import java.util.Optional;
  * @description 회원-챌린지 간 조인엔티티와 관련한 레포지토리
  * @author  박찬호
  * @since   2022-08-03
- * @updated 1. 챌린지 상태에 따른 UserChallenge 조회
- *          2. 챌린지 주최자 조회 쿼리 추가
- *          - 2022.08.13 박찬호
+ * @updated 1. 챌린지 색깔 조회 쿼리 추가
+ *          - 2022.08.16 박찬호
  */
 
 public interface UserChallengeRepository extends JpaRepository<UserChallenge, Long> {
@@ -64,5 +64,14 @@ public interface UserChallengeRepository extends JpaRepository<UserChallenge, Lo
     //챌린지의 주최자 조회
     @Query("select uc.user from UserChallenge uc where uc.challenge=:challenge and uc.status='Master'")
     User findMasterInChallenge(@Param("challenge") Challenge challenge);
+
+
+    //회원이 참여하고 있는 챌린지 개수 (챌린지 상태 상관X)
+    @Query("select count(uc) from UserChallenge uc where uc.user=:user and (uc.status<>'Done' or uc.status<>'Reject')")
+    int findCountChallenge(@Param("user")User user);
+
+    //챌린지 색깔 조회
+    @Query("select uc.color from UserChallenge uc where uc.user=:user and uc.challenge=:challenge")
+    ChallengeColor findChallengeColor(@Param("user") User user, @Param("challenge") Challenge challenge);
 
 }

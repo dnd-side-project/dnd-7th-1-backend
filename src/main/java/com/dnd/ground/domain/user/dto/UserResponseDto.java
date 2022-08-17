@@ -1,5 +1,6 @@
 package com.dnd.ground.domain.user.dto;
 
+import com.dnd.ground.domain.challenge.ChallengeColor;
 import com.dnd.ground.domain.challenge.dto.ChallengeResponseDto;
 import com.dnd.ground.domain.matrix.dto.MatrixDto;
 import com.dnd.ground.domain.user.User;
@@ -16,7 +17,14 @@ import java.util.List;
  *              4. 랭킹 정보
  * @author  박세헌, 박찬호
  * @since   2022-08-08
+<<<<<<< HEAD
  * @updated 상세 지도 보는 클래스 생성 - 2022-08-17 박세헌
+=======
+ * @updated 1. 친구 프로필 조회 기능 구현을 위한 Profile 클래스 생성 - 박찬호
+ *          2. 마이페이지 필드 추가 - 박세헌
+ *          3. 챌린지 색깔 관련 수정 - 박찬호
+ *          - 2022.08.16
+>>>>>>> upstream/develop
  */
 
 @Data
@@ -141,8 +149,8 @@ public class UserResponseDto {
         @ApiModelProperty(value = "나와 같이 하는 챌린지 개수", example = "1", required = true)
         private Integer challengeNumber;
 
-        @ApiModelProperty(value = "지도에 나타나는 챌린지 대표 색깔", example = "#ffffff", required = true)
-        private String challengeColor;
+        @ApiModelProperty(value = "지도에 나타나는 챌린지 대표 색깔", example = "Pink", required = true)
+        private ChallengeColor challengeColor;
 
         @ApiModelProperty(value = "챌린지를 같이 하는 사람의 마지막 위치 - 위도", example = "37.123123", required = true)
         private Double latitude;
