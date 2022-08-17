@@ -1,14 +1,15 @@
 package com.dnd.ground.domain.challenge.service;
 
-import com.dnd.ground.domain.challenge.Challenge;
-import com.dnd.ground.domain.challenge.ChallengeColor;
-import com.dnd.ground.domain.challenge.ChallengeStatus;
-import com.dnd.ground.domain.challenge.UserChallenge;
+import com.dnd.ground.domain.challenge.*;
 import com.dnd.ground.domain.challenge.dto.ChallengeCreateRequestDto;
 import com.dnd.ground.domain.challenge.dto.ChallengeRequestDto;
 import com.dnd.ground.domain.challenge.dto.ChallengeResponseDto;
 import com.dnd.ground.domain.challenge.repository.ChallengeRepository;
 import com.dnd.ground.domain.challenge.repository.UserChallengeRepository;
+import com.dnd.ground.domain.exerciseRecord.ExerciseRecord;
+import com.dnd.ground.domain.exerciseRecord.Repository.ExerciseRecordRepository;
+import com.dnd.ground.domain.matrix.dto.MatrixDto;
+import com.dnd.ground.domain.matrix.matrixRepository.MatrixRepository;
 import com.dnd.ground.domain.matrix.matrixService.MatrixService;
 import com.dnd.ground.domain.user.User;
 import com.dnd.ground.domain.user.dto.RankResponseDto;
@@ -23,8 +24,10 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.persistence.Tuple;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
@@ -32,10 +35,8 @@ import java.util.*;
  * @description 챌린지와 관련된 서비스의 역할을 분리한 구현체
  * @author  박찬호
  * @since   2022-08-03
- * @updated 1. 친구와 함께 진행 중인 챌린지 리스트 조회 기능 구현
- *          2. 챌린지 생성 과정에 색상 추가
- *          3. 챌린지 색깔 관련 수정
- *          - 2022.08.16 박찬호
+ * @updated 1. 챌린지 상세 조회 기능 구현
+ *          - 2022.08.17 박찬호
  */
 
 @Slf4j
@@ -43,10 +44,12 @@ import java.util.*;
 @Service
 public class ChallengeServiceImpl implements ChallengeService {
 
+    private final UserRepository userRepository;
     private final ChallengeRepository challengeRepository;
     private final UserChallengeRepository userChallengeRepository;
-    private final UserRepository userRepository;
+    private final ExerciseRecordRepository exerciseRecordRepository;
     private final MatrixService matrixService;
+    private final MatrixRepository matrixRepository;
 
     /*챌린지 생성*/
     @Transactional
@@ -94,7 +97,7 @@ public class ChallengeServiceImpl implements ChallengeService {
     @Transactional
     public ResponseEntity<?> changeUserChallengeStatus(ChallengeRequestDto.CInfo requestDto, ChallengeStatus status) {
         //정보 조회
-        Challenge challenge = challengeRepository.findByUuid(requestDto.getUuid());
+        Challenge challenge = challengeRepository.findByUuid(requestDto.getUuid()).orElseThrow(); //예외 처리 예정
         User user = userRepository.findByNickname(requestDto.getNickname()).orElseThrow(); // 예외 처리 예정
         //상태 변경
         UserChallenge userChallenge = userChallengeRepository.findByUserAndChallenge(user, challenge).orElseThrow();
@@ -309,5 +312,70 @@ public class ChallengeServiceImpl implements ChallengeService {
         }
 
         return response;
+    }
+
+    /*진행 중인 챌린지 상세 조회*/
+    public ChallengeResponseDto.Detail getDetailProgress(ChallengeRequestDto.CInfo request) {
+        User user = userRepository.findByNickname(request.getNickname()).orElseThrow(); //예외 처리 예정
+        Challenge challenge = challengeRepository.findByUuid(request.getUuid()).orElseThrow(); //예외 처리 예정
+
+        //필요한 변수 선언
+        List<User> members = userChallengeRepository.findChallengeUsers(challenge); //본인 포함 챌린지에 참여하는 인원들
+
+        List<MatrixDto> matrices; //영역 기록
+        List<UserResponseDto.Ranking> rankings = new ArrayList<>(); //랭킹
+        List<ExerciseRecord> records; //영역 기록
+
+        LocalDate started = challenge.getStarted(); //챌린지 시작 날짜
+        LocalDate ended = started.plusDays(7-started.getDayOfWeek().getValue()); //챌린지 끝나는 날(해당 주 일요일)
+
+        Integer distance = 0; //거리
+        Integer exerciseTime = 0; //운동시간
+        Integer stepCount = 0; //걸음수
+
+        //개인 기록 계산
+        records = exerciseRecordRepository.findRecord(user.getId(), started.atStartOfDay(), ended.atTime(LocalTime.MAX));
+
+        for (ExerciseRecord record : records) {
+            distance += record.getDistance();
+            exerciseTime += record.getExerciseTime();
+            stepCount += record.getStepCount();
+        }
+
+        //영역 정보 조회
+        matrices = matrixRepository.findMatrixSetByRecords(records);
+
+        //챌린지 타입에 따른 랭킹 정보(순위, 닉네임, 점수) 계산
+        if (challenge.getType().equals(ChallengeType.Widen)) {
+            for (User member : members) {
+                //각 유저의 챌린지 기간동안의 기록
+                records = exerciseRecordRepository.findRecord(member.getId(), started.atStartOfDay(), ended.atTime(LocalTime.MAX));
+
+                //랭킹 리스트에 추가
+                rankings.add(new UserResponseDto.Ranking(1, member.getNickname(),
+                                (long) matrixRepository.findMatrixSetByRecords(records).size()));
+            }
+            //랭킹 정렬
+            rankings = matrixService.calculateAreaRank(rankings);
+        }
+        else if (challenge.getType().equals(ChallengeType.Accumulate)) {
+            //모든 회원의 칸 수 기록을 Tuple[닉네임, 이번주 누적 칸수] 내림차순으로 정리
+            List<Tuple> matrixCount = exerciseRecordRepository.findMatrixCount(members, started.atStartOfDay(), ended.atTime(LocalTime.MAX));
+            //랭킹 계산
+            rankings = matrixService.calculateMatrixRank(matrixCount, members);
+        }
+
+        return ChallengeResponseDto.Detail.builder()
+                .name(challenge.getName())
+                .type(challenge.getType())
+                .started(started)
+                .ended(started.plusDays(7-started.getDayOfWeek().getValue()))
+                .color(userChallengeRepository.findChallengeColor(user,challenge))
+                .matrices(matrices)
+                .rankings(rankings)
+                .distance(distance)
+                .exerciseTime(exerciseTime)
+                .stepCount(stepCount)
+                .build();
     }
 }

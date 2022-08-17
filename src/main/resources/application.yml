@@ -1,6 +1,6 @@
 spring:
   profiles:
-    active: dev
+    active: production
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: ${db.url}

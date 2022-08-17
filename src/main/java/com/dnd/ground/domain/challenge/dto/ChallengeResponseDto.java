@@ -1,19 +1,23 @@
 package com.dnd.ground.domain.challenge.dto;
 
 import com.dnd.ground.domain.challenge.ChallengeColor;
+import com.dnd.ground.domain.challenge.ChallengeType;
+import com.dnd.ground.domain.matrix.dto.MatrixDto;
+import com.dnd.ground.domain.user.dto.UserResponseDto;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 
 import java.time.LocalDate;
+import java.util.List;
 
 /**
  * @description 챌린지와 관련한 Response DTO
  * @author  박찬호
  * @since   2022-08-12
- * @updated 1. 챌린지 색깔 관련 수정
- *          - 2022.08.15 박찬호
+ * @updated 1. 챌린지 상세 조회 기능 구현을 위한 Detail 메소드 생성
+ *          - 2022.08.17 박찬호
  */
 
 
@@ -22,7 +26,7 @@ public class ChallengeResponseDto {
     /*상태에 상관 없이 사용되는 챌린지 관련 공통 정보*/
     @Data
     @AllArgsConstructor
-    static public class CInfo {
+    static public class CInfoRes {
         @ApiModelProperty(value="챌린지 이름", example="챌린지A")
         private String name;
 
@@ -109,6 +113,41 @@ public class ChallengeResponseDto {
 
         @ApiModelProperty(value="초대 시간(yyyy-MM-dd hh:mm)", example="2022-08-12 22:10")
         private String created;
+    }
+
+    @Data
+    @Builder
+    static public class Detail {
+        @ApiModelProperty(value="회원 닉네임", example="NickA", dataType = "String", notes="회원 닉네임")
+        private String name;
+
+        @ApiModelProperty(value="챌린지 종류", example="Widen", dataType = "String", notes="일주일 챌린지 종류")
+        private ChallengeType type;
+
+        @ApiModelProperty(value="챌린지 색상", example="Pink", dataType = "String", notes="회원-챌린지 색상")
+        private ChallengeColor color;
+
+        @ApiModelProperty(value="챌린지 시작 날짜", example="2022-08-17", dataType = "LocalDate", notes="챌린지 시작 날짜")
+        private LocalDate started;
+
+        @ApiModelProperty(value="챌린지 종료 날짜", example="2022-08-21", dataType = "LocalDate", notes="챌린지 종료 날짜(일요일)")
+        private LocalDate ended;
+
+        @ApiModelProperty(value="영역 정보", example="[{\"latitude\": 1.0,\"longitude\": 1.0}]", dataType = "Array[double, double]", notes="영역 정보 배열")
+        private List<MatrixDto> matrices;
+
+        @ApiModelProperty(value="랭킹 정보", example="[{\"rank\": 1, \"nickname\": \"NickB\", \"score\": 4}]", dataType = "Array[int, String, int]", notes="랭킹 정보")
+        private List<UserResponseDto.Ranking> rankings;
+
+        //내 기록
+        @ApiModelProperty(value="거리", example="100", dataType = "int", notes="일주일 동안 기록들의 거리 합")
+        private Integer distance;
+
+        @ApiModelProperty(value="운동 시간", example="15", dataType = "int", notes="일주일 동안 기록 시간 합 (단위: 초)")
+        private Integer exerciseTime;
+
+        @ApiModelProperty(value="걸음 수", example="15", dataType = "int", notes="일주일 동안 기록의 걸음 수 합")
+        private Integer stepCount;
     }
 
 }
