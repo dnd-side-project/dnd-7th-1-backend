@@ -17,7 +17,7 @@ import java.util.List;
  * @author  박세헌, 박찬호
  * @since   2022-08-08
  * @updated 1. 친구 프로필 조회 기능 구현을 위한 Profile 클래스 생성 - 박찬호
- *          2. 마이페이지 필드 추가 - 박세헌
+ *          2. api 명세 수정 - 박세헌
  *          - 2022.08.16
  */
 
@@ -88,10 +88,10 @@ public class UserResponseDto {
         @ApiModelProperty(value = "현재 나의 영역", example = "77", required = true)
         private Long matricesNumber;
 
-        @ApiModelProperty(value = "유저의 마지막 위치 - 위도", example = "마지막 위치(위도)")
+        @ApiModelProperty(value = "유저의 마지막 위치 - 위도", example = "37.123123")
         private Double latitude;
 
-        @ApiModelProperty(value = "유저의 마지막 위치 - 경도", example = "마지막 위치(경도)")
+        @ApiModelProperty(value = "유저의 마지막 위치 - 경도", example = "127.123123")
         private Double longitude;
 
         @ApiModelProperty(value = "칸 꼭지점 위도, 경도 리스트", required = true)
@@ -122,10 +122,10 @@ public class UserResponseDto {
         @ApiModelProperty(value = "닉네임", example = "NickB", required = true)
         private String nickname;
 
-        @ApiModelProperty(value = "친구의 마지막 위치 - 위도", example = "마지막 위치(위도)")
+        @ApiModelProperty(value = "친구의 마지막 위치 - 위도", example = "37.123123")
         private Double latitude;
 
-        @ApiModelProperty(value = "친구의 마지막 위치 - 경도", example = "마지막 위치(경도)")
+        @ApiModelProperty(value = "친구의 마지막 위치 - 경도", example = "127.123123")
         private Double longitude;
 
         @ApiModelProperty(value = "칸 꼭지점 위도, 경도 리스트", required = true)
@@ -146,10 +146,10 @@ public class UserResponseDto {
         @ApiModelProperty(value = "지도에 나타나는 챌린지 대표 색깔", example = "#ffffff", required = true)
         private String challengeColor;
 
-        @ApiModelProperty(value = "챌린지를 같이 하는 사람의 마지막 위치 - 위도", example = "마지막 위치(위도)", required = true)
+        @ApiModelProperty(value = "챌린지를 같이 하는 사람의 마지막 위치 - 위도", example = "37.123123", required = true)
         private Double latitude;
 
-        @ApiModelProperty(value = "챌린지를 같이 하는 사람의 마지막 위치 - 경도", example = "마지막 위치(경도)", required = true)
+        @ApiModelProperty(value = "챌린지를 같이 하는 사람의 마지막 위치 - 경도", example = "127.123123", required = true)
         private Double longitude;
 
         @ApiModelProperty(value = "칸 꼭지점 위도, 경도 리스트", required = true)
@@ -160,13 +160,13 @@ public class UserResponseDto {
     @Data
     @AllArgsConstructor
     public static class Ranking {
-        @ApiModelProperty(value = "랭크", example = "1위", required = true)
+        @ApiModelProperty(value = "랭크", example = "1", required = true)
         private Integer rank;
 
         @ApiModelProperty(value = "닉네임", example = "NickA", required = true)
         private String nickname;
 
-        @ApiModelProperty(value = "점수", example = "점수", required = true)
+        @ApiModelProperty(value = "점수(영역수/걸음수/역대누적칸수)", example = "50", required = true)
         private Long score;
     }
 }
