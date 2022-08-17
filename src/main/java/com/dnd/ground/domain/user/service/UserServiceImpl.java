@@ -8,12 +8,14 @@ import com.dnd.ground.domain.challenge.repository.UserChallengeRepository;
 import com.dnd.ground.domain.challenge.service.ChallengeService;
 import com.dnd.ground.domain.exerciseRecord.ExerciseRecord;
 import com.dnd.ground.domain.exerciseRecord.Repository.ExerciseRecordRepository;
+import com.dnd.ground.domain.exerciseRecord.dto.RecordResponseDto;
 import com.dnd.ground.domain.friend.repository.FriendRepository;
 import com.dnd.ground.domain.friend.service.FriendService;
 import com.dnd.ground.domain.matrix.dto.MatrixDto;
 import com.dnd.ground.domain.matrix.matrixRepository.MatrixRepository;
 import com.dnd.ground.domain.matrix.matrixService.MatrixService;
 import com.dnd.ground.domain.user.User;
+import com.dnd.ground.domain.user.dto.ActivityRecordResponseDto;
 import com.dnd.ground.domain.user.dto.HomeResponseDto;
 import com.dnd.ground.domain.user.dto.RankResponseDto;
 import com.dnd.ground.domain.user.dto.UserResponseDto;
@@ -32,10 +34,7 @@ import java.util.*;
  * @description 유저 서비스 클래스
  * @author  박세헌, 박찬호
  * @since   2022-08-01
- * @updated 1. 친구 프로필 조회 기능 구현 - 박찬호
- *          2. 친구 영역의 수 조회 수정 - 박세헌
- *          3. 챌린지 색깔 관련 수정 - 박찬호
- *          - 2022.08.16
+ * @updated 1. 상세 지도 보기 - 202.08.17 박세헌
  */
 
 @Slf4j
@@ -139,8 +138,8 @@ public class UserServiceImpl implements UserService{
         // 이번주 운동기록
         List<ExerciseRecord> recordOfThisWeek = exerciseRecordRepository.findRecordOfThisWeek(user.getId());
 
-        // 이번주 영역의 수
-        Long areaNumber = (long) matrixRepository.findMatrixSetByRecords(recordOfThisWeek).size();
+        // 이번주 채운 칸의 수
+        Long areaNumber = (long) matrixRepository.findMatrixByRecords(recordOfThisWeek).size();
 
         // 이번주 걸음수
         Integer stepCount = exerciseRecordRepository.findUserStepCount(user, recordOfThisWeek);
@@ -216,6 +215,71 @@ public class UserServiceImpl implements UserService{
                 .rank(rank)
                 .challenges(challenges)
                 .build();
+    }
+
+    /* 나의 활동 기록 조회 */
+    public ActivityRecordResponseDto getActivityRecord(String nickname, LocalDateTime start, LocalDateTime end) {
+        User user = userRepository.findByNickname(nickname).orElseThrow();  // 예외처리 예정
+        List<ExerciseRecord> record = exerciseRecordRepository.findRecord(user.getId(), start, end);  // start~end 사이 운동기록 조회
+        List<RecordResponseDto.activityRecord> activityRecords = new ArrayList<>();
+
+        Integer totalDistance = 0;  // 총 거리
+        Integer totalExerciseTime = 0;  // 총 운동 시간
+        Long totalMatrixNumber = 0L;  // 총 채운 칸의 수
+
+        // 활동 내역 정보
+        for (ExerciseRecord exerciseRecord : record) {
+            activityRecords.add(RecordResponseDto.activityRecord
+                    .builder()
+                    .exerciseId(exerciseRecord.getId())
+                    .matrixNumber((long) exerciseRecord.getMatrices().size())
+                    .stepCount(exerciseRecord.getStepCount())
+                    .distance(exerciseRecord.getDistance())
+                    .exerciseTime(exerciseRecord.getExerciseTime())
+                    .started(exerciseRecord.getStarted())
+                    .build());
+            totalDistance += exerciseRecord.getDistance();
+            totalExerciseTime += exerciseRecord.getExerciseTime();
+            totalMatrixNumber += (long) exerciseRecord.getMatrices().size();
+        }
+
+        return ActivityRecordResponseDto
+                .builder()
+                .activityRecords(activityRecords)
+                .totalMatrixNumber(totalMatrixNumber)
+                .totalDistance(totalDistance)
+                .totalExerciseTime(totalExerciseTime)
+                .build();
+    }
+
+    /* 나의 운동기록에 대한 정보 조회 */
+    public RecordResponseDto.EInfo getExerciseInfo(Long exerciseId){
+        ExerciseRecord exerciseRecord = exerciseRecordRepository.findById(exerciseId).orElseThrow();  // 예외 처리
+        return RecordResponseDto.EInfo
+                .builder()
+                .recordId(exerciseRecord.getId())
+                .started(exerciseRecord.getStarted())
+                .ended(exerciseRecord.getEnded())
+                .matrixNumber((long) exerciseRecord.getMatrices().size())
+                .distance(exerciseRecord.getDistance())
+                .exerciseTime(exerciseRecord.getExerciseTime())
+                .stepCount(exerciseRecord.getStepCount())
+                .message(exerciseRecord.getMessage())
+                .matrices(matrixRepository.findMatrixSetByRecord(exerciseRecord))
+                .build();
+    }
+
+    /* 상세 지도 보기 */
+    public UserResponseDto.DetailMap getDetailMap(Long recordId){
+        // 운동 기록 찾기
+        ExerciseRecord exerciseRecord = exerciseRecordRepository.findById(recordId).orElseThrow();  // 예외 처리
+        // 유저 찾기
+        User user = userRepository.findByExerciseRecord(exerciseRecord).orElseThrow();  // 예외 처리
+        // 운동기록의 칸 찾기
+        List<MatrixDto> matrices = matrixRepository.findMatrixSetByRecord(exerciseRecord);
+
+        return new UserResponseDto.DetailMap(user.getLatitude(),
+                user.getLongitude(), matrices);
     }
 
 }
