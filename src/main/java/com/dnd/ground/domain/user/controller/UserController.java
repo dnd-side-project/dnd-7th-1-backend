@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestParam;
  *          - 2022.08.16 박찬호
  *          2. 활동 기록 조회 기능 구현
  *          3. 운동 기록에 대한 정보 조회 기능 구현
+ *          4. 상세 지도 보기 기능 구현
  *          - 2022.08.17 박세헌
  */
 
@@ -28,4 +29,6 @@ public interface UserController {
     ResponseEntity<ActivityRecordResponseDto> getActivityRecord(@RequestParam("nickname") String nickname);
 
     ResponseEntity<RecordResponseDto.EInfo> getRecordInfo(@RequestParam("recordId") Long recordId);
+
+    ResponseEntity<UserResponseDto.DetailMap> getDetailMap(@RequestParam("recordId") Long recordId);
 }

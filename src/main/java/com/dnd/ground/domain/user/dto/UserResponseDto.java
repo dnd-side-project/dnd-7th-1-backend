@@ -16,9 +16,7 @@ import java.util.List;
  *              4. 랭킹 정보
  * @author  박세헌, 박찬호
  * @since   2022-08-08
- * @updated 1. 친구 프로필 조회 기능 구현을 위한 Profile 클래스 생성 - 박찬호
- *          2. api 명세 수정 - 박세헌
- *          - 2022.08.16
+ * @updated 상세 지도 보는 클래스 생성 - 2022-08-17 박세헌
  */
 
 @Data
@@ -168,5 +166,19 @@ public class UserResponseDto {
 
         @ApiModelProperty(value = "점수(영역수/걸음수/역대누적칸수)", example = "50", required = true)
         private Long score;
+    }
+
+    /*상세 지도 DTO*/
+    @Data
+    @AllArgsConstructor
+    public static class DetailMap {
+        @ApiModelProperty(value = "사용자의 마지막 위치(위도)", example = "37.123123", required = true)
+        private Double latitude;
+
+        @ApiModelProperty(value = "사용자의 마지막 위치(경도)", example = "127.123123", required = true)
+        private Double longitude;
+
+        @ApiModelProperty(value = "칸 꼭지점 위도, 경도 리스트", required = true)
+        private List<MatrixDto> matrices;
     }
 }
