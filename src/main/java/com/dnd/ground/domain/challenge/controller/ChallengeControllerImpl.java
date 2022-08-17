@@ -74,7 +74,7 @@ public class ChallengeControllerImpl implements ChallengeController {
         return ResponseEntity.ok().body(challengeService.findDoneChallenge(nickname));
     }
 
-    @GetMapping("/detail/progress")
+    @GetMapping("/detail")
     public ResponseEntity<ChallengeResponseDto.Detail> getDetailProgressChallenge(@ModelAttribute ChallengeRequestDto.CInfo requestDto) {
         return ResponseEntity.ok().body(challengeService.getDetailProgress(requestDto));
     }
