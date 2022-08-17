@@ -34,7 +34,7 @@ import java.util.*;
  * @description 유저 서비스 클래스
  * @author  박세헌, 박찬호
  * @since   2022-08-01
- * @updated 1. 상세 지도 보기 - 202.08.17 박세헌
+ * @updated 운동 시작, 끝, 시간 formatting - 202.08.17 박세헌
  */
 
 @Slf4j
@@ -139,7 +139,7 @@ public class UserServiceImpl implements UserService{
         List<ExerciseRecord> recordOfThisWeek = exerciseRecordRepository.findRecordOfThisWeek(user.getId());
 
         // 이번주 채운 칸의 수
-        Long areaNumber = (long) matrixRepository.findMatrixByRecords(recordOfThisWeek).size();
+        Long matrixNumber = (long) matrixRepository.findMatrixByRecords(recordOfThisWeek).size();
 
         // 이번주 걸음수
         Integer stepCount = exerciseRecordRepository.findUserStepCount(user, recordOfThisWeek);
@@ -158,7 +158,7 @@ public class UserServiceImpl implements UserService{
         return UserResponseDto.UInfo.builder()
                 .nickname(nickname)
                 .intro(user.getIntro())
-                .areaNumber(areaNumber)
+                .matrixNumber(matrixNumber)
                 .stepCount(stepCount)
                 .distance(distance)
                 .friendNumber(friendNumber)
@@ -229,40 +229,66 @@ public class UserServiceImpl implements UserService{
 
         // 활동 내역 정보
         for (ExerciseRecord exerciseRecord : record) {
+
+            // 운동 시작 시간 formatting
+            String started = exerciseRecord.getStarted().format(DateTimeFormatter.ofPattern("MM월 dd일 E요일 HH:mm"));
+
+            // 운동 시간 formatting
+            Integer exerciseTime = exerciseRecord.getExerciseTime();
+            int minute = exerciseTime / 60;
+            String time = Integer.toString(minute) + "분";
+
             activityRecords.add(RecordResponseDto.activityRecord
                     .builder()
                     .exerciseId(exerciseRecord.getId())
                     .matrixNumber((long) exerciseRecord.getMatrices().size())
                     .stepCount(exerciseRecord.getStepCount())
                     .distance(exerciseRecord.getDistance())
-                    .exerciseTime(exerciseRecord.getExerciseTime())
-                    .started(exerciseRecord.getStarted())
+                    .exerciseTime(time)
+                    .started(started)
                     .build());
             totalDistance += exerciseRecord.getDistance();
             totalExerciseTime += exerciseRecord.getExerciseTime();
             totalMatrixNumber += (long) exerciseRecord.getMatrices().size();
         }
 
+        // 총 운동 시간 formatting
+        int totalMinute = totalExerciseTime / 60;
+        int totalSecond = totalExerciseTime % 60;
+
+        String totalTime = Integer.toString(totalMinute) + ":" + Integer.toString(totalSecond);
+
         return ActivityRecordResponseDto
                 .builder()
                 .activityRecords(activityRecords)
                 .totalMatrixNumber(totalMatrixNumber)
                 .totalDistance(totalDistance)
-                .totalExerciseTime(totalExerciseTime)
+                .totalExerciseTime(totalTime)
                 .build();
     }
 
     /* 나의 운동기록에 대한 정보 조회 */
     public RecordResponseDto.EInfo getExerciseInfo(Long exerciseId){
         ExerciseRecord exerciseRecord = exerciseRecordRepository.findById(exerciseId).orElseThrow();  // 예외 처리
+
+        // 운동 시작, 끝 시간 formatting
+        String started = exerciseRecord.getStarted().format(DateTimeFormatter.ofPattern("MM월 dd일 E요일 HH:mm"));
+        String ended = exerciseRecord.getEnded().format(DateTimeFormatter.ofPattern("MM월 dd일 E요일 HH:mm"));
+
+        // 운동 시간 formatting
+        Integer exerciseTime = exerciseRecord.getExerciseTime();
+        int minute = exerciseTime / 60;
+        int second = exerciseTime % 60;
+        String time = Integer.toString(minute) + ":" + Integer.toString(second);
+
         return RecordResponseDto.EInfo
                 .builder()
                 .recordId(exerciseRecord.getId())
-                .started(exerciseRecord.getStarted())
-                .ended(exerciseRecord.getEnded())
+                .started(started)
+                .ended(ended)
                 .matrixNumber((long) exerciseRecord.getMatrices().size())
                 .distance(exerciseRecord.getDistance())
-                .exerciseTime(exerciseRecord.getExerciseTime())
+                .exerciseTime(time)
                 .stepCount(exerciseRecord.getStepCount())
                 .message(exerciseRecord.getMessage())
                 .matrices(matrixRepository.findMatrixSetByRecord(exerciseRecord))

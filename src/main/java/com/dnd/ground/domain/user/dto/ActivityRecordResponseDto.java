@@ -18,15 +18,15 @@ import java.util.List;
 @Data @Builder
 public class ActivityRecordResponseDto {
 
-    @ApiModelProperty(value = "활동 내역 정보")
+    @ApiModelProperty(value = "해당 날짜에 존재하는 활동 내역 정보(운동 기록 정보)")
     List<RecordResponseDto.activityRecord> activityRecords;
 
-    @ApiModelProperty(value = "해당 날짜의 총 칸의 수", example = "27")
+    @ApiModelProperty(value = "해당 날짜에 존재하는 운동 기록의 총 칸의 수", example = "27")
     Long totalMatrixNumber;
 
-    @ApiModelProperty(value = "해당 날짜의 총 거리", example = "60")
+    @ApiModelProperty(value = "해당 날짜에 존재하는 운동 기록의 총 거리", example = "60")
     Integer totalDistance;
 
-    @ApiModelProperty(value = "해당 날짜의 총 칸의 수", example = "540")
-    Integer totalExerciseTime;
+    @ApiModelProperty(value = "해당 날짜에 존재하는 운동 기록의 총 시간", example = "3:00")
+    String totalExerciseTime;
 }

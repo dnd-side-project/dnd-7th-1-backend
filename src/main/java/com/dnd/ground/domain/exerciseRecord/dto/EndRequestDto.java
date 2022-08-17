@@ -32,7 +32,7 @@ public class EndRequestDto {
     @ApiModelProperty(value="걸음수", example="100", required = true)
     private Integer stepCount;
 
-    @ApiModelProperty(value="상세기록", example="재밌었다!", required = true)
+    @ApiModelProperty(value="상세 기록", example="상세 기록 예시", required = true)
     private String message;
 
     @ApiModelProperty(value="칸 꼭지점 위도, 경도 리스트", required = true)

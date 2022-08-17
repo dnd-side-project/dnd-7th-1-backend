@@ -10,7 +10,7 @@ import lombok.Data;
  *              2. (일주일)누적 칸의 수
  * @author  박세헌
  * @since   2022-08-02
- * @updated 2022-08-17 / api 명세 수정: 박세헌
+ * @updated 2022-08-17 / 누적 영역 필드 Long으로 변경 - 박세헌
  */
 
 @Data
@@ -21,5 +21,5 @@ public class StartResponseDto {
     private Long recordId;
 
     @ApiModelProperty(value="누적 영역", example="20", required = true)
-    private Integer areaNumber;
+    private Long areaNumber;
 }
