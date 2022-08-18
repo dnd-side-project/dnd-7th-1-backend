@@ -34,7 +34,8 @@ import java.util.*;
  * @description 유저 서비스 클래스
  * @author  박세헌, 박찬호
  * @since   2022-08-01
- * @updated 운동 시작, 끝, 시간 formatting - 202.08.17 박세헌
+ * @updated matrixRanking함수 파라미터 변경
+ *          - 2022.08.18 박세헌
  */
 
 @Slf4j
@@ -188,7 +189,7 @@ public class UserServiceImpl implements UserService{
         Long allMatrixNumber = -1L;
         Long areas = -1L;
 
-        RankResponseDto.Matrix matrixRanking = matrixService.matrixRanking(friendNickname, friend.getCreated(), LocalDateTime.now());
+        RankResponseDto.Matrix matrixRanking = matrixService.matrixRanking(friendNickname);
 
         //역대 누적 칸수 및 랭킹 정보
         for (UserResponseDto.Ranking allRankInfo: matrixRanking.getMatrixRankings()) {
