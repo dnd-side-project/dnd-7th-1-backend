@@ -9,6 +9,7 @@ import com.dnd.ground.domain.challenge.service.ChallengeService;
 import com.dnd.ground.domain.exerciseRecord.ExerciseRecord;
 import com.dnd.ground.domain.exerciseRecord.Repository.ExerciseRecordRepository;
 import com.dnd.ground.domain.exerciseRecord.dto.RecordResponseDto;
+import com.dnd.ground.domain.exerciseRecord.service.ExerciseRecordService;
 import com.dnd.ground.domain.friend.repository.FriendRepository;
 import com.dnd.ground.domain.friend.service.FriendService;
 import com.dnd.ground.domain.matrix.dto.MatrixDto;
@@ -34,12 +35,13 @@ import java.util.*;
  * @description 유저 서비스 클래스
  * @author  박세헌, 박찬호
  * @since   2022-08-01
-
- * @updated 1. API 명세 수정
+ * @updated 1. API 명세 수정 - 박찬호
  * @updated 2. matrixRanking함수 파라미터 변경 - 박세헌
  *          3. 활동 기록의 운동 시간 1분 미만 이면 초로 변환 - 박세헌
  *          4. 메인화면 조회 시, 필터에 따른 조회 기능 구현 - 박찬호
- *          - 2022.08.18
+ *          5. 운동기록 조회에서 해당 운동 기록이 참여한 챌린지들 추가 - 박세헌
+ *          6. 활동 기록의 운동 시간 1분 미만 이면 초로 변환 - 박세헌
+ *          - 2022.08.18 박세헌
  */
 
 @Slf4j
@@ -253,7 +255,7 @@ public class UserServiceImpl implements UserService{
             // 운동 시간 formatting
             Integer exerciseTime = exerciseRecord.getExerciseTime();
             String time = "";
-            System.out.println(exerciseTime);
+
             if (exerciseTime < 60){
                 time = Integer.toString(exerciseTime) + "초";
             }
@@ -303,7 +305,18 @@ public class UserServiceImpl implements UserService{
         Integer exerciseTime = exerciseRecord.getExerciseTime();
         int minute = exerciseTime / 60;
         int second = exerciseTime % 60;
-        String time = Integer.toString(minute) + ":" + Integer.toString(second);
+        String time = "";
+
+        // 10초 미만이라면 앞에 0하나 붙여주기
+        if (Integer.toString(second).length() == 1){
+            time = Integer.toString(minute) + ":0" + Integer.toString(second);
+        }
+        else{
+            time = Integer.toString(minute) + ":" + Integer.toString(second);
+        }
+
+        // 해당 운동 기록이 참여한 챌린지들 조회
+        List<ChallengeResponseDto.CInfoRes> challenges = challengeService.findChallengeByRecord(exerciseRecord);
 
         return RecordResponseDto.EInfo
                 .builder()
@@ -317,6 +330,7 @@ public class UserServiceImpl implements UserService{
                 .stepCount(exerciseRecord.getStepCount())
                 .message(exerciseRecord.getMessage())
                 .matrices(matrixRepository.findMatrixSetByRecord(exerciseRecord))
+                .challenges(challenges)
                 .build();
     }
 
