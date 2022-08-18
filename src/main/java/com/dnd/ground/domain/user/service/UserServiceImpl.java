@@ -34,7 +34,8 @@ import java.util.*;
  * @description 유저 서비스 클래스
  * @author  박세헌, 박찬호
  * @since   2022-08-01
- * @updated 운동 시작, 끝, 시간 formatting - 202.08.17 박세헌
+ * @updated 1. API 명세 수정
+ *          - 2022.08.18 박찬호
  */
 
 @Slf4j
@@ -172,8 +173,7 @@ public class UserServiceImpl implements UserService{
         User friend = userRepository.findByNickname(friendNickname).orElseThrow(); //예외 처리 예정
 
         //마지막 활동 시간
-        LocalDateTime lastRecord = exerciseRecordRepository.findLastRecord(friend).orElseThrow(); //예외 처리 예정
-        String lasted = lastRecord.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")); //친구의 마지막 활동 시간
+        LocalDateTime lasted = exerciseRecordRepository.findLastRecord(friend).orElseThrow(); //예외 처리 예정
 
         //친구 관계 확인
         Boolean isFriend = false;
