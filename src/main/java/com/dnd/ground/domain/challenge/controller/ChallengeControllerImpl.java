@@ -19,8 +19,8 @@ import java.util.List;
  * @description 챌린지와 관련된 컨트롤러 구현체
  * @author  박찬호
  * @since   2022-08-01
- * @updated 1. 챌린지 상세 조회 기능 구현
- *          - 2022.08.17 박찬호
+ * @updated 1. API 명세 수정
+ *          - 2022.08.18 박찬호
  */
 
 @Api(tags = "챌린지")
@@ -75,8 +75,8 @@ public class ChallengeControllerImpl implements ChallengeController {
     }
 
     @GetMapping("/detail")
+    @Operation(summary = "챌린지 상세 정보 조회", description = "챌린지와 관련된 정보 + 랭킹 관련 정보 + 개인 기록 정보")
     public ResponseEntity<ChallengeResponseDto.Detail> getDetailProgressChallenge(@ModelAttribute ChallengeRequestDto.CInfo requestDto) {
         return ResponseEntity.ok().body(challengeService.getDetailProgress(requestDto));
     }
-
 }

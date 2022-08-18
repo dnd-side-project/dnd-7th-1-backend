@@ -16,8 +16,8 @@ import java.util.List;
  * @description 챌린지와 관련한 Response DTO
  * @author  박찬호
  * @since   2022-08-12
- * @updated 1. 챌린지 상세 조회 기능 구현을 위한 Detail 메소드 생성
- *          - 2022.08.17 박찬호
+ * @updated 1. API 명세 수정
+ *          - 2022.08.18 박찬호
  */
 
 
@@ -27,10 +27,10 @@ public class ChallengeResponseDto {
     @Data
     @AllArgsConstructor
     static public class CInfoRes {
-        @ApiModelProperty(value="챌린지 이름", example="챌린지A")
+        @ApiModelProperty(value="챌린지 이름", example="챌린지1")
         private String name;
 
-        @ApiModelProperty(value="챌린지 이름", example="챌린지A")
+        @ApiModelProperty(value="챌린지 시작 날짜", example="2022-08-18")
         private LocalDate started;
     }
 
@@ -39,7 +39,7 @@ public class ChallengeResponseDto {
     @AllArgsConstructor
     @Builder
     static public class Wait {
-        @ApiModelProperty(value="챌린지 이름", example="챌린지A")
+        @ApiModelProperty(value="챌린지 이름", example="챌린지1")
         private String name;
 
         @ApiModelProperty(value="챌린지 시작 날짜", example="2022-08-12")
@@ -54,7 +54,7 @@ public class ChallengeResponseDto {
         @ApiModelProperty(value="챌린지를 수락한 인원(주최자 포함)", example="2")
         private Integer readyCount;
 
-        @ApiModelProperty(value="챌린지 색깔", example="Red")
+        @ApiModelProperty(value="챌린지 색깔(Red, Pink, Yellow)", example="Red")
         private ChallengeColor color;
     }
 
@@ -62,7 +62,7 @@ public class ChallengeResponseDto {
     @Data
     @Builder
     static public class Progress {
-        @ApiModelProperty(value="챌린지 이름", example="챌린지A")
+        @ApiModelProperty(value="챌린지 이름", example="챌린지1")
         private String name;
 
         @ApiModelProperty(value="챌린지 시작 날짜", example="2022-08-15")
@@ -82,7 +82,7 @@ public class ChallengeResponseDto {
     @Data
     @Builder
     static public class Done {
-        @ApiModelProperty(value="챌린지 이름", example="챌린지A")
+        @ApiModelProperty(value="챌린지 이름", example="챌린지1")
         private String name;
 
         @ApiModelProperty(value="챌린지 시작 날짜", example="2022-08-15")
@@ -118,35 +118,35 @@ public class ChallengeResponseDto {
     @Data
     @Builder
     static public class Detail {
-        @ApiModelProperty(value="회원 닉네임", example="NickA", dataType = "String", notes="회원 닉네임")
+        @ApiModelProperty(value="챌린지 이름", example="챌린지1")
         private String name;
 
-        @ApiModelProperty(value="챌린지 종류", example="Widen", dataType = "String", notes="일주일 챌린지 종류")
+        @ApiModelProperty(value="챌린지 종류(영역:Widen || 칸:Accumulate)", example="Widen")
         private ChallengeType type;
 
-        @ApiModelProperty(value="챌린지 색상", example="Pink", dataType = "String", notes="회원-챌린지 색상")
+        @ApiModelProperty(value="챌린지 색상(Red, Pink, Yellow)", example="Pink")
         private ChallengeColor color;
 
-        @ApiModelProperty(value="챌린지 시작 날짜", example="2022-08-17", dataType = "LocalDate", notes="챌린지 시작 날짜")
+        @ApiModelProperty(value="챌린지 시작 날짜", example="2022-08-17")
         private LocalDate started;
 
         @ApiModelProperty(value="챌린지 종료 날짜", example="2022-08-21", dataType = "LocalDate", notes="챌린지 종료 날짜(일요일)")
         private LocalDate ended;
 
-        @ApiModelProperty(value="영역 정보", example="[{\"latitude\": 1.0,\"longitude\": 1.0}]", dataType = "Array[double, double]", notes="영역 정보 배열")
+        @ApiModelProperty(value="영역 정보", example="[{\"latitude\": 1.0,\"longitude\": 1.0}]")
         private List<MatrixDto> matrices;
 
-        @ApiModelProperty(value="랭킹 정보", example="[{\"rank\": 1, \"nickname\": \"NickB\", \"score\": 4}]", dataType = "Array[int, String, int]", notes="랭킹 정보")
+        @ApiModelProperty(value="랭킹 정보", example="[{\"rank\": 1, \"nickname\": \"NickB\", \"score\": 4}]")
         private List<UserResponseDto.Ranking> rankings;
 
         //내 기록
-        @ApiModelProperty(value="거리", example="100", dataType = "int", notes="일주일 동안 기록들의 거리 합")
+        @ApiModelProperty(value="거리", example="100")
         private Integer distance;
 
-        @ApiModelProperty(value="운동 시간", example="15", dataType = "int", notes="일주일 동안 기록 시간 합 (단위: 초)")
+        @ApiModelProperty(value="운동 시간", example="15")
         private Integer exerciseTime;
 
-        @ApiModelProperty(value="걸음 수", example="15", dataType = "int", notes="일주일 동안 기록의 걸음 수 합")
+        @ApiModelProperty(value="걸음 수", example="15")
         private Integer stepCount;
     }
 

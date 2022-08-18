@@ -4,9 +4,11 @@ import com.dnd.ground.domain.challenge.ChallengeColor;
 import com.dnd.ground.domain.challenge.dto.ChallengeResponseDto;
 import com.dnd.ground.domain.matrix.dto.MatrixDto;
 import com.dnd.ground.domain.user.User;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -17,7 +19,8 @@ import java.util.List;
  *              4. 랭킹 정보
  * @author  박세헌, 박찬호
  * @since   2022-08-08
- * @updated 상세 지도 보는 클래스 생성 - 2022-08-17 박세헌
+ * @updated 1. API 명세 수정
+ *          - 2022.08.18 박찬호
  */
 
 @Data
@@ -55,13 +58,14 @@ public class UserResponseDto {
         @ApiModelProperty(value = "친구 닉네임", example = "NickA")
         private String nickname;
 
-        @ApiModelProperty(value = "친구의 마지막 접속 시간", example = "2022-08-16 17:40")
-        private String lasted;
+        @ApiModelProperty(value = "친구의 마지막 접속 시간", example = "2022-08-18T18:10:43.78")
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss", timezone = "Asia/Seoul")
+        private LocalDateTime lasted;
 
         @ApiModelProperty(value = "친구의 소개 메시지", example = "친구의 소개 메시지 예시입니다.")
         private String intro;
 
-        @ApiModelProperty(value = "회원과 친구 관계인지 나타내는 Boolean", example = "true or false")
+        @ApiModelProperty(value = "회원과 친구 관계인지 나타내는 Boolean", example = "true")
         private Boolean isFriend;
 
         @ApiModelProperty(value = "이번 주 영역 개수", example = "9")
@@ -74,26 +78,26 @@ public class UserResponseDto {
         private Integer rank;
 
         @ApiModelProperty(value = "회원과 함께 하는 챌린지 리스트"
-                , example = "[\"name\": \"챌린지1\", \"started\": \"2022-08-14\", \"ended\": \"2022-08-14\", \"rank\": 1]")
-        List<ChallengeResponseDto.Progress> challenges; // Progress로 들어가면 필요 없는게 너무 많이 들어갈듯 ;
+                , example = "[{\"name\": \"챌린지1\", \"started\": \"2022-08-16\", \"ended\": \"2022-08-21\", \"rank\": 1, \"color\": \"Red\"}]")
+        List<ChallengeResponseDto.Progress> challenges;
     }
 
     /*회원의 영역 정보 관련 DTO*/
     @Data
     static public class UserMatrix {
-        @ApiModelProperty(value = "닉네임", example = "NickA", required = true)
+        @ApiModelProperty(value = "닉네임", example = "NickA")
         private String nickname;
 
-        @ApiModelProperty(value = "현재 나의 영역", example = "77", required = true)
+        @ApiModelProperty(value = "현재 나의 영역", example = "77")
         private Long matricesNumber;
 
-        @ApiModelProperty(value = "유저의 마지막 위치 - 위도", example = "37.123123")
+        @ApiModelProperty(value = "유저의 마지막 위치 - 위도", example = "37.330436")
         private Double latitude;
 
-        @ApiModelProperty(value = "유저의 마지막 위치 - 경도", example = "127.123123")
+        @ApiModelProperty(value = "유저의 마지막 위치 - 경도", example = "-122.030216")
         private Double longitude;
 
-        @ApiModelProperty(value = "칸 꼭지점 위도, 경도 리스트", required = true)
+        @ApiModelProperty(value = "칸 꼭지점 위도, 경도 리스트", example = "[{\"latitude\": 37.330436, \"longitude\": -122.030216}]")
         private List<MatrixDto> matrices;
 
         //생성자
@@ -121,10 +125,10 @@ public class UserResponseDto {
         @ApiModelProperty(value = "닉네임", example = "NickB", required = true)
         private String nickname;
 
-        @ApiModelProperty(value = "친구의 마지막 위치 - 위도", example = "37.123123")
+        @ApiModelProperty(value = "친구의 마지막 위치 - 위도", example = "37.330436")
         private Double latitude;
 
-        @ApiModelProperty(value = "친구의 마지막 위치 - 경도", example = "127.123123")
+        @ApiModelProperty(value = "친구의 마지막 위치 - 경도", example = "-122.030216")
         private Double longitude;
 
         @ApiModelProperty(value = "칸 꼭지점 위도, 경도 리스트", required = true)
@@ -151,7 +155,7 @@ public class UserResponseDto {
         @ApiModelProperty(value = "챌린지를 같이 하는 사람의 마지막 위치 - 경도", example = "127.123123", required = true)
         private Double longitude;
 
-        @ApiModelProperty(value = "칸 꼭지점 위도, 경도 리스트", required = true)
+        @ApiModelProperty(value = "칸 꼭지점 위도, 경도 리스트", example = "[{\"latitude\": 37.330436, \"longitude\": -122.030216}]",  required = true)
         private List<MatrixDto> matrices;
     }
 
@@ -179,7 +183,7 @@ public class UserResponseDto {
         @ApiModelProperty(value = "사용자의 마지막 위치(경도)", example = "127.123123", required = true)
         private Double longitude;
 
-        @ApiModelProperty(value = "칸 꼭지점 위도, 경도 리스트", required = true)
+        @ApiModelProperty(value = "칸 꼭지점 위도, 경도 리스트", example = "[{\"latitude\": 37.330436, \"longitude\": -122.030216}]",required = true)
         private List<MatrixDto> matrices;
     }
 }

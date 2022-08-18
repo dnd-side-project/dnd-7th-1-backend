@@ -34,8 +34,10 @@ import java.util.*;
  * @description 유저 서비스 클래스
  * @author  박세헌, 박찬호
  * @since   2022-08-01
- * @updated 1. matrixRanking함수 파라미터 변경
- *          2. 활동 기록의 운동 시간 1분 미만 이면 초로 변환
+
+ * @updated 1. API 명세 수정
+ * @updated 2. matrixRanking함수 파라미터 변경
+ *          32. 활동 기록의 운동 시간 1분 미만 이면 초로 변환
  *          - 2022.08.18 박세헌
  */
 
@@ -174,8 +176,7 @@ public class UserServiceImpl implements UserService{
         User friend = userRepository.findByNickname(friendNickname).orElseThrow(); //예외 처리 예정
 
         //마지막 활동 시간
-        LocalDateTime lastRecord = exerciseRecordRepository.findLastRecord(friend).orElseThrow(); //예외 처리 예정
-        String lasted = lastRecord.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")); //친구의 마지막 활동 시간
+        LocalDateTime lasted = exerciseRecordRepository.findLastRecord(friend).orElseThrow(); //예외 처리 예정
 
         //친구 관계 확인
         Boolean isFriend = false;
