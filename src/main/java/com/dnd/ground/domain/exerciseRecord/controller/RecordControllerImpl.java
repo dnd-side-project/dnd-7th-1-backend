@@ -45,7 +45,10 @@ public class RecordControllerImpl implements RecordController{
     }
 
     @GetMapping("/rank/step")
-    @Operation(summary = "걸음수 랭킹", description = "해당 유저를 기준으로 start-end(기간) 사이 걸음수가 높은 순서대로 유저와 친구들을 조회")
+    @Operation(summary = "걸음수 랭킹",
+            description = "해당 유저를 기준으로 start-end(기간) 사이 걸음수가 높은 순서대로 유저와 친구들을 조회\n" +
+                    "start: 해당 주 월요일 00시 00분 00초\n" +
+                    "end: 해당 주 일요일 23시 59분 59초")
     public ResponseEntity<RankResponseDto.Step> matrixRank(@RequestBody UserRequestDto.LookUp requestDto){
         return ResponseEntity.ok(exerciseRecordService.stepRanking(requestDto.getNickname(), requestDto.getStart(), requestDto.getEnd()));
     }

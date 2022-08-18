@@ -14,13 +14,13 @@ import java.util.List;
  * @description 운동 영역 서비스 인터페이스
  * @author  박세헌
  * @since   2022-08-01
- * @updated matrixRanking함수 파라미터 변경(nickname -> user)
+ * @updated matrixRanking함수 파라미터 변경
  *          - 2022.08.18 박세헌
  */
 
 public interface MatrixService {
     Matrix save(Matrix matrix);
-    RankResponseDto.Matrix matrixRanking(User user, LocalDateTime start, LocalDateTime end);
+    RankResponseDto.Matrix matrixRanking(String nickname);
     RankResponseDto.Area areaRanking(String nickname, LocalDateTime start, LocalDateTime end);
     RankResponseDto.Area challengeRank(Challenge challenge, LocalDateTime start, LocalDateTime end);
 

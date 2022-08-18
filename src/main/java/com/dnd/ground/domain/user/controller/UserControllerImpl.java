@@ -37,8 +37,8 @@ public class UserControllerImpl implements UserController {
 
     @GetMapping("/home")
     @Operation(summary = "홈 화면 조회",
-            description = "닉네임을 통해 홈화면에 필요한 유저 정보(userMatrices), " +
-                    "나와 챌린지를 안하는 친구 정보(friendMatrices, 리스트), " +
+            description = "닉네임을 통해 홈화면에 필요한 유저 정보(userMatrices)\n" +
+                    "나와 챌린지를 안하는 친구 정보(friendMatrices, 리스트)\n" +
                     "나와 챌린지를 하는 유저 정보(challengeMatrices, 리스트) 조회")
     public ResponseEntity<HomeResponseDto> home(@RequestParam("nickname") String nickName){
         return ResponseEntity.ok(userService.showHome(nickName));
@@ -60,7 +60,10 @@ public class UserControllerImpl implements UserController {
     }
 
     @GetMapping("/info/activity")
-    @Operation(summary = "나의 활동 기록 조회", description = "해당 유저의 start-end(기간) 사이 활동기록 조회")
+    @Operation(summary = "나의 활동 기록 조회",
+            description = "해당 유저의 start-end(기간) 사이 활동기록 조회\n" +
+                    "start: 해당 날짜의 00시 00분 00초\n" +
+                    "end: 해당 날짜의 23시 59분 59초")
     public ResponseEntity<ActivityRecordResponseDto> getActivityRecord(@RequestBody UserRequestDto.LookUp requestDto){
         return ResponseEntity.ok().body(userService.getActivityRecord(requestDto.getNickname(), requestDto.getStart(), requestDto.getEnd()));
     }
