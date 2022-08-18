@@ -25,10 +25,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.Tuple;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.TemporalAdjusters;
 import java.util.*;
 
 /**
@@ -377,5 +379,28 @@ public class ChallengeServiceImpl implements ChallengeService {
                 .exerciseTime(exerciseTime)
                 .stepCount(stepCount)
                 .build();
+    }
+
+    /*해당 운동기록이 참여하고 있는 챌린지*/
+    public List<ChallengeResponseDto.CInfoRes> findChallengeByRecord(ExerciseRecord exerciseRecord){
+
+        User user = userRepository.findByExerciseRecord(exerciseRecord).orElseThrow(); // 에외 처리
+
+        LocalDateTime startedTime = exerciseRecord.getStarted();
+        LocalDate startedDate = LocalDate.of(startedTime.getYear(), startedTime.getMonth(), startedTime.getDayOfMonth());
+        LocalDate monday = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+
+        List<Challenge> challenges = challengeRepository.findChallengesBetweenStartAndEnd(user, monday, startedDate);
+        List<ChallengeResponseDto.CInfoRes> cInfoRes = new ArrayList<>();
+
+        challenges.forEach(c -> cInfoRes.add(ChallengeResponseDto.CInfoRes
+                .builder()
+                .name(c.getName())
+                .started(c.getStarted())
+                .ended(c.getStarted().plusDays(7-c.getStarted().getDayOfWeek().getValue()))
+                .color(userChallengeRepository.findChallengeColor(user, c))
+                .build()));
+
+        return cInfoRes;
     }
 }

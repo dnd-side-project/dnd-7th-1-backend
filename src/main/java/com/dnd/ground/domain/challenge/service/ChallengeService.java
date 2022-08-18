@@ -4,6 +4,8 @@ import com.dnd.ground.domain.challenge.ChallengeStatus;
 import com.dnd.ground.domain.challenge.dto.ChallengeCreateRequestDto;
 import com.dnd.ground.domain.challenge.dto.ChallengeRequestDto;
 import com.dnd.ground.domain.challenge.dto.ChallengeResponseDto;
+import com.dnd.ground.domain.exerciseRecord.ExerciseRecord;
+import com.dnd.ground.domain.user.User;
 import org.springframework.http.ResponseEntity;
 
 import java.util.List;
@@ -31,4 +33,6 @@ public interface ChallengeService {
     List<ChallengeResponseDto.Invite> findInviteChallenge(String nickname);
 
     ChallengeResponseDto.Detail getDetailProgress(ChallengeRequestDto.CInfo requestDto);
+
+    List<ChallengeResponseDto.CInfoRes> findChallengeByRecord(ExerciseRecord exerciseRecord);
 }

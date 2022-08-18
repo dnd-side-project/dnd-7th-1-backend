@@ -25,6 +25,7 @@ public class ChallengeResponseDto {
 
     /*상태에 상관 없이 사용되는 챌린지 관련 공통 정보*/
     @Data
+    @Builder
     @AllArgsConstructor
     static public class CInfoRes {
         @ApiModelProperty(value="챌린지 이름", example="챌린지A")
@@ -32,6 +33,12 @@ public class ChallengeResponseDto {
 
         @ApiModelProperty(value="챌린지 이름", example="챌린지A")
         private LocalDate started;
+
+        @ApiModelProperty(value = "챌린지 종료 날짜(시작 날짜 주의 일요일)", example = "2022-08-12")
+        private LocalDate ended;
+
+        @ApiModelProperty(value="챌린지 색깔", example="Red")
+        private ChallengeColor color;
     }
 
     /*진행 대기 중 상태의 챌린지 정보*/

@@ -9,6 +9,7 @@ import com.dnd.ground.domain.challenge.service.ChallengeService;
 import com.dnd.ground.domain.exerciseRecord.ExerciseRecord;
 import com.dnd.ground.domain.exerciseRecord.Repository.ExerciseRecordRepository;
 import com.dnd.ground.domain.exerciseRecord.dto.RecordResponseDto;
+import com.dnd.ground.domain.exerciseRecord.service.ExerciseRecordService;
 import com.dnd.ground.domain.friend.repository.FriendRepository;
 import com.dnd.ground.domain.friend.service.FriendService;
 import com.dnd.ground.domain.matrix.dto.MatrixDto;
@@ -20,14 +21,18 @@ import com.dnd.ground.domain.user.dto.HomeResponseDto;
 import com.dnd.ground.domain.user.dto.RankResponseDto;
 import com.dnd.ground.domain.user.dto.UserResponseDto;
 import com.dnd.ground.domain.user.repository.UserRepository;
+import io.swagger.annotations.ApiModelProperty;
 import lombok.*;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.TemporalAdjusters;
 import java.util.*;
 
 /**
@@ -50,6 +55,7 @@ public class UserServiceImpl implements UserService{
     private final ChallengeRepository challengeRepository;
     private final UserChallengeRepository userChallengeRepository;
     private final ExerciseRecordRepository exerciseRecordRepository;
+    private final ExerciseRecordService exerciseRecordService;
     private final FriendService friendService;
     private final FriendRepository friendRepository;
     private final MatrixRepository matrixRepository;
@@ -288,7 +294,18 @@ public class UserServiceImpl implements UserService{
         Integer exerciseTime = exerciseRecord.getExerciseTime();
         int minute = exerciseTime / 60;
         int second = exerciseTime % 60;
-        String time = Integer.toString(minute) + ":" + Integer.toString(second);
+        String time = "";
+
+        // 10초 미만이라면 앞에 0하나 붙여주기
+        if (Integer.toString(second).length() == 1){
+            time = Integer.toString(minute) + ":0" + Integer.toString(second);
+        }
+        else{
+            time = Integer.toString(minute) + ":" + Integer.toString(second);
+        }
+
+        // 해당 운동 기록이 참여한 챌린지들 조회
+        List<ChallengeResponseDto.CInfoRes> challenges = challengeService.findChallengeByRecord(exerciseRecord);
 
         return RecordResponseDto.EInfo
                 .builder()
@@ -302,6 +319,7 @@ public class UserServiceImpl implements UserService{
                 .stepCount(exerciseRecord.getStepCount())
                 .message(exerciseRecord.getMessage())
                 .matrices(matrixRepository.findMatrixSetByRecord(exerciseRecord))
+                .challenges(challenges)
                 .build();
     }
 
