@@ -55,7 +55,6 @@ public class MatrixServiceImpl implements MatrixService {
 
         // [Tuple(닉네임, 이번주 누적 칸수)] 칸수 기준 내림차순 정렬
         List<Tuple> matrixCount = exerciseRecordRepository.findMatrixCount(userAndFriends, start, end);
-        System.out.println(matrixCount.size());
 
         // 랭킹 계산[랭킹, 닉네임, 칸의 수]
         List<UserResponseDto.Ranking> matrixRankings = calculateMatrixRank(matrixCount, userAndFriends);

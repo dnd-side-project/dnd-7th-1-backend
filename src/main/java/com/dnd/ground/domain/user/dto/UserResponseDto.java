@@ -20,6 +20,7 @@ import java.util.List;
  * @author  박세헌, 박찬호
  * @since   2022-08-08
  * @updated 1. API 명세 수정
+ *          2. UserMatrix 클래스 생성자 수정
  *          - 2022.08.18 박찬호
  */
 
@@ -105,8 +106,8 @@ public class UserResponseDto {
             this.nickname = user.getNickname();
             this.matricesNumber = 0L;
 
-            this.latitude = user.getLatitude();
-            this.longitude = user.getLongitude();
+            this.latitude = 0.0;
+            this.longitude = 0.0;
         }
 
         //수정자 모음
