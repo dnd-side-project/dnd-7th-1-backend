@@ -14,8 +14,8 @@ import java.util.List;
  * @description 챌린지와 관련된 서비스의 역할을 분리한 인터페이스
  * @author  박찬호
  * @since   2022-08-03
- * @updated 1. 챌린지 상세 조회 기능 구현
- *          - 2022.08.17 박찬호
+ * @updated 해당 운동기록이 참여하고 있는 챌린지
+ *          - 2022.08.18 박세헌
  */
 
 public interface ChallengeService {

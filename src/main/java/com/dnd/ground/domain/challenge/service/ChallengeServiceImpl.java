@@ -37,8 +37,8 @@ import java.util.*;
  * @description 챌린지와 관련된 서비스의 역할을 분리한 구현체
  * @author  박찬호
  * @since   2022-08-03
- * @updated 1. 챌린지 상세 조회 기능 구현
- *          - 2022.08.17 박찬호
+ * @updated 해당 운동기록이 참여하고 있는 챌린지
+ *          - 2022.08.18 박세헌
  */
 
 @Slf4j
@@ -393,10 +393,12 @@ public class ChallengeServiceImpl implements ChallengeService {
 
         User user = userRepository.findByExerciseRecord(exerciseRecord).orElseThrow(); // 에외 처리
 
+        // LocalDate 형태로 변환
         LocalDateTime startedTime = exerciseRecord.getStarted();
         LocalDate startedDate = LocalDate.of(startedTime.getYear(), startedTime.getMonth(), startedTime.getDayOfMonth());
         LocalDate monday = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
 
+        // 해당주 월요일 ~ 기록 시간 사이 시작한 챌린지들 조회
         List<Challenge> challenges = challengeRepository.findChallengesBetweenStartAndEnd(user, monday, startedDate);
         List<ChallengeResponseDto.CInfoRes> cInfoRes = new ArrayList<>();
 

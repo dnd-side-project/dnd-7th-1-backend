@@ -15,8 +15,8 @@ import java.util.Optional;
  * @description 챌린지와 관련한 레포지토리
  * @author  박찬호
  * @since   2022-08-03
- * @updated 1. UUID로 챌린지 조회 쿼리의 반환형에 Optional 추가
- *          - 2022.08.17 박찬호
+ * @updated 챌린지 시작 시간이 start~end 사이인 챌린지 조회
+ *          - 2022.08.18 박세헌
  */
 
 public interface ChallengeRepository extends JpaRepository<Challenge, Long> {
