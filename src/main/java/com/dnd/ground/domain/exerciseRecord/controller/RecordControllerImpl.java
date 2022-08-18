@@ -3,19 +3,24 @@ package com.dnd.ground.domain.exerciseRecord.controller;
 import com.dnd.ground.domain.exerciseRecord.dto.EndRequestDto;
 import com.dnd.ground.domain.exerciseRecord.dto.StartResponseDto;
 import com.dnd.ground.domain.exerciseRecord.service.ExerciseRecordService;
+import com.dnd.ground.domain.user.dto.RankResponseDto;
+import com.dnd.ground.domain.user.dto.UserRequestDto;
 import io.swagger.annotations.Api;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.DayOfWeek;
+import java.time.LocalDateTime;
+import java.time.temporal.TemporalAdjusters;
 
 /**
  * @description 기록 컨트롤러 클래스
  * @author  박세헌
  * @since   2022-08-01
- * @updated 2022-08-09 / 기록 중지 api: 박세헌
+ * @updated 2022-08-18 / 기록 api 변경 - 박세헌
  */
 
 @Api(tags = "운동기록")
@@ -27,7 +32,7 @@ public class RecordControllerImpl implements RecordController{
 
     private final ExerciseRecordService exerciseRecordService;
 
-    @PostMapping("/start")
+    @GetMapping("/start")
     @Operation(summary = "기록 시작", description = "기록 시작: 운동기록 생성, 누적영역 조회")
     public ResponseEntity<StartResponseDto> start(@RequestParam("nickname") String nickname){
         return ResponseEntity.ok(exerciseRecordService.recordStart(nickname));
@@ -39,10 +44,12 @@ public class RecordControllerImpl implements RecordController{
         return exerciseRecordService.recordEnd(endRequestDto);
     }
 
-    @PostMapping("/stop")
-    @Operation(summary = "기록 중지", description = "기록 중지: 운동기록 삭제")
-    public ResponseEntity<?> stop(@RequestParam("recordId") Long recordId){
-        exerciseRecordService.delete(recordId);
-        return ResponseEntity.ok(HttpStatus.OK);
+    @GetMapping("/rank/step")
+    @Operation(summary = "걸음수 랭킹",
+            description = "해당 유저를 기준으로 start-end(기간) 사이 걸음수가 높은 순서대로 유저와 친구들을 조회\n" +
+                    "start: 해당 주 월요일 00시 00분 00초\n" +
+                    "end: 해당 주 일요일 23시 59분 59초")
+    public ResponseEntity<RankResponseDto.Step> matrixRank(@RequestBody UserRequestDto.LookUp requestDto){
+        return ResponseEntity.ok(exerciseRecordService.stepRanking(requestDto.getNickname(), requestDto.getStart(), requestDto.getEnd()));
     }
 }

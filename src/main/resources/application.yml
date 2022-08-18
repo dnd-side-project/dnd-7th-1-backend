@@ -13,6 +13,7 @@ spring:
       hibernate:
         format_sql: true
     defer-datasource-initialization: true
+    open-in-view: true
   mvc:
     pathmatch:
       matching-strategy: ant_path_matcher

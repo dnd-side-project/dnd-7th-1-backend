@@ -1,10 +1,7 @@
 package com.dnd.ground.domain.friend.controller;
 
-import com.dnd.ground.domain.challenge.service.ChallengeServiceImpl;
 import com.dnd.ground.domain.friend.dto.FriendResponseDto;
 import com.dnd.ground.domain.friend.service.FriendService;
-import com.dnd.ground.domain.user.User;
-import com.dnd.ground.domain.user.repository.UserRepository;
 import io.swagger.annotations.Api;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
@@ -16,8 +13,8 @@ import org.springframework.web.bind.annotation.*;
  * @description 친구와 관련된 컨트롤러 구현체
  * @author  박찬호
  * @since   2022-08-01
- * @updated 1. 친구 목록 조회 기능 구현
- *          - 2022.08.02 박찬호
+ * @updated 1. API 명세 수정
+ *          - 2022.08.18 박찬호
  */
 
 @Api(tags = "친구")
