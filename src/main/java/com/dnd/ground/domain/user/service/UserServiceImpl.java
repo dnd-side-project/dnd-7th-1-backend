@@ -238,7 +238,7 @@ public class UserServiceImpl implements UserService{
             // 운동 시간 formatting
             Integer exerciseTime = exerciseRecord.getExerciseTime();
             String time = "";
-            System.out.println(exerciseTime);
+
             if (exerciseTime < 60){
                 time = Integer.toString(exerciseTime) + "초";
             }

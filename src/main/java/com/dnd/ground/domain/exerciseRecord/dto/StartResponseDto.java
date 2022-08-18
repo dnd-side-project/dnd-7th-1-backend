@@ -10,16 +10,12 @@ import lombok.Data;
  *              2. (일주일)누적 칸의 수
  * @author  박세헌
  * @since   2022-08-02
- * @updated 2022-08-17 / 누적 영역 필드 Long으로 변경 - 박세헌
+ * @updated 2022-08-18 / 운동 기록 id 삭제 - 박세헌
  */
 
 @Data
 @AllArgsConstructor
 public class StartResponseDto {
-
-    @ApiModelProperty(value="시작시 생성된 운동기록 id", example="1", required = true)
-    private Long recordId;
-
     @ApiModelProperty(value="누적 영역", example="20", required = true)
     private Long areaNumber;
 }
