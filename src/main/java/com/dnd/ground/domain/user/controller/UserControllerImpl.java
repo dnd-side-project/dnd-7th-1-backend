@@ -11,19 +11,16 @@ import io.swagger.annotations.ApiParam;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.time.DayOfWeek;
-import java.time.LocalDateTime;
-import java.time.temporal.TemporalAdjusters;
 
 /**
  * @description 회원 관련 컨트롤러 구현체
  * @author  박세헌, 박찬호
  * @since   2022-08-02
- * @updated nickname, start, end 가진 requestDto 생성
- *          - 2022-08-18 박세헌
+ * @updated 1. 메인 화면 필터 변경 기능 구현
+ *          - 2022-08-18 박찬호
  */
 
 @Api(tags = "유저")
@@ -80,4 +77,21 @@ public class UserControllerImpl implements UserController {
         return ResponseEntity.ok().body(userService.getDetailMap(recordId));
     }
 
+    @PostMapping("filter/mine")
+    @Operation(summary = "필터 변경: 나의 기록 보기", description = "'나의 기록 보기' 옵션이 변경됩니다.(True<->False)")
+    public ResponseEntity<HttpStatus> changeFilterMine(@RequestParam("nickname") String nickname) {
+        return ResponseEntity.status(userService.changeFilterMine(nickname)).build();
+    }
+
+    @PostMapping("filter/friend")
+    @Operation(summary = "필터 변경: 친구 보기", description = "'친구 보기' 옵션이 변경됩니다.(True<->False)")
+    public ResponseEntity<HttpStatus> changeFilterFriend(@RequestParam("nickname") String nickname) {
+        return ResponseEntity.status(userService.changeFilterFriend(nickname)).build();
+    }
+
+    @PostMapping("filter/record")
+    @Operation(summary = "필터 변경: 친구들에게 보이기", description = "'친구들에게 보이기' 옵션이 변경됩니다.(True<->False)")
+    public ResponseEntity<HttpStatus> changeFilterRecord(@RequestParam("nickname") String nickname) {
+        return ResponseEntity.status(userService.changeFilterRecord(nickname)).build();
+    }
 }

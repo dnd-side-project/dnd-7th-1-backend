@@ -4,6 +4,7 @@ import com.dnd.ground.domain.challenge.UserChallenge;
 import com.dnd.ground.domain.exerciseRecord.ExerciseRecord;
 import com.dnd.ground.domain.friend.Friend;
 import lombok.*;
+import org.springframework.http.HttpStatus;
 
 import javax.persistence.*;
 import javax.validation.constraints.Email;
@@ -17,6 +18,7 @@ import java.util.List;
  * @author  박찬호, 박세헌
  * @since   2022.07.28
  * @updated 1. 메인화면 필터 관련 필드 추가
+ *          2. 메인 화면 필터 변경을 위한 수정자 추가
  *          -2022.08.18 박찬호
  */
 
@@ -76,5 +78,21 @@ public class User {
     public void updatePosition(Double latitude, Double longitude) {
         this.latitude = latitude;
         this.longitude = longitude;
+    }
+
+    //필터 변경
+    public HttpStatus changeFilterMine() {
+        this.isShowMine = !this.isShowMine;
+        return HttpStatus.OK;
+    }
+
+    public HttpStatus changeFilterFriend() {
+        this.isShowFriend = !this.isShowFriend;
+        return HttpStatus.OK;
+    }
+
+    public HttpStatus changeFilterRecord() {
+        this.isPublicRecord = !this.isPublicRecord;
+        return HttpStatus.OK;
     }
 }

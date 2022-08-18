@@ -9,7 +9,6 @@ import com.dnd.ground.domain.challenge.service.ChallengeService;
 import com.dnd.ground.domain.exerciseRecord.ExerciseRecord;
 import com.dnd.ground.domain.exerciseRecord.Repository.ExerciseRecordRepository;
 import com.dnd.ground.domain.exerciseRecord.dto.RecordResponseDto;
-import com.dnd.ground.domain.exerciseRecord.service.ExerciseRecordService;
 import com.dnd.ground.domain.friend.repository.FriendRepository;
 import com.dnd.ground.domain.friend.service.FriendService;
 import com.dnd.ground.domain.matrix.dto.MatrixDto;
@@ -24,6 +23,7 @@ import com.dnd.ground.domain.user.repository.UserRepository;
 import lombok.*;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,6 +41,7 @@ import java.util.*;
  *          4. 메인화면 조회 시, 필터에 따른 조회 기능 구현 - 박찬호
  *          5. 운동기록 조회에서 해당 운동 기록이 참여한 챌린지들 추가 - 박세헌
  *          6. 활동 기록의 운동 시간 1분 미만 이면 초로 변환 - 박세헌
+ *          7. 메인 화면 필터 변경 기능 구현 - 박찬호
  *          - 2022.08.18 박세헌
  */
 
@@ -345,6 +346,27 @@ public class UserServiceImpl implements UserService{
 
         return new UserResponseDto.DetailMap(user.getLatitude(),
                 user.getLongitude(), matrices);
+    }
+
+    /*필터 변경: 나의 기록 보기*/
+    @Transactional
+    public HttpStatus changeFilterMine(String nickname) {
+        userRepository.findByNickname(nickname).orElseThrow().changeFilterMine();
+        return HttpStatus.OK;
+    }
+
+    /*필터 변경: 친구 보기*/
+    @Transactional
+    public HttpStatus changeFilterFriend(String nickname) {
+        userRepository.findByNickname(nickname).orElseThrow().changeFilterFriend();
+        return HttpStatus.OK;
+    }
+
+    /*필터 변경: 친구들에게 보이기*/
+    @Transactional
+    public HttpStatus changeFilterRecord(String nickname) {
+        userRepository.findByNickname(nickname).orElseThrow().changeFilterRecord();
+        return HttpStatus.OK;
     }
 
 }
