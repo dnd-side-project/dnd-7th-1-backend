@@ -29,6 +29,7 @@ import java.time.temporal.TemporalAdjusters;
  *          2. 활동 기록 조회 기능 구현
  *          3. 운동 기록에 대한 정보 조회 기능 구현
  *          4. 상세 지도 보기 기능 구현
+ *          5. api 명세 수정
  *          - 2022.08.17 박세헌
  */
 
@@ -43,8 +44,8 @@ public class UserControllerImpl implements UserController {
 
     @GetMapping("/home")
     @Operation(summary = "홈 화면 조회",
-            description = "닉네임을 통해 홈화면에 필요한 유저 정보(userMatrix), " +
-                    "챌린지를 안하는 친구 정보(friendMatrices, 리스트), " +
+            description = "닉네임을 통해 홈화면에 필요한 유저 정보(userMatrices), " +
+                    "나와 챌린지를 안하는 친구 정보(friendMatrices, 리스트), " +
                     "나와 챌린지를 하는 유저 정보(challengeMatrices, 리스트) 조회")
     public ResponseEntity<HomeResponseDto> home(@RequestParam("nickname") String nickName){
         return ResponseEntity.ok(userService.showHome(nickName));
@@ -65,8 +66,8 @@ public class UserControllerImpl implements UserController {
         return ResponseEntity.ok().body(userService.getUserProfile(userNickname, friendNickname));
     }
 
-    @GetMapping("/info/activityRecord")
-    @Operation(summary = "나의 활동 기록 조회", description = "start-end 사이 활동기록 조회(추후 nickname, start, end를 가진 requestDto 생성 예정)")
+    @GetMapping("/info/activity")
+    @Operation(summary = "나의 활동 기록 조회", description = "해당 유저의 start-end(기간) 사이 활동기록 조회(추후 nickname, start, end를 가진 requestDto 생성 예정)")
     public ResponseEntity<ActivityRecordResponseDto> getActivityRecord(@RequestParam("nickname") String nickname){
 
         /* 추후 nickname, start, end를 가진 requestDto 생성 예정 */
@@ -78,14 +79,14 @@ public class UserControllerImpl implements UserController {
         return ResponseEntity.ok().body(userService.getActivityRecord(nickname, start, end));
     }
 
-    @GetMapping("/info/activityRecord/recordInfo")
-    @Operation(summary = "운동 기록 정보", description = "선택한 운동기록에 대한 정보")
+    @GetMapping("/info/activity/record")
+    @Operation(summary = "운동 기록 정보", description = "기록 id를 받아 선택한 운동기록에 대한 정보 조회")
     public ResponseEntity<RecordResponseDto.EInfo> getRecordInfo(@RequestParam("recordId") Long recordId){
         return ResponseEntity.ok().body(userService.getExerciseInfo(recordId));
     }
 
-    @GetMapping("/detail/map")
-    @Operation(summary = "상세 지도", description = "기록 끝 혹은 나의 활동 기록에서 볼 수 있는 해당 기록의 상세 지도")
+    @GetMapping("/info/activity/record/map")
+    @Operation(summary = "상세 지도", description = "기록 id를 받아 나의 활동 기록에서 해당 기록의 상세 지도 조회")
     public ResponseEntity<UserResponseDto.DetailMap> getDetailMap(@RequestParam("recordId") Long recordId){
         return ResponseEntity.ok().body(userService.getDetailMap(recordId));
     }
