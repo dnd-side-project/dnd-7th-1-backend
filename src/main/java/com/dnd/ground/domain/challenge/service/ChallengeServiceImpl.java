@@ -74,6 +74,13 @@ public class ChallengeServiceImpl implements ChallengeService {
 
         //주최자의 챌린지 생성 과정
         int challengeCount = userChallengeRepository.findCountChallenge(master); //참여한 챌린지 개수 (챌린지 상태 상관X)
+
+        //챌린지가 3개 이상이면 챌린지 생성 거부
+        if (challengeCount > 3) {
+            challengeRepository.deleteById(challenge.getId()); //롤백 구현 필요
+            return new ResponseEntity(HttpStatus.BAD_REQUEST); //구체적인 예외처리 필요
+        }
+
         UserChallenge masterChallenge = userChallengeRepository.save(new UserChallenge(challenge, master, color[challengeCount]));
         masterChallenge.changeStatus(ChallengeStatus.Master);
         
