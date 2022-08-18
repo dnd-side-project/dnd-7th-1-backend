@@ -35,8 +35,8 @@ import java.util.*;
  * @description 챌린지와 관련된 서비스의 역할을 분리한 구현체
  * @author  박찬호
  * @since   2022-08-03
- * @updated 1. 챌린지 상세 조회 기능 구현
- *          - 2022.08.17 박찬호
+ * @updated 1. 챌린지 조회 시, 종류에 따른 랭킹 계산 반영
+ *          - 2022.08.18 박찬호
  */
 
 @Slf4j
@@ -227,12 +227,27 @@ public class ChallengeServiceImpl implements ChallengeService {
             LocalDate started = challenge.getStarted(); //챌린지 시작 날짜
 
             //해당 회원의 랭킹 추출
-            RankResponseDto.Area rankList = matrixService.challengeRank(challenge, started.atStartOfDay(), LocalDateTime.now());
+            if (challenge.getType() == ChallengeType.Widen) {
+                RankResponseDto.Area rankList = matrixService.challengeRank(challenge, started.atStartOfDay(), LocalDateTime.now());
 
-            for (UserResponseDto.Ranking ranking : rankList.getAreaRankings()) {
-                if (ranking.getNickname().equals(nickname)) {
-                    rank = ranking.getRank();
-                    break;
+                for (UserResponseDto.Ranking ranking : rankList.getAreaRankings()) {
+                    if (ranking.getNickname().equals(nickname)) {
+                        rank = ranking.getRank();
+                        break;
+                    }
+                }
+            }
+            else if (challenge.getType() == ChallengeType.Accumulate) {
+                //챌린지를 함께 진행하는 회원 목록
+                List<User> member = userChallengeRepository.findChallengeUsers(challenge);
+                //기록 조회
+                List<Tuple> matrixCount = exerciseRecordRepository.findMatrixCount(member, started.atStartOfDay(), LocalDateTime.now());
+                //랭킹 계산
+                for (UserResponseDto.Ranking ranking : matrixService.calculateMatrixRank(matrixCount, member)) {
+                    if (ranking.getNickname().equals(nickname)) {
+                        rank=ranking.getRank();
+                        break;
+                    }
                 }
             }
 
@@ -262,13 +277,28 @@ public class ChallengeServiceImpl implements ChallengeService {
             Integer rank = -1; //랭킹
             LocalDate started = challenge.getStarted(); //챌린지 시작 날짜
 
-            //해당 회원의 랭킹 추출
-            RankResponseDto.Area rankList = matrixService.challengeRank(challenge, started.atStartOfDay(), LocalDateTime.now());
+            //해당 회원(친구)의 랭킹 추출
+            if (challenge.getType() == ChallengeType.Widen) {
+                RankResponseDto.Area rankList = matrixService.challengeRank(challenge, started.atStartOfDay(), LocalDateTime.now());
 
-            for (UserResponseDto.Ranking ranking : rankList.getAreaRankings()) {
-                if (ranking.getNickname().equals(friendNickname)) {
-                    rank = ranking.getRank();
-                    break;
+                for (UserResponseDto.Ranking ranking : rankList.getAreaRankings()) {
+                    if (ranking.getNickname().equals(friendNickname)) {
+                        rank = ranking.getRank();
+                        break;
+                    }
+                }
+            }
+            else if (challenge.getType() == ChallengeType.Accumulate) {
+                //챌린지를 함께 진행하는 회원 목록
+                List<User> member = userChallengeRepository.findChallengeUsers(challenge);
+                //기록 조회
+                List<Tuple> matrixCount = exerciseRecordRepository.findMatrixCount(member, started.atStartOfDay(), LocalDateTime.now());
+                //랭킹 계산
+                for (UserResponseDto.Ranking ranking : matrixService.calculateMatrixRank(matrixCount, member)) {
+                    if (ranking.getNickname().equals(friendNickname)) {
+                        rank=ranking.getRank();
+                        break;
+                    }
                 }
             }
 
