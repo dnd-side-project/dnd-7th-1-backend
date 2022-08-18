@@ -14,9 +14,8 @@ import java.util.List;
  *              2. 활동 기록 response Dto
  * @author  박세헌, 박찬호
  * @since   2022-08-16
- * @updated 1. api명세 수정
- *          2. started, ended, exerciseTime 필드 string으로 formatting
- *          - 2020-08-17 박세헌
+ * @updated 운동 시작 시간, 끝 시간 날짜 분리
+ *          - 2022-08-18 박세헌
  */
 
 @Data
@@ -27,10 +26,13 @@ public class RecordResponseDto {
         @ApiModelProperty(value = "운동기록 id", example = "1")
         private Long recordId;
 
-        @ApiModelProperty(value="운동 기록 시작 시간", example="12월 25일 토요일 18:04")
+        @ApiModelProperty(value = "해당 기록의 날짜", example = "07월 25일 토요일")
+        private String date;
+
+        @ApiModelProperty(value="운동 기록 시작 시간", example="18:04")
         private String started;
 
-        @ApiModelProperty(value="운동 기록 끝 시간", example="12월 25일 토요일 18:07")
+        @ApiModelProperty(value="운동 기록 끝 시간", example="18:07")
         private String ended;
 
         @ApiModelProperty(value="해당 기록의 채운 칸의 수", example="9")
