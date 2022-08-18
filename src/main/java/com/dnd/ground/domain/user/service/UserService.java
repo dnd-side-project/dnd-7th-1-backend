@@ -1,19 +1,33 @@
 package com.dnd.ground.domain.user.service;
 
+import com.dnd.ground.domain.exerciseRecord.dto.RecordResponseDto;
 import com.dnd.ground.domain.user.User;
+import com.dnd.ground.domain.user.dto.ActivityRecordResponseDto;
 import com.dnd.ground.domain.user.dto.HomeResponseDto;
-import com.dnd.ground.domain.user.dto.RankResponseDto;
+import com.dnd.ground.domain.user.dto.UserResponseDto;
+import org.springframework.http.HttpStatus;
+
+import java.time.LocalDateTime;
 
 /**
- * @description 유저 서비스 인터페이스
+ * @description 회원 서비스 인터페이스
  * @author  박세헌, 박찬호
  * @since   2022-08-01
- * @updated 2022-08-09 / 랭킹 관련 함수 추가: 박세헌
+ * @updated 1. 메인 화면 필터 변경 기능 구현
+ *          -2022.08.18 박찬호
  */
 
 public interface UserService {
     User save(User user);
     HomeResponseDto showHome(String nickname);
-    RankResponseDto.matrixRankingResponseDto matrixRanking(String nickname);
-    RankResponseDto.areaRankingResponseDto areaRanking(String nickname);
+    UserResponseDto.UInfo getUserInfo(String nickname);
+
+    UserResponseDto.Profile getUserProfile(String userNickname, String friendNickname);
+    ActivityRecordResponseDto getActivityRecord(String nickname, LocalDateTime start, LocalDateTime end);
+    RecordResponseDto.EInfo getExerciseInfo(Long exerciseId);
+    UserResponseDto.DetailMap getDetailMap(Long recordId);
+
+    HttpStatus changeFilterMine(String nickname);
+    HttpStatus changeFilterFriend(String nickname);
+    HttpStatus changeFilterRecord(String nickname);
 }

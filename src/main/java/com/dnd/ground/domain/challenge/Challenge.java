@@ -4,6 +4,7 @@ import lombok.*;
 
 import javax.persistence.*;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -11,9 +12,8 @@ import java.util.List;
  * @description 챌린지 엔티티
  * @author  박찬호
  * @since   2022-07-26
- * @updated 1.type 필드 추가(챌린지 종류)
- *          2.챌린지 상태 업데이트 메소드 추가(updateStatus())
- *          - 2022-08-09 박찬호
+ * @updated 1.챌린지 색깔 필드 삭제
+ *          - 2022-08-16 박찬호
  */
 
 @Getter
@@ -38,11 +38,12 @@ public class Challenge {
     @Column(name = "challenge_started", nullable = false)
     private LocalDate started;
 
+    @Column(name = "challenge_created", nullable = false)
+    @Builder.Default
+    private LocalDateTime created = LocalDateTime.now();
+
     @Column(name = "challenge_message", nullable = false)
     private String message;
-
-    @Column(name = "challenge_color", nullable = false)
-    private String color;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "challenge_status", nullable = false)
@@ -57,12 +58,11 @@ public class Challenge {
     private List<UserChallenge> users = new ArrayList<>();
 
     @Builder(builderMethodName = "create")
-    public Challenge(String name, String uuid, LocalDate started, String message, String color, ChallengeType type) {
+    public Challenge(String name, String uuid, LocalDate started, String message, ChallengeType type) {
         this.uuid = uuid;
         this.name = name;
         this.started = started;
         this.message = message;
-        this.color = color;
         this.type = type;
     }
 
