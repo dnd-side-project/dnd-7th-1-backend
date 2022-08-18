@@ -9,19 +9,16 @@ import java.util.List;
 
 /**
  * @description 기록 끝 Request Dto
- *              1. 운동기록 id
- *              2. matrix 정보
- *              3. 거리
  * @author  박세헌
  * @since   2022-08-02
- * @updated 2022-08-17 / api 명세 수정 - 박세헌
+ * @updated 2022-08-18 / recordId 삭제, nickname 추가 - 박세헌
  */
 
 @Data
 public class EndRequestDto {
 
-    @ApiModelProperty(value="시작할때 넘겨준 운동기록 id", example="1", required = true)
-    private Long recordId;
+    @ApiModelProperty(name = "유저의 닉네임", example = "NickA")
+    private String nickname;
 
     @ApiModelProperty(value="거리", example="100", required = true)
     private Integer distance;

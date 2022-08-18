@@ -24,12 +24,13 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * @description 운동 기록 서비스 클래스
  * @author  박세헌, 박찬호
  * @since   2022-08-01
- * @updated 2022-08-17 / 누적 영역 필드 Long으로 변경 - 박세헌
+ * @updated 2022-08-17 / 기록 api 변경(기록 끝일때 새로운 운동 기록 생성) - 박세헌
  */
 
 @Service
@@ -52,24 +53,22 @@ public class ExerciseRecordServiceImpl implements ExerciseRecordService {
     @Transactional
     public StartResponseDto recordStart(String nickname) {
         User user = userRepository.findByNickname(nickname).orElseThrow();  // 예외 처리
-        ExerciseRecord exerciseRecord = new ExerciseRecord(user, LocalDateTime.now());
-        exerciseRecordRepository.save(exerciseRecord);
         List<ExerciseRecord> recordOfThisWeek = exerciseRecordRepository.findRecordOfThisWeek(user.getId());
         if (recordOfThisWeek.isEmpty()) {
-            return new StartResponseDto(exerciseRecord.getId(), 0L);
+            return new StartResponseDto(0L);
         }
 
-        return new StartResponseDto(exerciseRecord.getId(),
-                (long) matrixRepository.findMatrixSetByRecords(recordOfThisWeek).size());
+        return new StartResponseDto((long) matrixRepository.findMatrixSetByRecords(recordOfThisWeek).size());
     }
 
     // 기록 끝
     @Transactional
     public ResponseEntity<?> recordEnd(EndRequestDto endRequestDto) {
-        //기록 조회
-        ExerciseRecord exerciseRecord = exerciseRecordRepository.findById(endRequestDto.getRecordId()).orElseThrow(); // 예외 처리
+        // 유저 찾아서 운동 기록 생성
+        User user = userRepository.findByNickname(endRequestDto.getNickname()).orElseThrow(); // 예외처리
+        ExerciseRecord exerciseRecord = new ExerciseRecord(user, LocalDateTime.now());
 
-        // 정보 update(ended, 거리, 걸음수, 운동시간)
+        // 정보 update(ended, 거리, 걸음수, 운동시간, 상세 기록)
         exerciseRecord.updateInfo(endRequestDto.getDistance(), endRequestDto.getStepCount(),
                 endRequestDto.getExerciseTime(), endRequestDto.getMessage());
 

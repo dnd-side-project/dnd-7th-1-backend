@@ -20,7 +20,7 @@ import java.time.temporal.TemporalAdjusters;
  * @description 기록 컨트롤러 클래스
  * @author  박세헌
  * @since   2022-08-01
- * @updated 2022-08-17 / api 명세 수정 - 박세헌
+ * @updated 2022-08-18 / 기록 api 변경 - 박세헌
  */
 
 @Api(tags = "운동기록")
@@ -32,7 +32,7 @@ public class RecordControllerImpl implements RecordController{
 
     private final ExerciseRecordService exerciseRecordService;
 
-    @PostMapping("/start")
+    @GetMapping("/start")
     @Operation(summary = "기록 시작", description = "기록 시작: 운동기록 생성, 누적영역 조회")
     public ResponseEntity<StartResponseDto> start(@RequestParam("nickname") String nickname){
         return ResponseEntity.ok(exerciseRecordService.recordStart(nickname));
