@@ -6,6 +6,7 @@ import com.dnd.ground.domain.user.dto.ActivityRecordResponseDto;
 import com.dnd.ground.domain.user.dto.HomeResponseDto;
 import com.dnd.ground.domain.user.dto.UserResponseDto;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 
 import java.time.LocalDateTime;
 
@@ -30,4 +31,6 @@ public interface UserService {
     HttpStatus changeFilterMine(String nickname);
     HttpStatus changeFilterFriend(String nickname);
     HttpStatus changeFilterRecord(String nickname);
+
+    ResponseEntity<?> editRecordMessage(Long recordId, String message);
 }

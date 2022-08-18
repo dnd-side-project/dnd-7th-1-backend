@@ -24,6 +24,7 @@ import lombok.*;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,6 +43,7 @@ import java.util.*;
  *          5. 운동기록 조회에서 해당 운동 기록이 참여한 챌린지들 추가 - 박세헌
  *          6. 활동 기록의 운동 시간 1분 미만 이면 초로 변환 - 박세헌
  *          7. 메인 화면 필터 변경 기능 구현 - 박찬호
+ *          8  운동 기록 메시지 수정 기능 - 박세헌
  *          - 2022.08.18 박세헌
  */
 
@@ -369,4 +371,12 @@ public class UserServiceImpl implements UserService{
         return HttpStatus.OK;
     }
 
+    /* 운동 기록의 상세 메시지 수정 */
+    @Transactional
+    public ResponseEntity<?> editRecordMessage(Long recordId, String message){
+        ExerciseRecord exerciseRecord = exerciseRecordRepository.findById(recordId).orElseThrow(); // 예외 처리
+        exerciseRecord.editMessage(message);
+        exerciseRecordRepository.save(exerciseRecord);
+        return new ResponseEntity(HttpStatus.OK);
+    }
 }

@@ -1,5 +1,6 @@
 package com.dnd.ground.domain.user.controller;
 
+import com.dnd.ground.domain.exerciseRecord.dto.RecordRequestDto;
 import com.dnd.ground.domain.exerciseRecord.dto.RecordResponseDto;
 import com.dnd.ground.domain.user.dto.ActivityRecordResponseDto;
 import com.dnd.ground.domain.user.dto.HomeResponseDto;
@@ -21,6 +22,8 @@ import org.springframework.web.bind.annotation.*;
  * @since   2022-08-02
  * @updated 1. 메인 화면 필터 변경 기능 구현
  *          - 2022-08-18 박찬호
+ *          1. 프로필, 운동기록 메시지 수정 api
+ *          - 2022-08-18 박세헌
  */
 
 @Api(tags = "유저")
@@ -93,5 +96,17 @@ public class UserControllerImpl implements UserController {
     @Operation(summary = "필터 변경: 친구들에게 보이기", description = "'친구들에게 보이기' 옵션이 변경됩니다.(True<->False)")
     public ResponseEntity<HttpStatus> changeFilterRecord(@RequestParam("nickname") String nickname) {
         return ResponseEntity.status(userService.changeFilterRecord(nickname)).build();
+    }
+
+    @PostMapping("/info/profile/edit")
+    public ResponseEntity<?> editUserProfile(@RequestBody UserRequestDto.Profile requestDto){
+        /* 닉네임이 비어있을때 예외 처리 필요 */
+        /* 닉네임이 중복일때 예외 처리 필요 */
+        return ResponseEntity.ok(HttpStatus.OK);
+    }
+
+    @GetMapping("/info/activity/record/edit")
+    public ResponseEntity<?> getDetailMap(@RequestBody RecordRequestDto.Message requestDto){
+        return userService.editRecordMessage(requestDto.getRecordId(), requestDto.getMessage());
     }
 }
