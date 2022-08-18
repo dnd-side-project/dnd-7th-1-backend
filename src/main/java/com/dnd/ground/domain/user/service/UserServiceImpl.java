@@ -34,8 +34,11 @@ import java.util.*;
  * @description 유저 서비스 클래스
  * @author  박세헌, 박찬호
  * @since   2022-08-01
+
  * @updated 1. API 명세 수정
- *          - 2022.08.18 박찬호
+ * @updated 2. matrixRanking함수 파라미터 변경
+ *          32. 활동 기록의 운동 시간 1분 미만 이면 초로 변환
+ *          - 2022.08.18 박세헌
  */
 
 @Slf4j
@@ -188,7 +191,7 @@ public class UserServiceImpl implements UserService{
         Long allMatrixNumber = -1L;
         Long areas = -1L;
 
-        RankResponseDto.Matrix matrixRanking = matrixService.matrixRanking(friendNickname, friend.getCreated(), LocalDateTime.now());
+        RankResponseDto.Matrix matrixRanking = matrixService.matrixRanking(friendNickname);
 
         //역대 누적 칸수 및 랭킹 정보
         for (UserResponseDto.Ranking allRankInfo: matrixRanking.getMatrixRankings()) {
@@ -235,8 +238,14 @@ public class UserServiceImpl implements UserService{
 
             // 운동 시간 formatting
             Integer exerciseTime = exerciseRecord.getExerciseTime();
-            int minute = exerciseTime / 60;
-            String time = Integer.toString(minute) + "분";
+            String time = "";
+            System.out.println(exerciseTime);
+            if (exerciseTime < 60){
+                time = Integer.toString(exerciseTime) + "초";
+            }
+            else{
+                time = Integer.toString(exerciseTime / 60) + "분";
+            }
 
             activityRecords.add(RecordResponseDto.activityRecord
                     .builder()
@@ -272,8 +281,9 @@ public class UserServiceImpl implements UserService{
         ExerciseRecord exerciseRecord = exerciseRecordRepository.findById(exerciseId).orElseThrow();  // 예외 처리
 
         // 운동 시작, 끝 시간 formatting
-        String started = exerciseRecord.getStarted().format(DateTimeFormatter.ofPattern("MM월 dd일 E요일 HH:mm"));
-        String ended = exerciseRecord.getEnded().format(DateTimeFormatter.ofPattern("MM월 dd일 E요일 HH:mm"));
+        String date = exerciseRecord.getStarted().format(DateTimeFormatter.ofPattern("MM월 dd일 E요일"));
+        String started = exerciseRecord.getStarted().format(DateTimeFormatter.ofPattern("HH:mm"));
+        String ended = exerciseRecord.getEnded().format(DateTimeFormatter.ofPattern("HH:mm"));
 
         // 운동 시간 formatting
         Integer exerciseTime = exerciseRecord.getExerciseTime();
@@ -284,6 +294,7 @@ public class UserServiceImpl implements UserService{
         return RecordResponseDto.EInfo
                 .builder()
                 .recordId(exerciseRecord.getId())
+                .date(date)
                 .started(started)
                 .ended(ended)
                 .matrixNumber((long) exerciseRecord.getMatrices().size())

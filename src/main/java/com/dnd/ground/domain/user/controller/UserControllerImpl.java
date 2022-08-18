@@ -3,6 +3,7 @@ package com.dnd.ground.domain.user.controller;
 import com.dnd.ground.domain.exerciseRecord.dto.RecordResponseDto;
 import com.dnd.ground.domain.user.dto.ActivityRecordResponseDto;
 import com.dnd.ground.domain.user.dto.HomeResponseDto;
+import com.dnd.ground.domain.user.dto.UserRequestDto;
 import com.dnd.ground.domain.user.dto.UserResponseDto;
 import com.dnd.ground.domain.user.service.UserService;
 import io.swagger.annotations.Api;
@@ -11,10 +12,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.time.DayOfWeek;
 import java.time.LocalDateTime;
@@ -24,13 +22,8 @@ import java.time.temporal.TemporalAdjusters;
  * @description 회원 관련 컨트롤러 구현체
  * @author  박세헌, 박찬호
  * @since   2022-08-02
- * @updated 1. 친구 프로필 조회 기능 구현
- *          - 2022.08.16 박찬호
- *          2. 활동 기록 조회 기능 구현
- *          3. 운동 기록에 대한 정보 조회 기능 구현
- *          4. 상세 지도 보기 기능 구현
- *          5. api 명세 수정
- *          - 2022.08.17 박세헌
+ * @updated nickname, start, end 가진 requestDto 생성
+ *          - 2022-08-18 박세헌
  */
 
 @Api(tags = "유저")
@@ -44,8 +37,8 @@ public class UserControllerImpl implements UserController {
 
     @GetMapping("/home")
     @Operation(summary = "홈 화면 조회",
-            description = "닉네임을 통해 홈화면에 필요한 유저 정보(userMatrices), " +
-                    "나와 챌린지를 안하는 친구 정보(friendMatrices, 리스트), " +
+            description = "닉네임을 통해 홈화면에 필요한 유저 정보(userMatrices)\n" +
+                    "나와 챌린지를 안하는 친구 정보(friendMatrices, 리스트)\n" +
                     "나와 챌린지를 하는 유저 정보(challengeMatrices, 리스트) 조회")
     public ResponseEntity<HomeResponseDto> home(@RequestParam("nickname") String nickName){
         return ResponseEntity.ok(userService.showHome(nickName));
@@ -67,16 +60,12 @@ public class UserControllerImpl implements UserController {
     }
 
     @GetMapping("/info/activity")
-    @Operation(summary = "나의 활동 기록 조회", description = "해당 유저의 start-end(기간) 사이 활동기록 조회(추후 nickname, start, end를 가진 requestDto 생성 예정)")
-    public ResponseEntity<ActivityRecordResponseDto> getActivityRecord(@RequestParam("nickname") String nickname){
-
-        /* 추후 nickname, start, end를 가진 requestDto 생성 예정 */
-        LocalDateTime result = LocalDateTime.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
-        LocalDateTime start = LocalDateTime.of(result.getYear(), result.getMonth(), result.getDayOfMonth(), 0, 0, 0);
-        LocalDateTime end = LocalDateTime.now();
-        /* 임시로 이번주 기록 */
-
-        return ResponseEntity.ok().body(userService.getActivityRecord(nickname, start, end));
+    @Operation(summary = "나의 활동 기록 조회",
+            description = "해당 유저의 start-end(기간) 사이 활동기록 조회\n" +
+                    "start: 해당 날짜의 00시 00분 00초\n" +
+                    "end: 해당 날짜의 23시 59분 59초")
+    public ResponseEntity<ActivityRecordResponseDto> getActivityRecord(@RequestBody UserRequestDto.LookUp requestDto){
+        return ResponseEntity.ok().body(userService.getActivityRecord(requestDto.getNickname(), requestDto.getStart(), requestDto.getEnd()));
     }
 
     @GetMapping("/info/activity/record")

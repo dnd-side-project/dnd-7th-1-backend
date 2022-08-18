@@ -25,8 +25,8 @@ import java.util.Objects;
  * @description 운동 영역 서비스 클래스
  * @author  박세헌
  * @since   2022-08-01
- * @updated 1. 랭킹 계산 메소드 모듈화
- *          - 2022.08.17 박찬호
+ * @updated matrixRanking함수 파라미터 변경
+ *          - 2022.08.18 박세헌
  */
 
 @Service
@@ -44,14 +44,18 @@ public class MatrixServiceImpl implements MatrixService {
         return matrixRepository.save(matrix);
     }
 
-    // 랭킹 조회(누적 칸의 수 기준)(보류)
-    public RankResponseDto.Matrix matrixRanking(String nickname, LocalDateTime start, LocalDateTime end) {
+    // 랭킹 조회(역대 누적 칸의 수 기준)
+    public RankResponseDto.Matrix matrixRanking(String nickname) {
         User user = userRepository.findByNickname(nickname).orElseThrow();
         List<User> userAndFriends = friendService.getFriends(user);  // 친구들 조회
         userAndFriends.add(0, user);  // 유저 추가
 
+        LocalDateTime start = user.getCreated();
+        LocalDateTime end = LocalDateTime.now();
+
         // [Tuple(닉네임, 이번주 누적 칸수)] 칸수 기준 내림차순 정렬
         List<Tuple> matrixCount = exerciseRecordRepository.findMatrixCount(userAndFriends, start, end);
+        System.out.println(matrixCount.size());
 
         // 랭킹 계산[랭킹, 닉네임, 칸의 수]
         List<UserResponseDto.Ranking> matrixRankings = calculateMatrixRank(matrixCount, userAndFriends);
@@ -63,6 +67,7 @@ public class MatrixServiceImpl implements MatrixService {
     public RankResponseDto.Area areaRanking(String nickname, LocalDateTime start, LocalDateTime end) {
         User user = userRepository.findByNickname(nickname).orElseThrow();
         List<User> friends = friendService.getFriends(user);  // 친구들 조회
+        System.out.println(friends.size());
         List<UserResponseDto.Ranking> areaRankings = new ArrayList<>();  // [랭킹, 닉네임, 영역의 수]
 
         // 유저의 닉네임과 영역의 수 대입
