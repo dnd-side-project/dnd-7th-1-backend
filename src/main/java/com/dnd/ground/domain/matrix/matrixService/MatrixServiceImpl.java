@@ -16,7 +16,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.Tuple;
+import java.time.DayOfWeek;
 import java.time.LocalDateTime;
+import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -25,8 +27,8 @@ import java.util.Objects;
  * @description 운동 영역 서비스 클래스
  * @author  박세헌
  * @since   2022-08-01
- * @updated 1. 랭킹 계산 메소드 모듈화
- *          - 2022.08.17 박찬호
+ * @updated matrixRanking함수 파라미터 변경(nickname -> user)
+ *          - 2022.08.18 박세헌
  */
 
 @Service
@@ -44,9 +46,8 @@ public class MatrixServiceImpl implements MatrixService {
         return matrixRepository.save(matrix);
     }
 
-    // 랭킹 조회(누적 칸의 수 기준)(보류)
-    public RankResponseDto.Matrix matrixRanking(String nickname, LocalDateTime start, LocalDateTime end) {
-        User user = userRepository.findByNickname(nickname).orElseThrow();
+    // 랭킹 조회(역대 누적 칸의 수 기준)
+    public RankResponseDto.Matrix matrixRanking(User user, LocalDateTime start, LocalDateTime end) {
         List<User> userAndFriends = friendService.getFriends(user);  // 친구들 조회
         userAndFriends.add(0, user);  // 유저 추가
 
