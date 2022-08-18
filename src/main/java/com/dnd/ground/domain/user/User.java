@@ -16,8 +16,8 @@ import java.util.List;
  * @description 회원 엔티티
  * @author  박찬호, 박세헌
  * @since   2022.07.28
- * @updated 1. 회원 생성 시간 필드 추가
- *          -2022.08.16 박찬호
+ * @updated 1. 메인화면 필터 관련 필드 추가
+ *          -2022.08.18 박찬호
  */
 
 @Getter
@@ -53,6 +53,15 @@ public class User {
 
     @Column(nullable = false)
     private LocalDateTime created;
+
+    @Column(name="is_show_mine", nullable = false)
+    private Boolean isShowMine;
+
+    @Column(name="is_show_friend", nullable = false)
+    private Boolean isShowFriend;
+
+    @Column(name="is_public_record", nullable = false)
+    private Boolean isPublicRecord;
 
     @OneToMany(mappedBy = "friend")
     private List<Friend> friends = new ArrayList<>();

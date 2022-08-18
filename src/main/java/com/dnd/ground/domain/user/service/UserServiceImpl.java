@@ -36,9 +36,10 @@ import java.util.*;
  * @since   2022-08-01
 
  * @updated 1. API 명세 수정
- * @updated 2. matrixRanking함수 파라미터 변경
- *          32. 활동 기록의 운동 시간 1분 미만 이면 초로 변환
- *          - 2022.08.18 박세헌
+ * @updated 2. matrixRanking함수 파라미터 변경 - 박세헌
+ *          3. 활동 기록의 운동 시간 1분 미만 이면 초로 변환 - 박세헌
+ *          4. 메인화면 조회 시, 필터에 따른 조회 기능 구현 - 박찬호
+ *          - 2022.08.18
  */
 
 @Slf4j
@@ -65,13 +66,16 @@ public class UserServiceImpl implements UserService{
     public HomeResponseDto showHome(String nickname){
         User user = userRepository.findByNickname(nickname).orElseThrow();  // 예외 처리
 
-        /*유저의 matrix 와 정보 (userMatrix)*/
+        /*회원의 matrix 와 정보 (userMatrix)*/
         UserResponseDto.UserMatrix userMatrix = new UserResponseDto.UserMatrix(user);
 
-        List<ExerciseRecord> userRecordOfThisWeek = exerciseRecordRepository.findRecordOfThisWeek(user.getId()); // 이번주 운동기록 조회
-        List<MatrixDto> userMatrixSet = matrixRepository.findMatrixSetByRecords(userRecordOfThisWeek);  // 운동 기록의 영역 조회
+        //회원의 "나의 기록 보기" 옵션이 True일 때만 포함.
+        if (user.getIsShowMine()) {
+            List<ExerciseRecord> userRecordOfThisWeek = exerciseRecordRepository.findRecordOfThisWeek(user.getId()); // 이번주 운동기록 조회
+            List<MatrixDto> userMatrixSet = matrixRepository.findMatrixSetByRecords(userRecordOfThisWeek);  // 운동 기록의 영역 조회
 
-        userMatrix.setProperties(nickname, userMatrixSet.size(), userMatrixSet, user.getLatitude(), user.getLongitude());
+            userMatrix.setProperties(user.getNickname(), userMatrixSet.size(), userMatrixSet, user.getLatitude(), user.getLongitude());
+        }
 
         /*----------*/
         //진행 중인 챌린지 목록 조회 List<UserChallenge>
@@ -96,15 +100,22 @@ public class UserServiceImpl implements UserService{
 
         /*챌린지를 안하는 친구들의 matrix 와 정보 (friendMatrices)*/
         Map<String, List<MatrixDto>> friendHashMap= new HashMap<>();
-
-        friendsNotChallenge.forEach(nf -> friendHashMap.put(nf.getNickname(),
-                matrixRepository.findMatrixSetByRecords(exerciseRecordRepository.findRecordOfThisWeek(nf.getId()))));  // 이번주 운동기록 조회하여 영역 대입
-
         List<UserResponseDto.FriendMatrix> friendMatrices = new ArrayList<>();
-        for (String friendNickname : friendHashMap.keySet()) {
-            User friend = userRepository.findByNickname(friendNickname).orElseThrow(); //예외 처리 예정
-            friendMatrices.add(new UserResponseDto.FriendMatrix(friendNickname, friend.getLatitude(), friend.getLongitude(),
-                    friendHashMap.get(friendNickname)));
+
+        //회원의 "친구 보기" 옵션이 True인 경우에만 포함
+        if (user.getIsShowFriend()) {
+            friendsNotChallenge.forEach(nf -> friendHashMap.put(nf.getNickname(),
+                    matrixRepository.findMatrixSetByRecords(exerciseRecordRepository.findRecordOfThisWeek(nf.getId()))));  // 이번주 운동기록 조회하여 영역 대입
+
+            for (String friendNickname : friendHashMap.keySet()) {
+                User friend = userRepository.findByNickname(friendNickname).orElseThrow(); //예외 처리 예정
+
+                //친구의 "친구에게 보이기" 옵션이 True인 경우에만 포함
+                if (friend.getIsPublicRecord()) {
+                    friendMatrices.add(new UserResponseDto.FriendMatrix(friendNickname, friend.getLatitude(), friend.getLongitude(),
+                            friendHashMap.get(friendNickname)));
+                }
+            }
         }
 
         /*챌린지를 하는 사람들의 matrix 와 정보 (challengeMatrices)*/
@@ -132,6 +143,9 @@ public class UserServiceImpl implements UserService{
                 .friendMatrices(friendMatrices)
                 .challengeMatrices(challengeMatrices)
                 .challengesNumber(challengeRepository.findCountChallenge(user))
+                .isShowMine(user.getIsShowMine())
+                .isShowFriend(user.getIsShowFriend())
+                .isPublicRecord(user.getIsPublicRecord())
                 .build();
     }
 
@@ -160,7 +174,7 @@ public class UserServiceImpl implements UserService{
         Long allMatrixNumber = (long) matrixRepository.findMatrixByRecords(record).size();
 
         return UserResponseDto.UInfo.builder()
-                .nickname(nickname)
+                .nickname(user.getNickname())
                 .intro(user.getIntro())
                 .matrixNumber(matrixNumber)
                 .stepCount(stepCount)
