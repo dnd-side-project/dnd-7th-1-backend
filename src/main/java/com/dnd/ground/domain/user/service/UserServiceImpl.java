@@ -377,7 +377,6 @@ public class UserServiceImpl implements UserService{
     public ResponseEntity<?> editRecordMessage(Long recordId, String message){
         ExerciseRecord exerciseRecord = exerciseRecordRepository.findById(recordId).orElseThrow(); // 예외 처리
         exerciseRecord.editMessage(message);
-        exerciseRecordRepository.save(exerciseRecord);
         return new ResponseEntity(HttpStatus.OK);
     }
 
@@ -386,7 +385,6 @@ public class UserServiceImpl implements UserService{
     public ResponseEntity<?> editUserProfile(String originalNick, String editNick, String intro){
         User user = userRepository.findByNickname(originalNick).orElseThrow();
         user.updateProfile(editNick, intro);
-        userRepository.save(user);
         return new ResponseEntity(HttpStatus.OK);
     }
 
