@@ -269,7 +269,7 @@ public class UserServiceImpl implements UserService{
 
             activityRecords.add(RecordResponseDto.activityRecord
                     .builder()
-                    .exerciseId(exerciseRecord.getId())
+                    .recordId(exerciseRecord.getId())
                     .matrixNumber((long) exerciseRecord.getMatrices().size())
                     .stepCount(exerciseRecord.getStepCount())
                     .distance(exerciseRecord.getDistance())
