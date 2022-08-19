@@ -24,6 +24,7 @@ import lombok.*;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,8 +36,10 @@ import java.util.*;
  * @description 유저 서비스 클래스
  * @author  박세헌, 박찬호
  * @since   2022-08-01
- * @updated 1.메인화면 조회 메소드 수정
- *          - 2022.08.19 박찬호
+ * @updated 1.메인화면 조회 메소드 수정 - 박찬호
+ *          2.  운동 기록 메시지 수정 기능 - 박세헌
+ *          3. 회원 프로필 수정 기능 - 박세헌
+ *          - 2022.08.18 박세헌
  */
 
 @Slf4j
@@ -367,6 +370,22 @@ public class UserServiceImpl implements UserService{
     public HttpStatus changeFilterRecord(String nickname) {
         userRepository.findByNickname(nickname).orElseThrow().changeFilterRecord();
         return HttpStatus.OK;
+    }
+
+    /* 운동 기록의 상세 메시지 수정 */
+    @Transactional
+    public ResponseEntity<?> editRecordMessage(Long recordId, String message){
+        ExerciseRecord exerciseRecord = exerciseRecordRepository.findById(recordId).orElseThrow(); // 예외 처리
+        exerciseRecord.editMessage(message);
+        return new ResponseEntity(HttpStatus.OK);
+    }
+
+    /* 회원 프로필 수정 */
+    @Transactional
+    public ResponseEntity<?> editUserProfile(String originalNick, String editNick, String intro){
+        User user = userRepository.findByNickname(originalNick).orElseThrow();
+        user.updateProfile(editNick, intro);
+        return new ResponseEntity(HttpStatus.OK);
     }
 
 }

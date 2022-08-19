@@ -15,6 +15,6 @@ import lombok.Data;
 public class MatrixDto{
     @ApiModelProperty(value = "위도", example = "37.123123")
     private Double latitude;
-    @ApiModelProperty(value = "위도", example = "127.123123")
+    @ApiModelProperty(value = "경도", example = "127.123123")
     private Double longitude;
 }
