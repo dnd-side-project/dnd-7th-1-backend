@@ -36,15 +36,9 @@ import java.util.*;
  * @description 유저 서비스 클래스
  * @author  박세헌, 박찬호
  * @since   2022-08-01
- * @updated 1. API 명세 수정 - 박찬호
- * @updated 2. matrixRanking함수 파라미터 변경 - 박세헌
- *          3. 활동 기록의 운동 시간 1분 미만 이면 초로 변환 - 박세헌
- *          4. 메인화면 조회 시, 필터에 따른 조회 기능 구현 - 박찬호
- *          5. 운동기록 조회에서 해당 운동 기록이 참여한 챌린지들 추가 - 박세헌
- *          6. 활동 기록의 운동 시간 1분 미만 이면 초로 변환 - 박세헌
- *          7. 메인 화면 필터 변경 기능 구현 - 박찬호
- *          8  운동 기록 메시지 수정 기능 - 박세헌
- *          9. 회원 프로필 수정 기능 - 박세헌
+ * @updated 1.메인화면 조회 메소드 수정 - 박찬호
+ *          2.  운동 기록 메시지 수정 기능 - 박세헌
+ *          3. 회원 프로필 수정 기능 - 박세헌
  *          - 2022.08.18 박세헌
  */
 
@@ -127,23 +121,29 @@ public class UserServiceImpl implements UserService{
         /*챌린지를 하는 사람들의 matrix 와 정보 (challengeMatrices)*/
         List<UserResponseDto.ChallengeMatrix> challengeMatrices = new ArrayList<>();
 
-        for (User friend : friendsWithChallenge) {
-            Integer challengeNumber = challengeRepository.findCountChallenge(user, friend); // 함께하는 챌린지 수
+        //회원의 "친구 보기" 옵션이 True인 경우에만 포함
+        if (user.getIsShowFriend()) {
+            for (User friend : friendsWithChallenge) {
+                //친구의 "친구에게 보이기" 옵션이 True인 경우에만 포함
+                if (!friend.getIsPublicRecord()) {
+                    Integer challengeNumber = challengeRepository.findCountChallenge(user, friend); // 함께하는 챌린지 수
 
-            //색깔 처리
-            Challenge challengeWithFriend = challengeRepository.findChallengesWithFriend(user, friend).get(0);//함께하는 첫번째 챌린지 조회
-            ChallengeColor challengeColor = userChallengeRepository.findChallengeColor(user, challengeWithFriend);//회원 기준 해당 챌린지 색깔
+                    //색깔 처리
+                    Challenge challengeWithFriend = challengeRepository.findChallengesWithFriend(user, friend).get(0);//함께하는 첫번째 챌린지 조회
+                    ChallengeColor challengeColor = userChallengeRepository.findChallengeColor(user, challengeWithFriend);//회원 기준 해당 챌린지 색깔
 
-            List<ExerciseRecord> challengeRecordOfThisWeek = exerciseRecordRepository.findRecordOfThisWeek(friend.getId()); // 이번주 운동기록 조회
-            List<MatrixDto> challengeMatrixSetDto = matrixRepository.findMatrixSetByRecords(challengeRecordOfThisWeek); // 운동 기록의 영역 조회
+                    List<ExerciseRecord> challengeRecordOfThisWeek = exerciseRecordRepository.findRecordOfThisWeek(friend.getId()); // 이번주 운동기록 조회
+                    List<MatrixDto> challengeMatrixSetDto = matrixRepository.findMatrixSetByRecords(challengeRecordOfThisWeek); // 운동 기록의 영역 조회
 
-            challengeMatrices.add(
-                    new UserResponseDto.ChallengeMatrix(
-                    friend.getNickname(), challengeNumber, challengeColor,
-                            friend.getLatitude(), friend.getLongitude(), challengeMatrixSetDto)
-            );
+                    challengeMatrices.add(
+                            new UserResponseDto.ChallengeMatrix(
+                                    friend.getNickname(), challengeNumber, challengeColor,
+                                    friend.getLatitude(), friend.getLongitude(), challengeMatrixSetDto)
+                    );
+                }
+            }
         }
-
+        
         return HomeResponseDto.builder()
                 .userMatrices(userMatrix)
                 .friendMatrices(friendMatrices)
