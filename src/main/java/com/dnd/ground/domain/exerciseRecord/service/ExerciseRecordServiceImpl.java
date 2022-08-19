@@ -30,7 +30,9 @@ import java.util.Optional;
  * @description 운동 기록 서비스 클래스
  * @author  박세헌, 박찬호
  * @since   2022-08-01
- * @updated 2022-08-19 / 칸 정보 반환 형태 수정으로 인한 로직 변경 - 박세헌
+ * @updated 2022-08-19 / 1. 칸 정보 반환 형태 수정으로 인한 로직 변경
+ *                       2. 운동 기록 response body 추가
+ *                        - 박세헌
  */
 
 @Service
@@ -83,7 +85,7 @@ public class ExerciseRecordServiceImpl implements ExerciseRecordService {
         exerciseRecord.getUser().updatePosition(lastPosition.get(0), lastPosition.get(1));
 
         exerciseRecordRepository.save(exerciseRecord);
-        return new ResponseEntity(HttpStatus.CREATED);
+        return new ResponseEntity("성공", HttpStatus.CREATED);
     }
 
     // 랭킹 조회(누적 걸음 수 기준)  (추후 파라미터 Requestdto로 교체 예정)
