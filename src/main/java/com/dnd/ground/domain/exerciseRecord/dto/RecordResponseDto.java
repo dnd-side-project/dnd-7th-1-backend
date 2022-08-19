@@ -62,7 +62,7 @@ public class RecordResponseDto {
     @Data @Builder
     static public class activityRecord {
 
-        @ApiModelProperty(value="운동기록 id", example = "1")
+        @ApiModelProperty(value="운동기록 id / 해당 운동 기록을 선택했을때 request 해야함", example = "1")
         private Long recordId;
 
         @ApiModelProperty(value="해당 기록의 칸의 수", example="9")
