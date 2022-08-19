@@ -44,6 +44,7 @@ import java.util.*;
  *          6. 활동 기록의 운동 시간 1분 미만 이면 초로 변환 - 박세헌
  *          7. 메인 화면 필터 변경 기능 구현 - 박찬호
  *          8  운동 기록 메시지 수정 기능 - 박세헌
+ *          9. 회원 프로필 수정 기능 - 박세헌
  *          - 2022.08.18 박세헌
  */
 
@@ -379,4 +380,14 @@ public class UserServiceImpl implements UserService{
         exerciseRecordRepository.save(exerciseRecord);
         return new ResponseEntity(HttpStatus.OK);
     }
+
+    /* 회원 프로필 수정 */
+    @Transactional
+    public ResponseEntity<?> editUserProfile(String originalNick, String editNick, String intro){
+        User user = userRepository.findByNickname(originalNick).orElseThrow();
+        user.updateProfile(editNick, intro);
+        userRepository.save(user);
+        return new ResponseEntity(HttpStatus.OK);
+    }
+
 }

@@ -17,10 +17,8 @@ import java.util.List;
  * @description 회원 엔티티
  * @author  박찬호, 박세헌
  * @since   2022.07.28
- * @updated 1. 메인화면 필터 관련 필드 추가
- *          2. 메인 화면 필터 변경을 위한 수정자 추가
- *          -2022.08.18 박찬호
- */
+ * @updated 1. 유저 프로필 수정 비즈니스 로직 추가
+ *           - 2022-08-19 박세헌헌 */
 
 @Getter
 @Builder
@@ -94,5 +92,10 @@ public class User {
     public HttpStatus changeFilterRecord() {
         this.isPublicRecord = !this.isPublicRecord;
         return HttpStatus.OK;
+    }
+
+    public void updateProfile(String nickname, String intro) {
+        this.nickname = nickname;
+        this.intro = intro;
     }
 }

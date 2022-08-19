@@ -99,13 +99,15 @@ public class UserControllerImpl implements UserController {
     }
 
     @PostMapping("/info/profile/edit")
+    @Operation(summary = "유저 프로필 수정", description = "닉네임, 자기소개 수정(예외 처리 예정)")
     public ResponseEntity<?> editUserProfile(@RequestBody UserRequestDto.Profile requestDto){
         /* 닉네임이 비어있을때 예외 처리 필요 */
         /* 닉네임이 중복일때 예외 처리 필요 */
-        return ResponseEntity.ok(HttpStatus.OK);
+        return userService.editUserProfile(requestDto.getOriginalNick(), requestDto.getEditNick(), requestDto.getIntro());
     }
 
-    @GetMapping("/info/activity/record/edit")
+    @PostMapping("/info/activity/record/edit")
+    @Operation(summary = "운동 기록 메시지 수정", description = "운동 기록 메시지 수정")
     public ResponseEntity<?> getDetailMap(@RequestBody RecordRequestDto.Message requestDto){
         return userService.editRecordMessage(requestDto.getRecordId(), requestDto.getMessage());
     }
