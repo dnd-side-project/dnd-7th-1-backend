@@ -1,5 +1,6 @@
 package com.dnd.ground.domain.exerciseRecord.dto;
 
+import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 
 /**
@@ -13,7 +14,11 @@ import lombok.Data;
 public class RecordRequestDto {
     @Data
     static public class Message{
+
+        @ApiModelProperty(value="운동 기록 id", required = true)
         private Long recordId;
+
+        @ApiModelProperty(value="운동 기록 상세 메시지")
         private String message;
     }
 }

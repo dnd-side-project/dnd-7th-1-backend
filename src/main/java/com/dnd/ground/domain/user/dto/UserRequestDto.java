@@ -22,15 +22,15 @@ public class UserRequestDto {
     @Data
     static public class LookUp{
 
-        @ApiModelProperty(name = "유저의 닉네임", example = "NickA")
+        @ApiModelProperty(name = "유저의 닉네임", example = "NickA", required = true)
         private String nickname;
 
         @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss", timezone = "Asia/Seoul")
-        @ApiModelProperty(name = "조회 하고 싶은 데이터의 시작 날짜", example = "2022-08-15T00:00:00")
+        @ApiModelProperty(name = "조회 하고 싶은 데이터의 시작 날짜", example = "2022-08-15T00:00:00",required = true)
         private LocalDateTime start;
 
         @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss", timezone = "Asia/Seoul")
-        @ApiModelProperty(name = "조회 하고 싶은 데이터의 끝 날짜", example = "2022-08-18T23:59:59")
+        @ApiModelProperty(name = "조회 하고 싶은 데이터의 끝 날짜", example = "2022-08-18T23:59:59", required = true)
         private LocalDateTime end;
     }
 
@@ -38,11 +38,11 @@ public class UserRequestDto {
     static public class Profile{
 
         @NotNull
-        @ApiModelProperty(name = "유저의 원래 닉네임", example = "NickA")
+        @ApiModelProperty(name = "유저의 원래 닉네임", example = "NickA", required = true)
         private String originalNick;
 
         @NotNull
-        @ApiModelProperty(name = "수정한 닉네임", example = "NickB")
+        @ApiModelProperty(name = "수정한 닉네임", example = "NickB", required = true)
         private String editNick;
 
         @ApiModelProperty(name = "유저의 소개글", example = "소개글 예시")
