@@ -20,7 +20,7 @@ import java.time.temporal.TemporalAdjusters;
  * @description 기록 컨트롤러 클래스
  * @author  박세헌
  * @since   2022-08-01
- * @updated 2022-08-18 / 기록 api 변경 - 박세헌
+ * @updated 2022-08-18 / 기록 끝 상태코드 created로 변경 - 박세헌
  */
 
 @Api(tags = "운동기록")

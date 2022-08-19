@@ -6,6 +6,7 @@ import com.dnd.ground.domain.user.dto.ActivityRecordResponseDto;
 import com.dnd.ground.domain.user.dto.HomeResponseDto;
 import com.dnd.ground.domain.user.dto.UserResponseDto;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 
 import java.time.LocalDateTime;
 
@@ -13,8 +14,9 @@ import java.time.LocalDateTime;
  * @description 회원 서비스 인터페이스
  * @author  박세헌, 박찬호
  * @since   2022-08-01
- * @updated 1. 메인 화면 필터 변경 기능 구현
- *          -2022.08.18 박찬호
+ * @updated  1  운동 기록 메시지 수정 기능
+ *           2. 회원 프로필 수정 기능
+ *           - 2022-08-19 박세헌
  */
 
 public interface UserService {
@@ -30,4 +32,7 @@ public interface UserService {
     HttpStatus changeFilterMine(String nickname);
     HttpStatus changeFilterFriend(String nickname);
     HttpStatus changeFilterRecord(String nickname);
+
+    ResponseEntity<?> editRecordMessage(Long recordId, String message);
+    ResponseEntity<?> editUserProfile(String originNick, String editNick, String intro);
 }

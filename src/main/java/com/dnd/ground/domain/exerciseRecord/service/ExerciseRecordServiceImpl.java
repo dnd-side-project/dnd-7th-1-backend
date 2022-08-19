@@ -81,7 +81,7 @@ public class ExerciseRecordServiceImpl implements ExerciseRecordService {
         exerciseRecord.getUser().updatePosition(lastPosition.getLatitude(), lastPosition.getLongitude());
 
         exerciseRecordRepository.save(exerciseRecord);
-        return ResponseEntity.ok(HttpStatus.OK);
+        return new ResponseEntity(HttpStatus.CREATED);
     }
 
     // 랭킹 조회(누적 걸음 수 기준)  (추후 파라미터 Requestdto로 교체 예정)

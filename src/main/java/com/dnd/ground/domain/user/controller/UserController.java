@@ -1,5 +1,6 @@
 package com.dnd.ground.domain.user.controller;
 
+import com.dnd.ground.domain.exerciseRecord.dto.RecordRequestDto;
 import com.dnd.ground.domain.exerciseRecord.dto.RecordResponseDto;
 import com.dnd.ground.domain.user.dto.ActivityRecordResponseDto;
 import com.dnd.ground.domain.user.dto.UserRequestDto;
@@ -32,4 +33,7 @@ public interface UserController {
     ResponseEntity<HttpStatus> changeFilterMine(@RequestParam("nickname") String nickname);
     ResponseEntity<HttpStatus> changeFilterFriend(@RequestParam("nickname") String nickname);
     ResponseEntity<HttpStatus> changeFilterRecord(@RequestParam("nickname") String nickname);
+
+    ResponseEntity<?> editUserProfile(@RequestBody UserRequestDto.Profile requestDto);
+    ResponseEntity<?> getDetailMap(@RequestBody RecordRequestDto.Message requestDto);
 }
