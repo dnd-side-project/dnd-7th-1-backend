@@ -30,7 +30,7 @@ import java.util.Optional;
  * @description 운동 기록 서비스 클래스
  * @author  박세헌, 박찬호
  * @since   2022-08-01
- * @updated 2022-08-17 / 기록 api 변경(기록 끝일때 새로운 운동 기록 생성) - 박세헌
+ * @updated 2022-08-19 / 칸 정보 반환 형태 수정으로 인한 로직 변경 - 박세헌
  */
 
 @Service
@@ -73,12 +73,14 @@ public class ExerciseRecordServiceImpl implements ExerciseRecordService {
                 endRequestDto.getExerciseTime(), endRequestDto.getMessage());
 
         //영역 저장
-        List<MatrixDto> matrices = endRequestDto.getMatrices();
-        matrices.forEach(m -> exerciseRecord.addMatrix(new Matrix(m.getLatitude(), m.getLongitude())));
+        ArrayList<ArrayList<Double>> matrices = endRequestDto.getMatrices();
+        for (int i=0; i<matrices.size(); i++){
+            exerciseRecord.addMatrix(new Matrix(matrices.get(i).get(0), matrices.get(i).get(1)));
+        }
 
         //회원 마지막 위치 최신화
-        MatrixDto lastPosition = matrices.get(matrices.size() - 1);
-        exerciseRecord.getUser().updatePosition(lastPosition.getLatitude(), lastPosition.getLongitude());
+        ArrayList<Double> lastPosition = matrices.get(matrices.size() - 1);
+        exerciseRecord.getUser().updatePosition(lastPosition.get(0), lastPosition.get(1));
 
         exerciseRecordRepository.save(exerciseRecord);
         return new ResponseEntity(HttpStatus.CREATED);
