@@ -6,8 +6,6 @@ import io.swagger.annotations.ApiModelProperty;
 import lombok.Builder;
 import lombok.Data;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -18,6 +16,7 @@ import java.util.List;
  * @since   2022-08-16
  * @updated 1. 운동 시작 시간, 끝 시간 날짜 분리
  *          2. EInfo 해당 운동 기록이 참여한 챌린지 필드 추가
+ *          3. exerciseId -> recordId 수정
  *          - 2022-08-18 박세헌
  */
 
@@ -64,7 +63,7 @@ public class RecordResponseDto {
     static public class activityRecord {
 
         @ApiModelProperty(value="운동기록 id", example = "1")
-        private Long exerciseId;
+        private Long recordId;
 
         @ApiModelProperty(value="해당 기록의 칸의 수", example="9")
         private Long matrixNumber;
