@@ -30,9 +30,7 @@ import java.util.Optional;
  * @description 운동 기록 서비스 클래스
  * @author  박세헌, 박찬호
  * @since   2022-08-01
- * @updated 2022-08-19 / 1. 칸 정보 반환 형태 수정으로 인한 로직 변경
- *                       2. 운동 기록 response body 추가
- *                        - 박세헌
+ * @updated 2022-08-22 / 운동 시작 시간, 끝 시간 추가 - 박세헌
  */
 
 @Service
@@ -68,11 +66,11 @@ public class ExerciseRecordServiceImpl implements ExerciseRecordService {
     public ResponseEntity<?> recordEnd(EndRequestDto endRequestDto) {
         // 유저 찾아서 운동 기록 생성
         User user = userRepository.findByNickname(endRequestDto.getNickname()).orElseThrow(); // 예외처리
-        ExerciseRecord exerciseRecord = new ExerciseRecord(user, LocalDateTime.now());
+        ExerciseRecord exerciseRecord = new ExerciseRecord(user);
 
-        // 정보 update(ended, 거리, 걸음수, 운동시간, 상세 기록)
+        // 정보 update(ended, 거리, 걸음수, 운동시간, 상세 기록, 시작 시간, 끝 시간)
         exerciseRecord.updateInfo(endRequestDto.getDistance(), endRequestDto.getStepCount(),
-                endRequestDto.getExerciseTime(), endRequestDto.getMessage());
+                endRequestDto.getExerciseTime(), endRequestDto.getMessage(), endRequestDto.getStarted(), endRequestDto.getEnded());
 
         //영역 저장
         ArrayList<ArrayList<Double>> matrices = endRequestDto.getMatrices();
