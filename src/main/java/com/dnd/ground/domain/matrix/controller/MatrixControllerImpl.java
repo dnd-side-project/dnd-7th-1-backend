@@ -35,7 +35,7 @@ public class MatrixControllerImpl implements MatrixController {
         return ResponseEntity.ok(matrixService.matrixRanking(nickname));
     }
 
-    @GetMapping("/rank/widen")
+    @PostMapping("/rank/widen")
     @Operation(summary = "영역의 수 랭킹",
             description = "해당 유저를 기준으로 start-end(기간) 사이 영역의 수가 높은 순서대로 유저와 친구들을 조회\n" +
             "start: 해당 주 월요일 00시 00분 00초\n" +
