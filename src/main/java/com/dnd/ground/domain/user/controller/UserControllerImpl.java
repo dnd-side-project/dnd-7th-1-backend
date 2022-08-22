@@ -61,7 +61,7 @@ public class UserControllerImpl implements UserController {
         return ResponseEntity.ok().body(userService.getUserProfile(userNickname, friendNickname));
     }
 
-    @GetMapping("/info/activity")
+    @PostMapping("/info/activity")
     @Operation(summary = "나의 활동 기록 조회",
             description = "해당 유저의 start-end(기간) 사이 활동기록 조회\n" +
                     "start: 해당 날짜의 00시 00분 00초\n" +
