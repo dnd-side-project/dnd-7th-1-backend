@@ -125,7 +125,7 @@ public class UserServiceImpl implements UserService{
         if (user.getIsShowFriend()) {
             for (User friend : friendsWithChallenge) {
                 //친구의 "친구에게 보이기" 옵션이 True인 경우에만 포함
-                if (!friend.getIsPublicRecord()) {
+                if (friend.getIsPublicRecord()) {
                     Integer challengeNumber = challengeRepository.findCountChallenge(user, friend); // 함께하는 챌린지 수
 
                     //색깔 처리
