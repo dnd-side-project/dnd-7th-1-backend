@@ -36,10 +36,7 @@ import java.util.*;
  * @description 유저 서비스 클래스
  * @author  박세헌, 박찬호
  * @since   2022-08-01
- * @updated 1.메인화면 조회 메소드 수정 - 박찬호
- *          2.  운동 기록 메시지 수정 기능 - 박세헌
- *          3. 회원 프로필 수정 기능 - 박세헌
- *          - 2022.08.18 박세헌
+ * @updated 운동 총 시간 초단위 10초미만 00 형태 - 박세헌
  */
 
 @Slf4j
@@ -285,7 +282,17 @@ public class UserServiceImpl implements UserService{
         int totalMinute = totalExerciseTime / 60;
         int totalSecond = totalExerciseTime % 60;
 
-        String totalTime = Integer.toString(totalMinute) + ":" + Integer.toString(totalSecond);
+        String totalTime = "";
+
+        // 10초 미만이라면 앞에 0하나 붙여주기
+        if (Integer.toString(totalSecond).length() == 1){
+            totalTime = Integer.toString(totalMinute) + ":0" + Integer.toString(totalSecond);
+            System.out.println(totalTime);
+        }
+        else{
+            totalTime = Integer.toString(totalMinute) + ":" + Integer.toString(totalSecond);
+            System.out.println(totalTime);
+        }
 
         return ActivityRecordResponseDto
                 .builder()
@@ -314,9 +321,11 @@ public class UserServiceImpl implements UserService{
         // 10초 미만이라면 앞에 0하나 붙여주기
         if (Integer.toString(second).length() == 1){
             time = Integer.toString(minute) + ":0" + Integer.toString(second);
+            System.out.println(time);
         }
         else{
             time = Integer.toString(minute) + ":" + Integer.toString(second);
+            System.out.println(time);
         }
 
         // 해당 운동 기록이 참여한 챌린지들 조회
