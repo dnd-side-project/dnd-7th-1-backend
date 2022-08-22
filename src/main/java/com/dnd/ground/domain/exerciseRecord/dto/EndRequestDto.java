@@ -1,15 +1,17 @@
 package com.dnd.ground.domain.exerciseRecord.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 
 /**
  * @description 기록 끝 Request Dto
  * @author  박세헌
  * @since   2022-08-02
- * @updated 2022-08-19 / 칸 정보 이차배열로 수정 - 박세헌
+ * @updated 2022-08-22 / 기록 시작-끝 필드 추가 - 박세헌
  */
 
 @Data
@@ -20,6 +22,14 @@ public class EndRequestDto {
 
     @ApiModelProperty(value="거리", example="100", required = true)
     private Integer distance;
+
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss", timezone = "Asia/Seoul")
+    @ApiModelProperty(value="기록 시작 시간", example="2022-08-15T00:00:00", required = true)
+    private LocalDateTime started;
+
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss", timezone = "Asia/Seoul")
+    @ApiModelProperty(value="기록 끝 시간", example="2022-08-15T00:00:00", required = true)
+    private LocalDateTime ended;
 
     @ApiModelProperty(value="운동시간(초)", example="80", required = true)
     private Integer exerciseTime;
