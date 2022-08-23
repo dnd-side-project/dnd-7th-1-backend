@@ -36,7 +36,8 @@ import java.util.*;
  * @description 유저 서비스 클래스
  * @author  박세헌, 박찬호
  * @since   2022-08-01
- * @updated 활동기록, 운동기록 날짜 Locale 한국으로 변경
+ * @updated 1. 활동기록, 운동기록 날짜 Locale 한국으로 변경
+ *          2. 마이 페이지 걸음수, 거리 null -> 0
  *          2022-08-23 - 박세헌
  */
 
@@ -164,10 +165,10 @@ public class UserServiceImpl implements UserService{
         Long matrixNumber = (long) matrixRepository.findMatrixByRecords(recordOfThisWeek).size();
 
         // 이번주 걸음수
-        Integer stepCount = exerciseRecordRepository.findUserStepCount(user, recordOfThisWeek);
+        Integer stepCount = exerciseRecordRepository.findUserStepCount(user, recordOfThisWeek).orElse(0);
 
         // 이번주 거리합
-        Integer distance = exerciseRecordRepository.findUserDistance(user, recordOfThisWeek);
+        Integer distance = exerciseRecordRepository.findUserDistance(user, recordOfThisWeek).orElse(0);
 
         // 친구 수
         Integer friendNumber = friendService.getFriends(user).size();
