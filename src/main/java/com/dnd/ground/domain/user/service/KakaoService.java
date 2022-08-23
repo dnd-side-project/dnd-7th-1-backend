@@ -65,12 +65,8 @@ public class KakaoService {
                 .bodyToMono(KakaoDto.Token.class)
                 .block();
 
-        System.out.println("토큰: " + token.toString());
-
         //카카오 토큰 정보 보기 API 호출
         KakaoDto.TokenInfo tokenInfo = getTokenInfo(token.getAccess_token());
-
-        System.out.println("**토큰정보: " + tokenInfo.toString());
 
         //기존 유저 → 200 Status + 닉네임
         Optional<User> user = userRepository.findByKakaoId(tokenInfo.getId());
