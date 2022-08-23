@@ -17,8 +17,10 @@ import java.util.List;
  * @description 회원 엔티티
  * @author  박찬호, 박세헌
  * @since   2022.07.28
- * @updated 1. 유저 프로필 수정 비즈니스 로직 추가
- *           - 2022-08-19 박세헌헌 */
+ * @updated 1. 카카오 회원 번호 필드 추가
+ *          2. 프로필 사진 관련 필드 주석 처리
+ *           - 2022-08-23 박찬호
+ */
 
 @Getter
 @Builder
@@ -31,6 +33,9 @@ public class User {
     @Id @GeneratedValue
     @Column(name = "user_id")
     private Long id;
+
+    @Column(name = "kakao_id")
+    private Long kakaoId;
 
     @Column(name = "username", nullable = false)
     private String username;
@@ -62,6 +67,12 @@ public class User {
 
     @Column(name="is_public_record", nullable = false)
     private Boolean isPublicRecord;
+
+//    @Column(name="picture_name", nullable = false)
+//    private String pictureName;
+//
+//    @Column(name="picture_path", nullable = false)
+//    private String picturePath;
 
     @OneToMany(mappedBy = "friend")
     private List<Friend> friends = new ArrayList<>();
