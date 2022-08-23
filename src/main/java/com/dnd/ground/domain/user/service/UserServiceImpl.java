@@ -36,7 +36,9 @@ import java.util.*;
  * @description 유저 서비스 클래스
  * @author  박세헌, 박찬호
  * @since   2022-08-01
- * @updated 운동 총 시간 초단위 10초미만 00 형태 - 박세헌
+ * @updated 1. 활동기록, 운동기록 날짜 Locale 한국으로 변경
+ *          2. 마이 페이지 걸음수, 거리 null -> 0
+ *          2022-08-23 - 박세헌
  */
 
 @Slf4j
@@ -163,10 +165,10 @@ public class UserServiceImpl implements UserService{
         Long matrixNumber = (long) matrixRepository.findMatrixByRecords(recordOfThisWeek).size();
 
         // 이번주 걸음수
-        Integer stepCount = exerciseRecordRepository.findUserStepCount(user, recordOfThisWeek);
+        Integer stepCount = exerciseRecordRepository.findUserStepCount(user, recordOfThisWeek).orElse(0);
 
         // 이번주 거리합
-        Integer distance = exerciseRecordRepository.findUserDistance(user, recordOfThisWeek);
+        Integer distance = exerciseRecordRepository.findUserDistance(user, recordOfThisWeek).orElse(0);
 
         // 친구 수
         Integer friendNumber = friendService.getFriends(user).size();
@@ -251,7 +253,7 @@ public class UserServiceImpl implements UserService{
         for (ExerciseRecord exerciseRecord : record) {
 
             // 운동 시작 시간 formatting
-            String started = exerciseRecord.getStarted().format(DateTimeFormatter.ofPattern("MM월 dd일 E요일 HH:mm"));
+            String started = exerciseRecord.getStarted().format(DateTimeFormatter.ofPattern("MM월 dd일 E요일 HH:mm").withLocale(Locale.forLanguageTag("ko")));
 
             // 운동 시간 formatting
             Integer exerciseTime = exerciseRecord.getExerciseTime();
@@ -308,7 +310,7 @@ public class UserServiceImpl implements UserService{
         ExerciseRecord exerciseRecord = exerciseRecordRepository.findById(exerciseId).orElseThrow();  // 예외 처리
 
         // 운동 시작, 끝 시간 formatting
-        String date = exerciseRecord.getStarted().format(DateTimeFormatter.ofPattern("MM월 dd일 E요일"));
+        String date = exerciseRecord.getStarted().format(DateTimeFormatter.ofPattern("MM월 dd일 E요일").withLocale(Locale.forLanguageTag("ko")));
         String started = exerciseRecord.getStarted().format(DateTimeFormatter.ofPattern("HH:mm"));
         String ended = exerciseRecord.getEnded().format(DateTimeFormatter.ofPattern("HH:mm"));
 
