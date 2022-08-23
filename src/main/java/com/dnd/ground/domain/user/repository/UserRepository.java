@@ -10,9 +10,10 @@ import java.util.Optional;
 
 /**
  * @description 유저 리포지토리 인터페이스
- * @author  박세헌
+ * @author  박세헌, 박찬호
  * @since   2022-08-01
- * @updated 2022-08-17 / 운동기록을 통해 유저 조회 - 박세헌
+ * @updated 1. 카카오 회원 번호로 회원 조회 쿼리 추가
+ *          2022-08-23 박찬호
  */
 
 public interface UserRepository extends JpaRepository<User, Long> {
@@ -21,5 +22,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @Query("select u from User u join u.exerciseRecords e where e = :exerciseRecord")
     Optional<User> findByExerciseRecord(ExerciseRecord exerciseRecord);
+
+    Optional<User> findByKakaoId(Long id);
 
 }
