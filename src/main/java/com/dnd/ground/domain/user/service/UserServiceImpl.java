@@ -15,16 +15,16 @@ import com.dnd.ground.domain.matrix.dto.MatrixDto;
 import com.dnd.ground.domain.matrix.matrixRepository.MatrixRepository;
 import com.dnd.ground.domain.matrix.matrixService.MatrixService;
 import com.dnd.ground.domain.user.User;
-import com.dnd.ground.domain.user.dto.ActivityRecordResponseDto;
-import com.dnd.ground.domain.user.dto.HomeResponseDto;
-import com.dnd.ground.domain.user.dto.RankResponseDto;
-import com.dnd.ground.domain.user.dto.UserResponseDto;
+import com.dnd.ground.domain.user.dto.*;
 import com.dnd.ground.domain.user.repository.UserRepository;
 import lombok.*;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,16 +36,16 @@ import java.util.*;
  * @description 유저 서비스 클래스
  * @author  박세헌, 박찬호
  * @since   2022-08-01
- * @updated 1. 활동기록, 운동기록 날짜 Locale 한국으로 변경
- *          2. 마이 페이지 걸음수, 거리 null -> 0
- *          2022-08-23 - 박세헌
+ * @updated 1. UserDetailsService을 impl받아 loadUserByUsername생성
+ *          2. loadUserByUsername함수: AuthenticationManager가 해당 함수로 유저를 검증
+ *          - 2022-08-24 박세헌
  */
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class UserServiceImpl implements UserService{
+public class UserServiceImpl implements UserService, UserDetailsService {
 
     private final UserRepository userRepository;
     private final ChallengeService challengeService;
@@ -58,8 +58,21 @@ public class UserServiceImpl implements UserService{
     private final MatrixService matrixService;
 
     @Transactional
-    public User save(User user){
-        return userRepository.save(user);
+    public User save(JwtUserDto user){
+        return userRepository.save(User
+                .builder()
+                .kakaoId(user.getId())
+                .username(user.getUsername())
+                .nickname(user.getNickname())
+                .mail(user.getMail())
+                .created(LocalDateTime.now())
+                .intro("")
+                .latitude(null)
+                .longitude(null)
+                .isShowMine(true)
+                .isShowFriend(true)
+                .isPublicRecord(true)
+                .build());
     }
 
     public HomeResponseDto showHome(String nickname){
@@ -399,4 +412,15 @@ public class UserServiceImpl implements UserService{
         return new ResponseEntity("성공", HttpStatus.OK);
     }
 
+    @Override
+    public UserDetails loadUserByUsername(String nickname) {
+        User user = userRepository.findByNickname(nickname).orElseThrow(); // 예외처리
+        BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+        return org.springframework.security.core.userdetails.User
+                .builder()
+                .username(nickname)
+                .password(passwordEncoder.encode(user.getKakaoId()+user.getMail()))
+                .authorities("BASIC")
+                .build();
+    }
 }
