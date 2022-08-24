@@ -15,8 +15,8 @@ import org.springframework.web.bind.annotation.RequestParam;
  * @description 회원 관련 역할 분리 인터페이스
  * @author  박세헌, 박찬호
  * @since   2022-08-02
- * @updated 1. 메인 화면 필터 변경 기능 구현
- *          - 2022-08-18 박찬호
+ * @updated 1.필터 변경 Response body 수정 (null -> 변경 값)
+ *          - 2022-08-24 박찬호
  */
 
 public interface UserController {
@@ -30,9 +30,9 @@ public interface UserController {
     ResponseEntity<RecordResponseDto.EInfo> getRecordInfo(@RequestParam("recordId") Long recordId);
     ResponseEntity<UserResponseDto.DetailMap> getDetailMap(@RequestParam("recordId") Long recordId);
 
-    ResponseEntity<HttpStatus> changeFilterMine(@RequestParam("nickname") String nickname);
-    ResponseEntity<HttpStatus> changeFilterFriend(@RequestParam("nickname") String nickname);
-    ResponseEntity<HttpStatus> changeFilterRecord(@RequestParam("nickname") String nickname);
+    ResponseEntity<Boolean> changeFilterMine(@RequestParam("nickname") String nickname);
+    ResponseEntity<Boolean> changeFilterFriend(@RequestParam("nickname") String nickname);
+    ResponseEntity<Boolean> changeFilterRecord(@RequestParam("nickname") String nickname);
 
     ResponseEntity<?> editUserProfile(@RequestBody UserRequestDto.Profile requestDto);
     ResponseEntity<?> getDetailMap(@RequestBody RecordRequestDto.Message requestDto);

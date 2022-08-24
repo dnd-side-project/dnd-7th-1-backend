@@ -4,7 +4,6 @@ import com.dnd.ground.domain.challenge.UserChallenge;
 import com.dnd.ground.domain.exerciseRecord.ExerciseRecord;
 import com.dnd.ground.domain.friend.Friend;
 import lombok.*;
-import org.springframework.http.HttpStatus;
 
 import javax.persistence.*;
 import javax.validation.constraints.Email;
@@ -17,9 +16,8 @@ import java.util.List;
  * @description 회원 엔티티
  * @author  박찬호, 박세헌
  * @since   2022.07.28
- * @updated 1. 카카오 회원 번호 필드 추가
- *          2. 프로필 사진 관련 필드 주석 처리
- *           - 2022-08-23 박찬호
+ * @updated 1.필터 변경 Response body 수정 (null -> 변경 값)
+ *           - 2022-08-24 박찬호
  */
 
 @Getter
@@ -90,19 +88,19 @@ public class User {
     }
 
     //필터 변경
-    public HttpStatus changeFilterMine() {
+    public Boolean changeFilterMine() {
         this.isShowMine = !this.isShowMine;
-        return HttpStatus.OK;
+        return this.isShowMine;
     }
 
-    public HttpStatus changeFilterFriend() {
+    public Boolean changeFilterFriend() {
         this.isShowFriend = !this.isShowFriend;
-        return HttpStatus.OK;
+        return this.isShowFriend;
     }
 
-    public HttpStatus changeFilterRecord() {
+    public Boolean changeFilterRecord() {
         this.isPublicRecord = !this.isPublicRecord;
-        return HttpStatus.OK;
+        return this.isPublicRecord;
     }
 
     public void updateProfile(String nickname, String intro) {

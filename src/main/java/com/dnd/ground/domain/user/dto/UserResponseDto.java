@@ -9,6 +9,7 @@ import io.swagger.annotations.ApiModelProperty;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -19,9 +20,8 @@ import java.util.List;
  *              4. 랭킹 정보
  * @author  박세헌, 박찬호
  * @since   2022-08-08
- * @updated 1. API 명세 수정
- *          2. UserMatrix 클래스 생성자 수정
- *          - 2022.08.18 박찬호
+ * @updated 1. 필터에 따른 UserMatrix 수정자 생성
+ *          - 2022.08.24 박찬호
  */
 
 @Data
@@ -117,6 +117,14 @@ public class UserResponseDto {
             this.setMatrices(matrices);
             this.setLatitude(lat);
             this.setLongitude(lon);
+        }
+
+        public void setProperties(String nickname, long matricesNumber, Double lat, Double lon) {
+            this.setNickname(nickname);
+            this.setMatricesNumber(matricesNumber);
+            this.setLatitude(lat);
+            this.setLongitude(lon);
+            this.matrices = new ArrayList<>();
         }
     }
 

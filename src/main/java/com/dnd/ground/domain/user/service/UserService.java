@@ -14,9 +14,8 @@ import java.time.LocalDateTime;
  * @description 회원 서비스 인터페이스
  * @author  박세헌, 박찬호
  * @since   2022-08-01
- * @updated  1  운동 기록 메시지 수정 기능
- *           2. 회원 프로필 수정 기능
- *           - 2022-08-19 박세헌
+ * @updated  2.필터 변경 Response body 수정 (null -> 변경 값)
+ *           - 2022-08-24 박찬호
  */
 
 public interface UserService {
@@ -29,9 +28,9 @@ public interface UserService {
     RecordResponseDto.EInfo getExerciseInfo(Long exerciseId);
     UserResponseDto.DetailMap getDetailMap(Long recordId);
 
-    HttpStatus changeFilterMine(String nickname);
-    HttpStatus changeFilterFriend(String nickname);
-    HttpStatus changeFilterRecord(String nickname);
+    Boolean changeFilterMine(String nickname);
+    Boolean changeFilterFriend(String nickname);
+    Boolean changeFilterRecord(String nickname);
 
     ResponseEntity<?> editRecordMessage(Long recordId, String message);
     ResponseEntity<?> editUserProfile(String originNick, String editNick, String intro);
