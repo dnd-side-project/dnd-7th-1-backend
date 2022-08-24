@@ -30,8 +30,8 @@ import java.util.Objects;
  * @description 운동 기록 서비스 클래스
  * @author  박세헌
  * @since   2022-08-01
- * @updated 2022-08-24 / 1. orElseThrow() 예외 처리
- *                        - 박세헌
+ * @updated 2022-08-24 / 1. orElseThrow() 예외 처리 - 박찬호
+ *                       2. 랭킹 동점 로직, 유저 맨위 - 박세헌
  */
 
 @Service
@@ -79,7 +79,7 @@ public class ExerciseRecordServiceImpl implements ExerciseRecordService {
 
         //영역 저장
         ArrayList<ArrayList<Double>> matrices = endRequestDto.getMatrices();
-        for (int i=0; i<matrices.size(); i++){
+        for (int i = 0; i < matrices.size(); i++) {
             exerciseRecord.addMatrix(new Matrix(matrices.get(i).get(0), matrices.get(i).get(1)));
         }
 
@@ -106,37 +106,40 @@ public class ExerciseRecordServiceImpl implements ExerciseRecordService {
         int count = 0;
         int rank = 1;
 
-        // 1명이라도 0점이 아니라면
-        if (!stepCount.isEmpty()) {
-            Long matrixNumber = (Long) stepCount.get(0).get(1);  // 맨 처음 user의 걸음 수
-            for (Tuple info : stepCount) {
-                if (Objects.equals((Long) info.get(1), matrixNumber)) {  // 전 유저와 걸음 수가 같다면 랭크 유지
-                    stepRankings.add(new UserResponseDto.Ranking(rank, (String) info.get(0),
-                            (Long) info.get(1)));
-                    count += 1;
-                    continue;
+        UserResponseDto.Ranking userRanking = null;
+
+        Long matrixNumber = (Long) stepCount.get(0).get(1);  // 맨 처음 user의 걸음 수
+        for (Tuple info : stepCount) {
+            // 전 유저와 걸음 수가 같다면 랭크 유지
+            if (Objects.equals((Long) info.get(1), matrixNumber)) {
+
+                // 유저 찾았으면 저장해둠
+                if (Objects.equals((String) info.get(0), user.getNickname())) {
+                    userRanking = new UserResponseDto.Ranking(rank, (String) info.get(0),
+                            (Long) info.get(1));
                 }
-                // 전 유저보다 걸음수가 작다면 랭크+1
-                rank += 1;
+
                 stepRankings.add(new UserResponseDto.Ranking(rank, (String) info.get(0),
                         (Long) info.get(1)));
-                matrixNumber = (Long) info.get(1);  // 걸음 수 update!
                 count += 1;
+                continue;
             }
-            rank += 1;
-            // 나머지 0점인 유저들 추가
-            for (int i = count; i < userAndFriends.size(); i++) {
-                stepRankings.add(new UserResponseDto.Ranking(rank, userAndFriends.get(i).getNickname(), 0L));
-            }
-            return new RankResponseDto.Step(stepRankings);
-        }
 
-        // 전부다 0점이라면
-        else {
-            for (int i = count; i < userAndFriends.size(); i++) {
-                stepRankings.add(new UserResponseDto.Ranking(rank, userAndFriends.get(i).getNickname(), 0L));
+            // 전 유저보다 걸음수가 작다면 앞에 있는 사람수 만큼이 자신 랭킹
+            count += 1;
+            rank = count;
+
+            // 유저 찾았으면 저장해둠
+            if (Objects.equals((String) info.get(0), user.getNickname())) {
+                userRanking = new UserResponseDto.Ranking(rank, (String) info.get(0),
+                        (Long) info.get(1));
             }
-            return new RankResponseDto.Step(stepRankings);
+            stepRankings.add(new UserResponseDto.Ranking(rank, (String) info.get(0),
+                    (Long) info.get(1)));
+            matrixNumber = (Long) info.get(1);  // 걸음 수 update!
         }
+        // 맨 앞에 유저 추가
+        stepRankings.add(0, userRanking);
+        return new RankResponseDto.Step(stepRankings);
     }
 }
