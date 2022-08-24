@@ -30,8 +30,12 @@ import java.util.Objects;
  * @description 운동 기록 서비스 클래스
  * @author  박세헌
  * @since   2022-08-01
+<<<<<<< HEAD
  * @updated 2022-08-24 / 1. orElseThrow() 예외 처리
  *                        - 박세헌
+=======
+ * @updated 2022-08-22 / 운동 시작 시간, 끝 시간 추가 - 박세헌
+>>>>>>> f180aec28cb7d84d648bab3203826c0c7814e601
  */
 
 @Service
@@ -68,14 +72,14 @@ public class ExerciseRecordServiceImpl implements ExerciseRecordService {
     @Transactional
     public ResponseEntity<?> recordEnd(EndRequestDto endRequestDto) {
         // 유저 찾아서 운동 기록 생성
+
         User user = userRepository.findByNickname(endRequestDto.getNickname()).orElseThrow(
                 () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
+        ExerciseRecord exerciseRecord = new ExerciseRecord(user);
 
-        ExerciseRecord exerciseRecord = new ExerciseRecord(user, LocalDateTime.now());
-
-        // 정보 update(ended, 거리, 걸음수, 운동시간, 상세 기록)
+        // 정보 update(ended, 거리, 걸음수, 운동시간, 상세 기록, 시작 시간, 끝 시간)
         exerciseRecord.updateInfo(endRequestDto.getDistance(), endRequestDto.getStepCount(),
-                endRequestDto.getExerciseTime(), endRequestDto.getMessage());
+                endRequestDto.getExerciseTime(), endRequestDto.getMessage(), endRequestDto.getStarted(), endRequestDto.getEnded());
 
         //영역 저장
         ArrayList<ArrayList<Double>> matrices = endRequestDto.getMatrices();
