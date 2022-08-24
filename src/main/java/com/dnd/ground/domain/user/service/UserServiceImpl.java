@@ -153,10 +153,10 @@ public class UserServiceImpl implements UserService{
         Long matrixNumber = (long) matrixRepository.findMatrixByRecords(recordOfThisWeek).size();
 
         // 이번주 걸음수
-        Integer stepCount = exerciseRecordRepository.findUserStepCount(user, recordOfThisWeek);
+        Integer stepCount = exerciseRecordRepository.findUserStepCount(user, recordOfThisWeek).orElse(0);
 
         // 이번주 거리합
-        Integer distance = exerciseRecordRepository.findUserDistance(user, recordOfThisWeek);
+        Integer distance = exerciseRecordRepository.findUserDistance(user, recordOfThisWeek).orElse(0);
 
         // 친구 수
         Integer friendNumber = friendService.getFriends(user).size();
@@ -241,7 +241,7 @@ public class UserServiceImpl implements UserService{
         for (ExerciseRecord exerciseRecord : record) {
 
             // 운동 시작 시간 formatting
-            String started = exerciseRecord.getStarted().format(DateTimeFormatter.ofPattern("MM월 dd일 E요일 HH:mm"));
+            String started = exerciseRecord.getStarted().format(DateTimeFormatter.ofPattern("MM월 dd일 E요일 HH:mm").withLocale(Locale.forLanguageTag("ko")));
 
             // 운동 시간 formatting
             Integer exerciseTime = exerciseRecord.getExerciseTime();
@@ -272,7 +272,17 @@ public class UserServiceImpl implements UserService{
         int totalMinute = totalExerciseTime / 60;
         int totalSecond = totalExerciseTime % 60;
 
-        String totalTime = Integer.toString(totalMinute) + ":" + Integer.toString(totalSecond);
+        String totalTime = "";
+
+        // 10초 미만이라면 앞에 0하나 붙여주기
+        if (Integer.toString(totalSecond).length() == 1){
+            totalTime = Integer.toString(totalMinute) + ":0" + Integer.toString(totalSecond);
+            System.out.println(totalTime);
+        }
+        else{
+            totalTime = Integer.toString(totalMinute) + ":" + Integer.toString(totalSecond);
+            System.out.println(totalTime);
+        }
 
         return ActivityRecordResponseDto
                 .builder()
@@ -288,7 +298,7 @@ public class UserServiceImpl implements UserService{
         ExerciseRecord exerciseRecord = exerciseRecordRepository.findById(exerciseId).orElseThrow();  // 예외 처리
 
         // 운동 시작, 끝 시간 formatting
-        String date = exerciseRecord.getStarted().format(DateTimeFormatter.ofPattern("MM월 dd일 E요일"));
+        String date = exerciseRecord.getStarted().format(DateTimeFormatter.ofPattern("MM월 dd일 E요일").withLocale(Locale.forLanguageTag("ko")));
         String started = exerciseRecord.getStarted().format(DateTimeFormatter.ofPattern("HH:mm"));
         String ended = exerciseRecord.getEnded().format(DateTimeFormatter.ofPattern("HH:mm"));
 
@@ -301,9 +311,11 @@ public class UserServiceImpl implements UserService{
         // 10초 미만이라면 앞에 0하나 붙여주기
         if (Integer.toString(second).length() == 1){
             time = Integer.toString(minute) + ":0" + Integer.toString(second);
+            System.out.println(time);
         }
         else{
             time = Integer.toString(minute) + ":" + Integer.toString(second);
+            System.out.println(time);
         }
 
         // 해당 운동 기록이 참여한 챌린지들 조회
