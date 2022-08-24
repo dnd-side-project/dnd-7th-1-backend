@@ -3,6 +3,7 @@ package com.dnd.ground.domain.user;
 import com.dnd.ground.domain.challenge.UserChallenge;
 import com.dnd.ground.domain.exerciseRecord.ExerciseRecord;
 import com.dnd.ground.domain.friend.Friend;
+import com.dnd.ground.domain.user.dto.JwtUserDto;
 import lombok.*;
 import org.springframework.http.HttpStatus;
 
@@ -17,9 +18,8 @@ import java.util.List;
  * @description 회원 엔티티
  * @author  박찬호, 박세헌
  * @since   2022.07.28
- * @updated 1. 카카오 회원 번호 필드 추가
- *          2. 프로필 사진 관련 필드 주석 처리
- *           - 2022-08-23 박찬호
+ * @updated 1. 리프레시 토큰 필드 생성 및 비즈니스 로직 추가
+ *          - 2022-08-24 박세헌
  */
 
 @Getter
@@ -74,6 +74,9 @@ public class User {
 //    @Column(name="picture_path", nullable = false)
 //    private String picturePath;
 
+    @Column(name="refresh_token")
+    private String refreshToken;
+
     @OneToMany(mappedBy = "friend")
     private List<Friend> friends = new ArrayList<>();
 
@@ -109,4 +112,9 @@ public class User {
         this.nickname = nickname;
         this.intro = intro;
     }
+
+    public void updateRefreshToken(String refreshToken){
+        this.refreshToken = refreshToken;
+    }
+
 }
