@@ -30,12 +30,8 @@ import java.util.Objects;
  * @description 운동 기록 서비스 클래스
  * @author  박세헌
  * @since   2022-08-01
-<<<<<<< HEAD
  * @updated 2022-08-24 / 1. orElseThrow() 예외 처리
  *                        - 박세헌
-=======
- * @updated 2022-08-22 / 운동 시작 시간, 끝 시간 추가 - 박세헌
->>>>>>> f180aec28cb7d84d648bab3203826c0c7814e601
  */
 
 @Service
