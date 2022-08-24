@@ -36,10 +36,8 @@ import java.util.*;
  * @description 유저 서비스 클래스
  * @author  박세헌, 박찬호
  * @since   2022-08-01
- * @updated 1.메인화면 조회 메소드 수정 - 박찬호
- *          2.  운동 기록 메시지 수정 기능 - 박세헌
- *          3. 회원 프로필 수정 기능 - 박세헌
- *          - 2022.08.18 박세헌
+ * @updated 1.필터에 따른 유저 정보 조회 안되는 문제 해결
+ *          - 2022.08.24 박찬호
  */
 
 @Slf4j
@@ -69,12 +67,14 @@ public class UserServiceImpl implements UserService{
         /*회원의 matrix 와 정보 (userMatrix)*/
         UserResponseDto.UserMatrix userMatrix = new UserResponseDto.UserMatrix(user);
 
-        //회원의 "나의 기록 보기" 옵션이 True일 때만 포함.
-        if (user.getIsShowMine()) {
-            List<ExerciseRecord> userRecordOfThisWeek = exerciseRecordRepository.findRecordOfThisWeek(user.getId()); // 이번주 운동기록 조회
-            List<MatrixDto> userMatrixSet = matrixRepository.findMatrixSetByRecords(userRecordOfThisWeek);  // 운동 기록의 영역 조회
+        List<ExerciseRecord> userRecordOfThisWeek = exerciseRecordRepository.findRecordOfThisWeek(user.getId()); // 이번주 운동기록 조회
+        List<MatrixDto> userMatrixSet = matrixRepository.findMatrixSetByRecords(userRecordOfThisWeek);  // 운동 기록의 영역 조회
 
+        //회원의 "나의 기록 보기" 옵션이 True일 때만 영역 포함.
+        if (user.getIsShowMine()) {
             userMatrix.setProperties(user.getNickname(), userMatrixSet.size(), userMatrixSet, user.getLatitude(), user.getLongitude());
+        } else {
+            userMatrix.setProperties(user.getNickname(), userMatrixSet.size(), user.getLatitude(), user.getLongitude());
         }
 
         /*----------*/
@@ -222,7 +222,7 @@ public class UserServiceImpl implements UserService{
         }
 
         //이번주 영역 정보
-        areas = (long)matrixRepository.findMatrixSetByRecords(
+        areas = (long) matrixRepository.findMatrixSetByRecords(
                 exerciseRecordRepository.findRecordOfThisWeek(friend.getId())).size();
 
         //함께 진행하는 챌린지 정보
