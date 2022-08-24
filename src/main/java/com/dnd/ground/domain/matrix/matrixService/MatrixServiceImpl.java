@@ -10,6 +10,8 @@ import com.dnd.ground.domain.user.User;
 import com.dnd.ground.domain.user.dto.RankResponseDto;
 import com.dnd.ground.domain.user.dto.UserResponseDto;
 import com.dnd.ground.domain.user.repository.UserRepository;
+import com.dnd.ground.global.exception.CNotFoundException;
+import com.dnd.ground.global.exception.CommonErrorCode;
 import lombok.*;
 
 import org.springframework.stereotype.Service;
@@ -23,10 +25,10 @@ import java.util.Objects;
 
 /**
  * @description 운동 영역 서비스 클래스
- * @author  박세헌
+ * @author  박세헌, 박찬호
  * @since   2022-08-01
- * @updated matrixRanking함수 파라미터 변경
- *          - 2022.08.18 박세헌
+ * @updated 1. orElseThrow() 예외 처리
+ *          - 2022.08.18 박찬호
  */
 
 @Service
@@ -46,7 +48,9 @@ public class MatrixServiceImpl implements MatrixService {
 
     // 랭킹 조회(역대 누적 칸의 수 기준)
     public RankResponseDto.Matrix matrixRanking(String nickname) {
-        User user = userRepository.findByNickname(nickname).orElseThrow();
+        User user = userRepository.findByNickname(nickname).orElseThrow(
+                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
+
         List<User> userAndFriends = friendService.getFriends(user);  // 친구들 조회
         userAndFriends.add(0, user);  // 유저 추가
 
@@ -64,7 +68,9 @@ public class MatrixServiceImpl implements MatrixService {
 
     // 랭킹 조회(누적 영역의 수 기준)
     public RankResponseDto.Area areaRanking(String nickname, LocalDateTime start, LocalDateTime end) {
-        User user = userRepository.findByNickname(nickname).orElseThrow();
+        User user = userRepository.findByNickname(nickname).orElseThrow(
+                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
+
         List<User> friends = friendService.getFriends(user);  // 친구들 조회
         System.out.println(friends.size());
         List<UserResponseDto.Ranking> areaRankings = new ArrayList<>();  // [랭킹, 닉네임, 영역의 수]

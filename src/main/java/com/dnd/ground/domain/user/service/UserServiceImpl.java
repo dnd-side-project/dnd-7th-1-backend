@@ -40,6 +40,7 @@ import java.util.*;
  * @since   2022-08-01
  * @updated 1.필터 상관 없이 모든 정보를 내려주도록 변경
  *          2.필터 변경 Response body 수정 (null -> 변경 값)
+ *          3.orElseThrow() 예외 처리
  *          - 2022.08.24 박찬호
  */
 
@@ -65,7 +66,8 @@ public class UserServiceImpl implements UserService{
     }
 
     public HomeResponseDto showHome(String nickname){
-        User user = userRepository.findByNickname(nickname).orElseThrow(() -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));  // 예외 처리
+        User user = userRepository.findByNickname(nickname).orElseThrow(
+                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
 
         /*회원의 matrix 와 정보 (userMatrix)*/
         UserResponseDto.UserMatrix userMatrix = new UserResponseDto.UserMatrix(user);
@@ -105,7 +107,8 @@ public class UserServiceImpl implements UserService{
                 matrixRepository.findMatrixSetByRecords(exerciseRecordRepository.findRecordOfThisWeek(nf.getId()))));  // 이번주 운동기록 조회하여 영역 대입
 
         for (String friendNickname : friendHashMap.keySet()) {
-            User friend = userRepository.findByNickname(friendNickname).orElseThrow(); //예외 처리 예정
+            User friend = userRepository.findByNickname(friendNickname).orElseThrow(
+                    () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
 
             friendMatrices.add(new UserResponseDto.FriendMatrix(friendNickname, friend.getLatitude(), friend.getLongitude(),
                     friendHashMap.get(friendNickname)));
@@ -144,7 +147,8 @@ public class UserServiceImpl implements UserService{
 
     /*회원 정보 조회(마이페이지)*/
     public UserResponseDto.UInfo getUserInfo(String nickname) {
-        User user = userRepository.findByNickname(nickname).orElseThrow();
+        User user = userRepository.findByNickname(nickname).orElseThrow(
+                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
 
         // 이번주 운동기록
         List<ExerciseRecord> recordOfThisWeek = exerciseRecordRepository.findRecordOfThisWeek(user.getId());
@@ -179,11 +183,16 @@ public class UserServiceImpl implements UserService{
 
     /*회원 프로필 조회*/
     public UserResponseDto.Profile getUserProfile(String userNickname, String friendNickname) {
-        User user = userRepository.findByNickname(userNickname).orElseThrow(); //예외 처리 예정
-        User friend = userRepository.findByNickname(friendNickname).orElseThrow(); //예외 처리 예정
+        User user = userRepository.findByNickname(userNickname).orElseThrow(
+                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
+
+        User friend = userRepository.findByNickname(friendNickname).orElseThrow(
+                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
 
         //마지막 활동 시간
-        LocalDateTime lasted = exerciseRecordRepository.findLastRecord(friend).orElseThrow(); //예외 처리 예정
+        LocalDateTime lasted = exerciseRecordRepository.findLastRecord(friend).orElseThrow(
+                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_RECORD)
+        );
 
         //친구 관계 확인
         Boolean isFriend = false;
@@ -229,7 +238,8 @@ public class UserServiceImpl implements UserService{
 
     /* 나의 활동 기록 조회 */
     public ActivityRecordResponseDto getActivityRecord(String nickname, LocalDateTime start, LocalDateTime end) {
-        User user = userRepository.findByNickname(nickname).orElseThrow();  // 예외처리 예정
+        User user = userRepository.findByNickname(nickname).orElseThrow(
+                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
         List<ExerciseRecord> record = exerciseRecordRepository.findRecord(user.getId(), start, end);  // start~end 사이 운동기록 조회
         List<RecordResponseDto.activityRecord> activityRecords = new ArrayList<>();
 
@@ -295,8 +305,8 @@ public class UserServiceImpl implements UserService{
 
     /* 나의 운동기록에 대한 정보 조회 */
     public RecordResponseDto.EInfo getExerciseInfo(Long exerciseId){
-        ExerciseRecord exerciseRecord = exerciseRecordRepository.findById(exerciseId).orElseThrow();  // 예외 처리
-
+        ExerciseRecord exerciseRecord = exerciseRecordRepository.findById(exerciseId).orElseThrow(
+                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_RECORD));
         // 운동 시작, 끝 시간 formatting
         String date = exerciseRecord.getStarted().format(DateTimeFormatter.ofPattern("MM월 dd일 E요일").withLocale(Locale.forLanguageTag("ko")));
         String started = exerciseRecord.getStarted().format(DateTimeFormatter.ofPattern("HH:mm"));
@@ -340,9 +350,11 @@ public class UserServiceImpl implements UserService{
     /* 상세 지도 보기 */
     public UserResponseDto.DetailMap getDetailMap(Long recordId){
         // 운동 기록 찾기
-        ExerciseRecord exerciseRecord = exerciseRecordRepository.findById(recordId).orElseThrow();  // 예외 처리
+        ExerciseRecord exerciseRecord = exerciseRecordRepository.findById(recordId).orElseThrow(
+                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_RECORD));
         // 유저 찾기
-        User user = userRepository.findByExerciseRecord(exerciseRecord).orElseThrow();  // 예외 처리
+        User user = userRepository.findByExerciseRecord(exerciseRecord).orElseThrow(
+                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
         // 운동기록의 칸 찾기
         List<MatrixDto> matrices = matrixRepository.findMatrixSetByRecord(exerciseRecord);
 
@@ -353,25 +365,32 @@ public class UserServiceImpl implements UserService{
     /*필터 변경: 나의 기록 보기*/
     @Transactional
     public Boolean changeFilterMine(String nickname) {
-        return userRepository.findByNickname(nickname).orElseThrow().changeFilterMine();
+        return userRepository.findByNickname(nickname)
+                .orElseThrow(() -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER))
+                .changeFilterMine();
     }
 
     /*필터 변경: 친구 보기*/
     @Transactional
     public Boolean changeFilterFriend(String nickname) {
-        return userRepository.findByNickname(nickname).orElseThrow().changeFilterFriend();
+        return userRepository.findByNickname(nickname)
+                .orElseThrow(() -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER))
+                .changeFilterFriend();
     }
 
     /*필터 변경: 친구들에게 보이기*/
     @Transactional
     public Boolean changeFilterRecord(String nickname) {
-        return userRepository.findByNickname(nickname).orElseThrow().changeFilterRecord();
+        return userRepository.findByNickname(nickname)
+                .orElseThrow(() -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER))
+                .changeFilterRecord();
     }
 
     /* 운동 기록의 상세 메시지 수정 */
     @Transactional
     public ResponseEntity<?> editRecordMessage(Long recordId, String message){
-        ExerciseRecord exerciseRecord = exerciseRecordRepository.findById(recordId).orElseThrow(); // 예외 처리
+        ExerciseRecord exerciseRecord = exerciseRecordRepository.findById(recordId).orElseThrow(
+                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_RECORD));
         exerciseRecord.editMessage(message);
         return new ResponseEntity("성공", HttpStatus.OK);
     }
@@ -379,7 +398,8 @@ public class UserServiceImpl implements UserService{
     /* 회원 프로필 수정 */
     @Transactional
     public ResponseEntity<?> editUserProfile(String originalNick, String editNick, String intro){
-        User user = userRepository.findByNickname(originalNick).orElseThrow();
+        User user = userRepository.findByNickname(originalNick).orElseThrow(
+                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
         user.updateProfile(editNick, intro);
         return new ResponseEntity("성공", HttpStatus.OK);
     }
