@@ -17,7 +17,7 @@ import java.time.Instant;
 public class JwtUtil {
 
     private static final Algorithm ALGORITHM = Algorithm.HMAC256("token-secret-key");
-    private static final long ACCESS_TIME = 60*30;  // 액세스 토큰 30분
+    private static final long ACCESS_TIME = 60 * 30;  // 액세스 토큰 30분
     private static final long REFRESH_TIME = 60*60*24*14;  // 리프레시 토큰 2주
 
     // 액세스 토큰 생성

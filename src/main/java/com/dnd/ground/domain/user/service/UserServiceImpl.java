@@ -419,7 +419,7 @@ public class UserServiceImpl implements UserService, UserDetailsService {
         return org.springframework.security.core.userdetails.User
                 .builder()
                 .username(nickname)
-                .password(passwordEncoder.encode(user.getKakaoId()+user.getMail()))
+                .password(passwordEncoder.encode(user.getKakaoId()+user.getNickname()))
                 .authorities("BASIC")
                 .build();
     }

@@ -26,7 +26,8 @@ import java.io.IOException;
  * @author  박세헌
  * @since   2022-08-24
  * @updated 1. 필터 생성
- *          - 2022.08.24 박찬호
+ *          2. password: kakaoId + 닉네임
+ *          - 2022.08.24 박세헌
  * @note 1. 찬호가 카카오 유저 대한 정보를 JwtUserDto에 맞게 "/sign"으로 post요청(회원가입 or 재로그인)
  *       2. 기존 유저가 자동 로그인 되는 기능은 어디서 처리? 해당 필터에서 처리 가능 할 것 같지만 매우매우 복잡
  */
@@ -66,10 +67,10 @@ public class JWTSignFilter extends UsernamePasswordAuthenticationFilter {
             userService.save(userDto);
         }
 
-        // id: 닉네임, password: kakaoId + mail
+        // id: 닉네임, password: kakaoId + 닉네임
         UsernamePasswordAuthenticationToken token = new UsernamePasswordAuthenticationToken(
                 userDto.getNickname(),
-                userDto.getId()+userDto.getMail(),
+                userDto.getId()+userDto.getNickname(),
                 null
         );
 

@@ -51,7 +51,7 @@ public class JWTCheckFilter extends BasicAuthenticationFilter {
                                     FilterChain chain) throws IOException, ServletException {
 
         String accessToken = request.getHeader("access_token");
-        String refreshToken = request.getHeader("access_token");
+        String refreshToken = request.getHeader("refresh_token");
 
         // 왜 토큰이 안오죠? 넘어가
         if (accessToken == null || !accessToken.startsWith("Bearer ")){
