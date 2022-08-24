@@ -6,12 +6,13 @@ import com.dnd.ground.domain.exerciseRecord.dto.EndRequestDto;
 import com.dnd.ground.domain.exerciseRecord.dto.StartResponseDto;
 import com.dnd.ground.domain.friend.service.FriendService;
 import com.dnd.ground.domain.matrix.Matrix;
-import com.dnd.ground.domain.matrix.dto.MatrixDto;
 import com.dnd.ground.domain.matrix.matrixRepository.MatrixRepository;
 import com.dnd.ground.domain.user.User;
 import com.dnd.ground.domain.user.dto.RankResponseDto;
 import com.dnd.ground.domain.user.dto.UserResponseDto;
 import com.dnd.ground.domain.user.repository.UserRepository;
+import com.dnd.ground.global.exception.CNotFoundException;
+import com.dnd.ground.global.exception.CommonErrorCode;
 import lombok.*;
 
 import org.springframework.http.HttpStatus;
@@ -24,14 +25,12 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 
 /**
  * @description 운동 기록 서비스 클래스
- * @author  박세헌, 박찬호
+ * @author  박세헌
  * @since   2022-08-01
- * @updated 2022-08-19 / 1. 칸 정보 반환 형태 수정으로 인한 로직 변경
- *                       2. 운동 기록 response body 추가
+ * @updated 2022-08-24 / 1. orElseThrow() 예외 처리
  *                        - 박세헌
  */
 
@@ -54,7 +53,9 @@ public class ExerciseRecordServiceImpl implements ExerciseRecordService {
     // 운동기록 id, 일주일 누적 영역 반환
     @Transactional
     public StartResponseDto recordStart(String nickname) {
-        User user = userRepository.findByNickname(nickname).orElseThrow();  // 예외 처리
+        User user = userRepository.findByNickname(nickname).orElseThrow(
+                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
+
         List<ExerciseRecord> recordOfThisWeek = exerciseRecordRepository.findRecordOfThisWeek(user.getId());
         if (recordOfThisWeek.isEmpty()) {
             return new StartResponseDto(0L);
@@ -67,7 +68,9 @@ public class ExerciseRecordServiceImpl implements ExerciseRecordService {
     @Transactional
     public ResponseEntity<?> recordEnd(EndRequestDto endRequestDto) {
         // 유저 찾아서 운동 기록 생성
-        User user = userRepository.findByNickname(endRequestDto.getNickname()).orElseThrow(); // 예외처리
+        User user = userRepository.findByNickname(endRequestDto.getNickname()).orElseThrow(
+                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
+
         ExerciseRecord exerciseRecord = new ExerciseRecord(user, LocalDateTime.now());
 
         // 정보 update(ended, 거리, 걸음수, 운동시간, 상세 기록)
@@ -90,7 +93,9 @@ public class ExerciseRecordServiceImpl implements ExerciseRecordService {
 
     // 랭킹 조회(누적 걸음 수 기준)  (추후 파라미터 Requestdto로 교체 예정)
     public RankResponseDto.Step stepRanking(String nickname, LocalDateTime start, LocalDateTime end) {
-        User user = userRepository.findByNickname(nickname).orElseThrow(); // 예외 처리
+        User user = userRepository.findByNickname(nickname).orElseThrow(
+                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
+
         List<User> userAndFriends = friendService.getFriends(user);  // 친구들 조회
         userAndFriends.add(0, user);  // 유저 추가
         List<UserResponseDto.Ranking> stepRankings = new ArrayList<>(); // [랭킹, 닉네임, 걸음 수]

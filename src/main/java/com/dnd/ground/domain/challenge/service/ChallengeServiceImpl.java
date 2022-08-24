@@ -15,6 +15,8 @@ import com.dnd.ground.domain.user.User;
 import com.dnd.ground.domain.user.dto.RankResponseDto;
 import com.dnd.ground.domain.user.dto.UserResponseDto;
 import com.dnd.ground.domain.user.repository.UserRepository;
+import com.dnd.ground.global.exception.CNotFoundException;
+import com.dnd.ground.global.exception.CommonErrorCode;
 import com.dnd.ground.global.util.UuidUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,11 +37,10 @@ import java.util.*;
 
 /**
  * @description 챌린지와 관련된 서비스의 역할을 분리한 구현체
- * @author  박찬호
+ * @author  박찬호, 박세헌
  * @since   2022-08-03
- * @updated 1. 챌린지 조회 시, 종류에 따른 랭킹 계산 반영 -박찬호
- *          2. 해당 운동기록이 참여하고 있는 챌린지 - 박세헌
- *          - 2022.08.18
+ * @updated 1. orElseThrow() 예외 처리
+ *          - 2022.08.24 박찬호
  */
 
 @Slf4j
@@ -58,7 +59,8 @@ public class ChallengeServiceImpl implements ChallengeService {
     @Transactional
     public ResponseEntity<?> createChallenge(ChallengeCreateRequestDto requestDto) {
 
-        User master = userRepository.findByNickname(requestDto.getNickname()).orElseThrow(); //예외 처리 예정
+        User master = userRepository.findByNickname(requestDto.getNickname()).orElseThrow(
+                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
 
         Challenge challenge = Challenge.create()
                 .uuid(UuidUtil.createUUID())
@@ -87,7 +89,8 @@ public class ChallengeServiceImpl implements ChallengeService {
         
         //챌린지 멤버의 챌린지 생성 과정
         for (String nickname : requestDto.getFriends()) {
-            User member = userRepository.findByNickname(nickname).orElseThrow(); //예외 처리 예정
+            User member = userRepository.findByNickname(nickname).orElseThrow(
+                    () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
 
             challengeCount = userChallengeRepository.findCountChallenge(member);
 
@@ -107,10 +110,16 @@ public class ChallengeServiceImpl implements ChallengeService {
     @Transactional
     public ResponseEntity<?> changeUserChallengeStatus(ChallengeRequestDto.CInfo requestDto, ChallengeStatus status) {
         //정보 조회
-        Challenge challenge = challengeRepository.findByUuid(requestDto.getUuid()).orElseThrow(); //예외 처리 예정
-        User user = userRepository.findByNickname(requestDto.getNickname()).orElseThrow(); // 예외 처리 예정
+        Challenge challenge = challengeRepository.findByUuid(requestDto.getUuid()).orElseThrow(
+                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_CHALLENGE));
+
+        User user = userRepository.findByNickname(requestDto.getNickname()).orElseThrow(
+                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
+
         //상태 변경
-        UserChallenge userChallenge = userChallengeRepository.findByUserAndChallenge(user, challenge).orElseThrow();
+        UserChallenge userChallenge = userChallengeRepository.findByUserAndChallenge(user, challenge).orElseThrow(
+                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER_CHALLENGE));
+
         if (userChallenge.getStatus() == ChallengeStatus.Master) {
             return new ResponseEntity(HttpStatus.BAD_REQUEST);
         }
@@ -172,7 +181,8 @@ public class ChallengeServiceImpl implements ChallengeService {
     
     /*초대 받은 챌린지 조회*/
     public List<ChallengeResponseDto.Invite> findInviteChallenge(String nickname) {
-        User user = userRepository.findByNickname(nickname).orElseThrow(); //예외 처리 예정
+        User user = userRepository.findByNickname(nickname).orElseThrow(
+                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
 
         List<Challenge> challenges = challengeRepository.findChallengeInWait(user);
         List<ChallengeResponseDto.Invite> response = new ArrayList<>();
@@ -194,7 +204,8 @@ public class ChallengeServiceImpl implements ChallengeService {
 
     /*진행 대기 중인 챌린지 리스트 조회*/
     public List<ChallengeResponseDto.Wait> findWaitChallenge(String nickname) {
-        User user = userRepository.findByNickname(nickname).orElseThrow(); //예외 처리 예정
+        User user = userRepository.findByNickname(nickname).orElseThrow(
+                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
 
         List<Challenge> waitChallenge = challengeRepository.findWaitChallenge(user);
         List<ChallengeResponseDto.Wait> response = new ArrayList<>();
@@ -220,7 +231,8 @@ public class ChallengeServiceImpl implements ChallengeService {
 
     /*진행 중인 챌린지 리스트 조회*/
     public List<ChallengeResponseDto.Progress> findProgressChallenge(String nickname) {
-        User user = userRepository.findByNickname(nickname).orElseThrow(); //예외 처리 예정
+        User user = userRepository.findByNickname(nickname).orElseThrow(
+                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
 
         List<Challenge> progressChallenge = challengeRepository.findProgressChallenge(user);
         List<ChallengeResponseDto.Progress> response = new ArrayList<>();
@@ -270,8 +282,11 @@ public class ChallengeServiceImpl implements ChallengeService {
 
     /*친구와 함께 진행 중인 챌린지 리스트 조회*/
     public List<ChallengeResponseDto.Progress> findProgressChallenge(String userNickname, String friendNickname) {
-        User user = userRepository.findByNickname(userNickname).orElseThrow(); //예외 처리 예정
-        User friend = userRepository.findByNickname(friendNickname).orElseThrow(); //예외 처리 예정
+        User user = userRepository.findByNickname(userNickname).orElseThrow(
+                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
+
+        User friend = userRepository.findByNickname(friendNickname).orElseThrow(
+                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
 
         List<Challenge> progressChallenge = challengeRepository.findChallengesWithFriend(user, friend);
         List<ChallengeResponseDto.Progress> response = new ArrayList<>();
@@ -321,7 +336,8 @@ public class ChallengeServiceImpl implements ChallengeService {
 
     /*진행 완료된 챌린지 리스트 조회*/
     public List<ChallengeResponseDto.Done> findDoneChallenge(String nickname) {
-        User user = userRepository.findByNickname(nickname).orElseThrow(); //예외 처리 예정
+        User user = userRepository.findByNickname(nickname).orElseThrow(
+                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
 
         List<Challenge> doneChallenge = challengeRepository.findDoneChallenge(user);
         List<ChallengeResponseDto.Done> response = new ArrayList<>();
@@ -356,8 +372,11 @@ public class ChallengeServiceImpl implements ChallengeService {
 
     /*진행 중인 챌린지 상세 조회*/
     public ChallengeResponseDto.Detail getDetailProgress(ChallengeRequestDto.CInfo request) {
-        User user = userRepository.findByNickname(request.getNickname()).orElseThrow(); //예외 처리 예정
-        Challenge challenge = challengeRepository.findByUuid(request.getUuid()).orElseThrow(); //예외 처리 예정
+        User user = userRepository.findByNickname(request.getNickname()).orElseThrow(
+                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
+
+        Challenge challenge = challengeRepository.findByUuid(request.getUuid()).orElseThrow(
+                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_CHALLENGE));
 
         //필요한 변수 선언
         List<User> members = userChallengeRepository.findChallengeUsers(challenge); //본인 포함 챌린지에 참여하는 인원들
@@ -422,7 +441,8 @@ public class ChallengeServiceImpl implements ChallengeService {
     /*해당 운동기록이 참여하고 있는 챌린지*/
     public List<ChallengeResponseDto.CInfoRes> findChallengeByRecord(ExerciseRecord exerciseRecord){
 
-        User user = userRepository.findByExerciseRecord(exerciseRecord).orElseThrow(); // 에외 처리
+        User user = userRepository.findByExerciseRecord(exerciseRecord).orElseThrow(
+                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
 
         // LocalDate 형태로 변환
         LocalDateTime startedTime = exerciseRecord.getStarted();
