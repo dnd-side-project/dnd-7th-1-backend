@@ -261,7 +261,7 @@ public class MatrixServiceImpl implements MatrixService {
                 count += 1;
                 continue;
             }
-            // 전 유저보다 영역 수가 작다면 랭크+1
+            // 전 유저보다 영역수 가 작다면 앞에 있는 사람수 만큼이 자신 랭킹
             count += 1;
             rank = count;
 
