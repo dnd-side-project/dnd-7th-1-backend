@@ -19,7 +19,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Builder
 public class JwtUserDto {
-    private Long Id;  // 카카오 id
+    private Long id;  // 카카오 id
     private String username;
     private String nickname;
     private String mail;
