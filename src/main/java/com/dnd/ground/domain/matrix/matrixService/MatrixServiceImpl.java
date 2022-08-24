@@ -82,7 +82,7 @@ public class MatrixServiceImpl implements MatrixService {
         // 친구들의 닉네임과 영역의 수 대입
         friends.forEach(f -> areaRankings.add(new UserResponseDto.Ranking(1, f.getNickname(),
                 (long) matrixRepository.findMatrixSetByRecords(exerciseRecordRepository.findRecord(f.getId(), start, end)).size())));
-        
+
         // 랭킹 계산 후 반환
         return new RankResponseDto.Area(calculateUserAreaRank(areaRankings, user));
     }
@@ -185,8 +185,8 @@ public class MatrixServiceImpl implements MatrixService {
 
                     // 유저 찾았으면 저장해둠
                     if (Objects.equals((String)info.get(0), user.getNickname())) {
-                        userRanking = new UserResponseDto.Ranking(rank, (String) info.get(0),
-                                (Long) info.get(1));
+                        matrixRankings.add(0, new UserResponseDto.Ranking(rank, (String) info.get(0),
+                                (Long) info.get(1)));
                     }
 
                     matrixRankings.add(new UserResponseDto.Ranking(rank, (String) info.get(0),
@@ -201,8 +201,8 @@ public class MatrixServiceImpl implements MatrixService {
 
                 // 유저 찾았으면 저장해둠
                 if (Objects.equals((String)info.get(0), user.getNickname())) {
-                    userRanking = new UserResponseDto.Ranking(rank, (String) info.get(0),
-                            (Long) info.get(1));
+                    matrixRankings.add(0, new UserResponseDto.Ranking(rank, (String) info.get(0),
+                            (Long) info.get(1)));
                 }
 
                 matrixRankings.add(new UserResponseDto.Ranking(rank, (String) info.get(0),
@@ -214,13 +214,11 @@ public class MatrixServiceImpl implements MatrixService {
             for (int i = count; i < member.size(); i++) {
                 // 유저 찾았으면 저장해둠
                 if (Objects.equals(member.get(i).getNickname(), user.getNickname())) {
-                    userRanking = new UserResponseDto.Ranking(rank, user.getNickname(),
-                            0L);
+                    matrixRankings.add(0, new UserResponseDto.Ranking(rank, user.getNickname(),
+                            0L));
                 }
                 matrixRankings.add(new UserResponseDto.Ranking(rank, member.get(i).getNickname(), 0L));
             }
-            // 맨 앞 유저 추가
-            matrixRankings.add(0, userRanking);
         }
 
         // 전부다 0점이라면
@@ -242,19 +240,20 @@ public class MatrixServiceImpl implements MatrixService {
 
         Long areaNumber = areaRankings.get(0).getScore();  // 맨 처음 user의 영역 수
         int rank = 1;
-        int count = 0;
-
-        int userRank = 0;
-        Long userArea = 0L;
+        int count = 1;
 
         for (int i=1; i<areaRankings.size(); i++){
+
             // 전 유저와 영역 수가 같다면 랭크 유지
             if (Objects.equals(areaRankings.get(i).getScore(), areaNumber)){
 
                 // 유저 찾았으면 저장해둠
                 if (Objects.equals(areaRankings.get(i).getNickname(), user.getNickname())) {
-                    userRank = rank;
-                    userArea = areaRankings.get(i).getScore();
+                    areaRankings.add(0, new UserResponseDto.Ranking(rank, user.getNickname(), areaRankings.get(i).getScore()));
+                    i += 1;
+                    areaRankings.get(i).setRank(rank);
+                    areaNumber = areaRankings.get(i).getScore();
+                    continue;
                 }
 
                 areaRankings.get(i).setRank(rank);
@@ -267,16 +266,16 @@ public class MatrixServiceImpl implements MatrixService {
 
             // 유저 찾았으면 저장해둠
             if (Objects.equals(areaRankings.get(i).getNickname(), user.getNickname())) {
-                userRank = rank;
-                userArea = areaRankings.get(i).getScore();
+                areaRankings.add(0, new UserResponseDto.Ranking(rank, user.getNickname(), areaRankings.get(i).getScore()));
+                i += 1;
+                areaRankings.get(i).setRank(rank);
+                areaNumber = areaRankings.get(i).getScore();
+                continue;
             }
 
             areaRankings.get(i).setRank(rank);
             areaNumber = areaRankings.get(i).getScore();  // 영역 수 update!
         }
-
-        // 맨앞 유저 추가
-        areaRankings.set(0, new UserResponseDto.Ranking(userRank, user.getNickname(), userArea));
 
         return areaRankings;
     }

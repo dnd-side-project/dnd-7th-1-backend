@@ -179,8 +179,6 @@ public class ExerciseRecordServiceImpl implements ExerciseRecordService {
         int count = 0;
         int rank = 1;
 
-        UserResponseDto.Ranking userRanking = null;
-
         Long matrixNumber = (Long) stepCount.get(0).get(1);  // 맨 처음 user의 걸음 수
         for (Tuple info : stepCount) {
             // 전 유저와 걸음 수가 같다면 랭크 유지
@@ -188,8 +186,8 @@ public class ExerciseRecordServiceImpl implements ExerciseRecordService {
 
                 // 유저 찾았으면 저장해둠
                 if (Objects.equals(info.get(0), user.getNickname())) {
-                    userRanking = new UserResponseDto.Ranking(rank, (String) info.get(0),
-                            (Long) info.get(1));
+                    stepRankings.add(0, new UserResponseDto.Ranking(rank, (String) info.get(0),
+                            (Long) info.get(1)));
                 }
 
                 stepRankings.add(new UserResponseDto.Ranking(rank, (String) info.get(0),
@@ -204,15 +202,13 @@ public class ExerciseRecordServiceImpl implements ExerciseRecordService {
 
             // 유저 찾았으면 저장해둠
             if (Objects.equals(info.get(0), user.getNickname())) {
-                userRanking = new UserResponseDto.Ranking(rank, (String) info.get(0),
-                        (Long) info.get(1));
+                stepRankings.add(0, new UserResponseDto.Ranking(rank, (String) info.get(0),
+                        (Long) info.get(1)));
             }
             stepRankings.add(new UserResponseDto.Ranking(rank, (String) info.get(0),
                     (Long) info.get(1)));
             matrixNumber = (Long) info.get(1);  // 걸음 수 update!
         }
-        // 맨 앞에 유저 추가
-        stepRankings.add(0, userRanking);
         return new RankResponseDto.Step(stepRankings);
     }
 }
