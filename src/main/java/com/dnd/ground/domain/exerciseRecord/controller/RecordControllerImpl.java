@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
  * @description 기록 컨트롤러 클래스
  * @author  박세헌
  * @since   2022-08-01
- * @updated 2022-08-25 / 기록 시작 api 반환 형태 수정 - 박세헌
+ * @updated 2022-08-26 / 컨트롤러-서비스단 전달 형태 변경 - 박세헌
  */
 
 @Api(tags = "운동기록")
@@ -36,7 +36,7 @@ public class RecordControllerImpl implements RecordController{
 
     @PostMapping("/end")
     @Operation(summary = "기록 끝", description = "기록 끝: 운동기록에 거리, matrix 저장")
-    public ResponseEntity<?> end(@RequestBody EndRequestDto endRequestDto){
+    public ResponseEntity<Boolean> end(@RequestBody EndRequestDto endRequestDto){
         return exerciseRecordService.recordEnd(endRequestDto);
     }
 
@@ -46,6 +46,6 @@ public class RecordControllerImpl implements RecordController{
                     "start: 해당 주 월요일 00시 00분 00초\n" +
                     "end: 해당 주 일요일 23시 59분 59초")
     public ResponseEntity<RankResponseDto.Step> stepRank(@RequestBody UserRequestDto.LookUp requestDto){
-        return ResponseEntity.ok(exerciseRecordService.stepRanking(requestDto.getNickname(), requestDto.getStart(), requestDto.getEnd()));
+        return ResponseEntity.ok(exerciseRecordService.stepRanking(requestDto));
     }
 }
