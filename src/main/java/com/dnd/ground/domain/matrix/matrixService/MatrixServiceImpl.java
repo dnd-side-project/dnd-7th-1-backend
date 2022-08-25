@@ -27,8 +27,8 @@ import java.util.Objects;
  * @description 운동 영역 서비스 클래스
  * @author  박세헌, 박찬호
  * @since   2022-08-01
- * @updated 1. orElseThrow() 예외 처리
- *          - 2022.08.18 박찬호
+ * @updated 1. orElseThrow() 예외 처리 - 2022.08.18 박찬호
+ *          2. 랭킹 동점 로직, 유저 맨위 로직 - 2022.08.25 박세헌
  */
 
 @Service
@@ -52,7 +52,7 @@ public class MatrixServiceImpl implements MatrixService {
                 () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
 
         List<User> userAndFriends = friendService.getFriends(user);  // 친구들 조회
-        userAndFriends.add(0, user);  // 유저 추가
+        userAndFriends.add(user);  // 유저 추가
 
         LocalDateTime start = user.getCreated();
         LocalDateTime end = LocalDateTime.now();
@@ -61,7 +61,7 @@ public class MatrixServiceImpl implements MatrixService {
         List<Tuple> matrixCount = exerciseRecordRepository.findMatrixCount(userAndFriends, start, end);
 
         // 랭킹 계산[랭킹, 닉네임, 칸의 수]
-        List<UserResponseDto.Ranking> matrixRankings = calculateMatrixRank(matrixCount, userAndFriends);
+        List<UserResponseDto.Ranking> matrixRankings = calculateUserMatrixRank(matrixCount, userAndFriends, user);
 
         return new RankResponseDto.Matrix(matrixRankings);
     }
@@ -72,7 +72,7 @@ public class MatrixServiceImpl implements MatrixService {
                 () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
 
         List<User> friends = friendService.getFriends(user);  // 친구들 조회
-        System.out.println(friends.size());
+
         List<UserResponseDto.Ranking> areaRankings = new ArrayList<>();  // [랭킹, 닉네임, 영역의 수]
 
         // 유저의 닉네임과 영역의 수 대입
@@ -82,9 +82,9 @@ public class MatrixServiceImpl implements MatrixService {
         // 친구들의 닉네임과 영역의 수 대입
         friends.forEach(f -> areaRankings.add(new UserResponseDto.Ranking(1, f.getNickname(),
                 (long) matrixRepository.findMatrixSetByRecords(exerciseRecordRepository.findRecord(f.getId(), start, end)).size())));
-        
+
         // 랭킹 계산 후 반환
-        return new RankResponseDto.Area(calculateAreaRank(areaRankings));
+        return new RankResponseDto.Area(calculateUserAreaRank(areaRankings, user));
     }
 
     /*챌린지 랭킹 조회*/
@@ -122,11 +122,11 @@ public class MatrixServiceImpl implements MatrixService {
                     continue;
                 }
                 // 전 유저보다 작다면 랭크+1
-                rank += 1;
+                count += 1;
+                rank = count;
                 matrixRankings.add(new UserResponseDto.Ranking(rank, (String) info.get(0),
                         (Long) info.get(1)));
                 matrixNumber = (Long) info.get(1);  // 칸 수 update!
-                count += 1;
             }
             rank += 1;
             // 나머지 0점인 유저들 추가
@@ -152,18 +152,132 @@ public class MatrixServiceImpl implements MatrixService {
 
         Long areaNumber = areaRankings.get(0).getScore();  // 맨 처음 user의 영역 수
         int rank = 1;
-
+        int count = 1;
         for (int i=1; i<areaRankings.size(); i++){
             if (Objects.equals(areaRankings.get(i).getScore(), areaNumber)){  // 전 유저와 영역 수가 같다면 랭크 유지
                 areaRankings.get(i).setRank(rank);
+                count += 1;
                 continue;
             }
             // 전 유저보다 영역 수가 작다면 랭크+1
-            rank += 1;
+            count += 1;
+            rank = count;
             areaRankings.get(i).setRank(rank);
             areaNumber = areaRankings.get(i).getScore();  // 영역 수 update!
         }
 
         return areaRankings;
     }
+
+    /*칸 수 기준 랭킹 계산(랭킹탭)*/
+    public List<UserResponseDto.Ranking> calculateUserMatrixRank(List<Tuple> matrixCount, List<User> member, User user) {
+        List<UserResponseDto.Ranking> matrixRankings = new ArrayList<>();
+        int count = 0;
+        int rank = 1;
+
+        UserResponseDto.Ranking userRanking = null;
+
+        // 1명이라도 0점이 아니라면
+        if (!matrixCount.isEmpty()) {
+            Long matrixNumber = (Long) matrixCount.get(0).get(1);  // 맨 처음 user의 칸 수
+            for (Tuple info : matrixCount) {
+                if (Objects.equals(info.get(1), matrixNumber)) {  // 전 유저와 칸수가 같다면 랭크 유지
+
+                    // 유저 찾았으면 저장해둠
+                    if (Objects.equals((String)info.get(0), user.getNickname())) {
+                        matrixRankings.add(0, new UserResponseDto.Ranking(rank, (String) info.get(0),
+                                (Long) info.get(1)));
+                    }
+
+                    matrixRankings.add(new UserResponseDto.Ranking(rank, (String) info.get(0),
+                            (Long) info.get(1)));
+                    count += 1;
+                    continue;
+                }
+
+                // 전 유저보다 칸 수가 작다면 앞에 있는 사람수 만큼이 자신 랭킹
+                count += 1;
+                rank = count;
+
+                // 유저 찾았으면 저장해둠
+                if (Objects.equals((String)info.get(0), user.getNickname())) {
+                    matrixRankings.add(0, new UserResponseDto.Ranking(rank, (String) info.get(0),
+                            (Long) info.get(1)));
+                }
+
+                matrixRankings.add(new UserResponseDto.Ranking(rank, (String) info.get(0),
+                        (Long) info.get(1)));
+                matrixNumber = (Long) info.get(1);  // 칸 수 update!
+            }
+            rank = count+1;
+            // 나머지 0점인 유저들 추가
+            for (int i = count; i < member.size(); i++) {
+                // 유저 찾았으면 저장해둠
+                if (Objects.equals(member.get(i).getNickname(), user.getNickname())) {
+                    matrixRankings.add(0, new UserResponseDto.Ranking(rank, user.getNickname(),
+                            0L));
+                }
+                matrixRankings.add(new UserResponseDto.Ranking(rank, member.get(i).getNickname(), 0L));
+            }
+        }
+
+        // 전부다 0점이라면
+        else {
+            // 맨앞 유저 추가
+            matrixRankings.add(new UserResponseDto.Ranking(rank, user.getNickname(), 0L));
+            for (int i = count; i < member.size(); i++) {
+                matrixRankings.add(new UserResponseDto.Ranking(rank, member.get(i).getNickname(), 0L));
+            }
+        }
+
+        return matrixRankings;
+    }
+
+    /*영역 기준 랭킹 계산(랭킹탭)*/
+    public List<UserResponseDto.Ranking> calculateUserAreaRank(List<UserResponseDto.Ranking> areaRankings, User user) {
+        //내림차순 정렬
+        areaRankings.sort((a, b) -> b.getScore().compareTo(a.getScore()));
+
+        Long areaNumber = areaRankings.get(0).getScore();  // 맨 처음 user의 영역 수
+        int rank = 1;
+        int count = 1;
+
+        for (int i=1; i<areaRankings.size(); i++){
+
+            // 전 유저와 영역 수가 같다면 랭크 유지
+            if (Objects.equals(areaRankings.get(i).getScore(), areaNumber)){
+
+                // 유저 찾았으면 저장해둠
+                if (Objects.equals(areaRankings.get(i).getNickname(), user.getNickname())) {
+                    areaRankings.add(0, new UserResponseDto.Ranking(rank, user.getNickname(), areaRankings.get(i).getScore()));
+                    i += 1;
+                    areaRankings.get(i).setRank(rank);
+                    areaNumber = areaRankings.get(i).getScore();
+                    continue;
+                }
+
+                areaRankings.get(i).setRank(rank);
+                count += 1;
+                continue;
+            }
+            // 전 유저보다 영역수 가 작다면 앞에 있는 사람수 만큼이 자신 랭킹
+            count += 1;
+            rank = count;
+
+            // 유저 찾았으면 저장해둠
+            if (Objects.equals(areaRankings.get(i).getNickname(), user.getNickname())) {
+                areaRankings.add(0, new UserResponseDto.Ranking(rank, user.getNickname(), areaRankings.get(i).getScore()));
+                i += 1;
+                areaRankings.get(i).setRank(rank);
+                areaNumber = areaRankings.get(i).getScore();
+                continue;
+            }
+
+            areaRankings.get(i).setRank(rank);
+            areaNumber = areaRankings.get(i).getScore();  // 영역 수 update!
+        }
+
+        return areaRankings;
+    }
+
 }

@@ -1,6 +1,7 @@
 package com.dnd.ground.domain.exerciseRecord.controller;
 
 import com.dnd.ground.domain.exerciseRecord.dto.EndRequestDto;
+import com.dnd.ground.domain.user.dto.HomeResponseDto;
 import com.dnd.ground.domain.user.dto.RankResponseDto;
 import com.dnd.ground.domain.user.dto.UserRequestDto;
 import org.springframework.http.ResponseEntity;
@@ -15,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
  */
 
 public interface RecordController {
-    ResponseEntity<?> start(@RequestParam("nickname") String nickname);
+    ResponseEntity<HomeResponseDto> start(@RequestParam("nickname") String nickname);
     ResponseEntity<?> end(@RequestBody EndRequestDto endRequestDto);
-    ResponseEntity<RankResponseDto.Step> matrixRank(@RequestBody UserRequestDto.LookUp requestDto);
+    ResponseEntity<RankResponseDto.Step> stepRank(@RequestBody UserRequestDto.LookUp requestDto);
 }
