@@ -2,6 +2,7 @@ package com.dnd.ground.domain.challenge.controller;
 
 import com.dnd.ground.domain.challenge.ChallengeStatus;
 import com.dnd.ground.domain.challenge.dto.ChallengeCreateRequestDto;
+import com.dnd.ground.domain.challenge.dto.ChallengeMapResponseDto;
 import com.dnd.ground.domain.challenge.dto.ChallengeRequestDto;
 import com.dnd.ground.domain.challenge.dto.ChallengeResponseDto;
 import com.dnd.ground.domain.challenge.service.ChallengeService;
@@ -19,8 +20,8 @@ import java.util.List;
  * @description 챌린지와 관련된 컨트롤러 구현체
  * @author  박찬호
  * @since   2022-08-01
- * @updated 1. API 명세 수정
- *          - 2022.08.18 박찬호
+ * @updated 1.챌린지 상세보기(지도) 기능 구현
+ *          - 2022.08.26 박찬호
  */
 
 @Api(tags = "챌린지")
@@ -78,5 +79,11 @@ public class ChallengeControllerImpl implements ChallengeController {
     @Operation(summary = "챌린지 상세 정보 조회", description = "챌린지와 관련된 정보 + 랭킹 관련 정보 + 개인 기록 정보")
     public ResponseEntity<ChallengeResponseDto.Detail> getDetailProgressChallenge(@ModelAttribute ChallengeRequestDto.CInfo requestDto) {
         return ResponseEntity.ok().body(challengeService.getDetailProgress(requestDto));
+    }
+
+    @GetMapping("/detail/map")
+    @Operation(summary = "챌린지 상세 정보 조회: 지도", description = "챌린지 상세조회에서 지도를 클릭했을 때 보여지는 정보\n챌린지에 참여한 유저 정보+랭킹")
+    public ResponseEntity<ChallengeMapResponseDto.Detail> getChallengeDetailMap(@RequestParam("uuid") String uuid) {
+        return ResponseEntity.ok().body(challengeService.getChallengeDetailMap(uuid));
     }
 }

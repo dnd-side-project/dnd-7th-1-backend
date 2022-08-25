@@ -2,6 +2,7 @@ package com.dnd.ground.domain.challenge.service;
 
 import com.dnd.ground.domain.challenge.*;
 import com.dnd.ground.domain.challenge.dto.ChallengeCreateRequestDto;
+import com.dnd.ground.domain.challenge.dto.ChallengeMapResponseDto;
 import com.dnd.ground.domain.challenge.dto.ChallengeRequestDto;
 import com.dnd.ground.domain.challenge.dto.ChallengeResponseDto;
 import com.dnd.ground.domain.challenge.repository.ChallengeRepository;
@@ -41,10 +42,8 @@ import java.util.*;
  * @description 챌린지와 관련된 서비스의 역할을 분리한 구현체
  * @author  박찬호, 박세헌
  * @since   2022-08-03
- * @updated 1.주최자(Master)의 상태 변경 시 예외 처리 추가
- *          2.동시에 4개 이상의 챌린지 생성 시 예외 처리
- *          3.잘못된 랭킹 계산에 대한 예외 처리
- *          - 2022.08.25 박찬호
+ * @updated 1.챌린지 상세보기(지도) 기능 구현
+ *          - 2022.08.26 박찬호
  */
 
 @Slf4j
@@ -359,6 +358,7 @@ public class ChallengeServiceImpl implements ChallengeService {
         List<ChallengeResponseDto.Done> response = new ArrayList<>();
 
         for (Challenge challenge : doneChallenge) {
+
             Integer rank = -1; //랭킹
             LocalDate started = challenge.getStarted(); //챌린지 시작 날짜
 
@@ -426,24 +426,7 @@ public class ChallengeServiceImpl implements ChallengeService {
         matrices = matrixRepository.findMatrixSetByRecords(records);
 
         //챌린지 타입에 따른 랭킹 정보(순위, 닉네임, 점수) 계산
-        if (challenge.getType().equals(ChallengeType.Widen)) {
-            for (User member : members) {
-                //각 유저의 챌린지 기간동안의 기록
-                records = exerciseRecordRepository.findRecord(member.getId(), started.atStartOfDay(), ended.atTime(LocalTime.MAX));
-
-                //랭킹 리스트에 추가
-                rankings.add(new UserResponseDto.Ranking(1, member.getNickname(),
-                                (long) matrixRepository.findMatrixSetByRecords(records).size()));
-            }
-            //랭킹 정렬
-            rankings = matrixService.calculateAreaRank(rankings);
-        }
-        else if (challenge.getType().equals(ChallengeType.Accumulate)) {
-            //모든 회원의 칸 수 기록을 Tuple[닉네임, 이번주 누적 칸수] 내림차순으로 정리
-            List<Tuple> matrixCount = exerciseRecordRepository.findMatrixCount(members, started.atStartOfDay(), ended.atTime(LocalTime.MAX));
-            //랭킹 계산
-            rankings = matrixService.calculateMatrixRank(matrixCount, members);
-        }
+        rankings = calculateChallengeRanking(challenge, members, started, ended, challenge.getType());
 
         return ChallengeResponseDto.Detail.builder()
                 .name(challenge.getName())
@@ -482,5 +465,92 @@ public class ChallengeServiceImpl implements ChallengeService {
                 .build()));
 
         return cInfoRes;
+    }
+
+    /*챌린지 상세보기: 지도*/
+    public ChallengeMapResponseDto.Detail getChallengeDetailMap(String uuid) {
+        Challenge challenge = challengeRepository.findByUuid(uuid).orElseThrow(
+                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_CHALLENGE));
+
+        //챌린지 참여 인원 조회
+        List<User> members = userChallengeRepository.findChallengeUsers(challenge);
+        
+        //필요한 변수 선언
+        List<ChallengeMapResponseDto.UserMapInfo> matrixList = new ArrayList<>();
+        List<UserResponseDto.Ranking> rankings = new ArrayList<>();
+        List<ExerciseRecord> records;
+
+        LocalDate started = challenge.getStarted(); //챌린지 시작 날짜
+        LocalDate ended = started.plusDays(7-started.getDayOfWeek().getValue()); //챌린지 끝나는 날(해당 주 일요일)
+
+        //챌린지 타입에 따른 결과 저장
+        if (challenge.getType().equals(ChallengeType.Widen)) {
+            for (User member : members) {
+                ChallengeColor color = userChallengeRepository.findChallengeColor(member, challenge);
+
+                //각 유저의 챌린지 기간동안의 기록
+                records = exerciseRecordRepository.findRecord(member.getId(), started.atStartOfDay(), ended.atTime(LocalTime.MAX));
+                //개인 영역 기록 저장
+                List<MatrixDto> matrixSetByRecord = matrixRepository.findMatrixSetByRecords(records);
+                matrixList.add(
+                        new ChallengeMapResponseDto.UserMapInfo(color, member.getLatitude(), member.getLongitude(), matrixSetByRecord)
+                );
+
+                //랭킹 리스트에 추가
+                rankings.add(new UserResponseDto.Ranking(1, member.getNickname(),
+                        (long) matrixRepository.findMatrixSetByRecords(records).size()));
+            }
+            //랭킹 정렬
+            rankings = matrixService.calculateAreaRank(rankings);
+        }
+        else if (challenge.getType().equals(ChallengeType.Accumulate)) {
+            for (User user : members) {
+                //matrixList 값 채우기
+                ChallengeColor color = userChallengeRepository.findChallengeColor(user, challenge);
+
+                //개인 기록 계산
+                records = exerciseRecordRepository.findRecord(user.getId(), started.atStartOfDay(), ended.atTime(LocalTime.MAX));
+                List<MatrixDto> matrixSetByRecord = matrixRepository.findMatrixSetByRecords(records);
+
+                matrixList.add(
+                        new ChallengeMapResponseDto.UserMapInfo(color, user.getLatitude(), user.getLongitude(), matrixSetByRecord)
+                );
+            }
+            //랭킹 계산
+            //모든 회원의 칸 수 기록을 Tuple[닉네임, 이번주 누적 칸수] 내림차순으로 정리
+            List<Tuple> matrixCount = exerciseRecordRepository.findMatrixCount(members, started.atStartOfDay(), ended.atTime(LocalTime.MAX));
+            rankings = matrixService.calculateMatrixRank(matrixCount, members);
+        }
+
+        return new ChallengeMapResponseDto.Detail(matrixList, rankings);
+    }
+
+    /*챌린지 종류에 따른 랭킹 계산 메소드*/
+    public List<UserResponseDto.Ranking> calculateChallengeRanking(
+            Challenge challenge, List<User> members, LocalDate started, LocalDate ended, ChallengeType type) {
+
+        List<ExerciseRecord> records = new ArrayList<>();
+        List<UserResponseDto.Ranking> rankings = new ArrayList<>();
+
+        if (type.equals(ChallengeType.Widen)) {
+            for (User member : members) {
+                //각 유저의 챌린지 기간동안의 기록
+                records = exerciseRecordRepository.findRecord(member.getId(), started.atStartOfDay(), ended.atTime(LocalTime.MAX));
+
+                //랭킹 리스트에 추가
+                rankings.add(new UserResponseDto.Ranking(1, member.getNickname(),
+                        (long) matrixRepository.findMatrixSetByRecords(records).size()));
+            }
+            //랭킹 정렬
+            rankings = matrixService.calculateAreaRank(rankings);
+        }
+        else if (challenge.getType().equals(ChallengeType.Accumulate)) {
+            //모든 회원의 칸 수 기록을 Tuple[닉네임, 이번주 누적 칸수] 내림차순으로 정리
+            List<Tuple> matrixCount = exerciseRecordRepository.findMatrixCount(members, started.atStartOfDay(), ended.atTime(LocalTime.MAX));
+            //랭킹 계산
+            rankings = matrixService.calculateMatrixRank(matrixCount, members);
+        }
+
+        return rankings;
     }
 }
