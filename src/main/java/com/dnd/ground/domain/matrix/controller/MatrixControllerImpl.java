@@ -15,9 +15,7 @@ import org.springframework.web.bind.annotation.*;
  * @description 메인홈 구성 컨트롤러 인터페이스
  * @author  박세헌, 박찬호
  * @since   2022-08-02
- * @updated 1. 역대 누적 칸수 랭킹 구현
- *          2. nickname, start, end 가진 requestDto 생성
- *          - 2022-08-18 박세헌
+ * @updated 2022-08-26 / 컨트롤러-서비스단 전달 형태 변경 - 박세헌
  */
 
 @Api(tags = "운동 영역")
@@ -41,6 +39,6 @@ public class MatrixControllerImpl implements MatrixController {
             "start: 해당 주 월요일 00시 00분 00초\n" +
             "end: 해당 주 일요일 23시 59분 59초")
     public ResponseEntity<RankResponseDto.Area> areaRank(@RequestBody UserRequestDto.LookUp requestDto){
-        return ResponseEntity.ok(matrixService.areaRanking(requestDto.getNickname(), requestDto.getStart(), requestDto.getEnd()));
+        return ResponseEntity.ok(matrixService.areaRanking(requestDto));
     }
 }
