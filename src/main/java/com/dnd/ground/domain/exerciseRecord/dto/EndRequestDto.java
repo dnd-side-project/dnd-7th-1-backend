@@ -29,7 +29,7 @@ public class EndRequestDto {
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss", timezone = "Asia/Seoul")
     @ApiModelProperty(value="기록 끝 시간", example="2022-08-15T00:00:00", required = true)
-    private LocalDateTime ended;
+    private LocalDateTime ended ;
 
     @ApiModelProperty(value="운동시간(초)", example="80", required = true)
     private Integer exerciseTime;
