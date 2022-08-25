@@ -28,6 +28,7 @@ import java.util.List;
 public class UserResponseDto {
 
     @Data
+    @AllArgsConstructor
     public static class UInfo {
         private String nickname;
         //프로필 사진 관련 필드 추가 예정

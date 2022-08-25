@@ -1,10 +1,7 @@
 package com.dnd.ground.domain.challenge.service;
 
 import com.dnd.ground.domain.challenge.*;
-import com.dnd.ground.domain.challenge.dto.ChallengeCreateRequestDto;
-import com.dnd.ground.domain.challenge.dto.ChallengeMapResponseDto;
-import com.dnd.ground.domain.challenge.dto.ChallengeRequestDto;
-import com.dnd.ground.domain.challenge.dto.ChallengeResponseDto;
+import com.dnd.ground.domain.challenge.dto.*;
 import com.dnd.ground.domain.challenge.repository.ChallengeRepository;
 import com.dnd.ground.domain.challenge.repository.UserChallengeRepository;
 import com.dnd.ground.domain.exerciseRecord.ExerciseRecord;
@@ -23,8 +20,6 @@ import com.dnd.ground.global.exception.CommonErrorCode;
 import com.dnd.ground.global.util.UuidUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,6 +38,7 @@ import java.util.*;
  * @author  박찬호, 박세헌
  * @since   2022-08-03
  * @updated 1.챌린지 상세보기(지도) 기능 구현
+ *          2.챌린지 관련 Response에 UUID 추가
  *          - 2022.08.26 박찬호
  */
 
@@ -60,7 +56,7 @@ public class ChallengeServiceImpl implements ChallengeService {
 
     /*챌린지 생성*/
     @Transactional
-    public ResponseEntity<?> createChallenge(ChallengeCreateRequestDto requestDto) {
+    public ChallengeCreateResponseDto createChallenge(ChallengeCreateRequestDto requestDto) {
 
         User master = userRepository.findByNickname(requestDto.getNickname()).orElseThrow(
                 () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
@@ -73,8 +69,11 @@ public class ChallengeServiceImpl implements ChallengeService {
                 .type(requestDto.getType())
                 .build();
 
+        //챌린지 저장
         challengeRepository.save(challenge);
 
+
+        List<UserResponseDto.UInfo> users = new ArrayList<>();
 
         requestDto.getFriends().add(master.getNickname());
 
@@ -105,14 +104,22 @@ public class ChallengeServiceImpl implements ChallengeService {
             }
 
             userChallengeRepository.save(new UserChallenge(challenge, member, color[challengeCount]));
+
+            //Response에 추가할 멤버 목록
+            users.add(new UserResponseDto.UInfo(nickname));
         }
 
-        return new ResponseEntity(HttpStatus.CREATED);
+        return ChallengeCreateResponseDto.builder()
+                .users(users)
+                .message(challenge.getMessage())
+                .started(challenge.getStarted())
+                .ended(challenge.getStarted().plusDays(7-challenge.getStarted().getDayOfWeek().getValue()))
+                .build();
     }
 
     /*유저-챌린지 상태 변경*/
     @Transactional
-    public ResponseEntity<?> changeUserChallengeStatus(ChallengeRequestDto.CInfo requestDto, ChallengeStatus status) {
+    public ChallengeStatus changeUserChallengeStatus(ChallengeRequestDto.CInfo requestDto, ChallengeStatus status) {
         //정보 조회
         Challenge challenge = challengeRepository.findByUuid(requestDto.getUuid()).orElseThrow(
                 () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_CHALLENGE));
@@ -120,7 +127,6 @@ public class ChallengeServiceImpl implements ChallengeService {
         User user = userRepository.findByNickname(requestDto.getNickname()).orElseThrow(
                 () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
 
-        //상태 변경
         UserChallenge userChallenge = userChallengeRepository.findByUserAndChallenge(user, challenge).orElseThrow(
                 () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER_CHALLENGE));
 
@@ -128,9 +134,11 @@ public class ChallengeServiceImpl implements ChallengeService {
         if (userChallenge.getStatus() == ChallengeStatus.Master) {
             throw new CExceedChallengeException(CommonErrorCode.NOT_CHANGE_MASTER_STATUS, user.getNickname());
         }
+
+        //상태 변경
         userChallenge.changeStatus(status);
 
-        return new ResponseEntity(HttpStatus.OK);
+        return status;
     }
 
     /*챌린지 상태 변경(매일 00:00 실행)*/
@@ -197,6 +205,7 @@ public class ChallengeServiceImpl implements ChallengeService {
             response.add(
                     ChallengeResponseDto.Invite.builder()
                             .name(challenge.getName())
+                            .uuid(challenge.getUuid())
                             .InviterNickname(userChallengeRepository.findMasterInChallenge(challenge).getNickname())
                             .message(challenge.getMessage())
                             .created(challenge.getCreated().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")))
@@ -222,6 +231,7 @@ public class ChallengeServiceImpl implements ChallengeService {
             response.add(
                     ChallengeResponseDto.Wait.builder()
                             .name(challenge.getName())
+                            .uuid(challenge.getUuid())
                             .started(started)
                             .ended(started.plusDays(7-started.getDayOfWeek().getValue()))
                             .totalCount(userChallengeRepository.findUCCount(challenge)) //챌린지에 참여하는 전체 인원 수
@@ -279,6 +289,7 @@ public class ChallengeServiceImpl implements ChallengeService {
             response.add(
                     ChallengeResponseDto.Progress.builder()
                             .name(challenge.getName())
+                            .uuid(challenge.getUuid())
                             .started(started)
                             .ended(started.plusDays(7-started.getDayOfWeek().getValue()))
                             .rank(rank)
@@ -338,6 +349,7 @@ public class ChallengeServiceImpl implements ChallengeService {
             response.add(
                     ChallengeResponseDto.Progress.builder()
                             .name(challenge.getName())
+                            .uuid(challenge.getUuid())
                             .started(started)
                             .ended(started.plusDays(7-started.getDayOfWeek().getValue()))
                             .rank(rank)
@@ -380,6 +392,7 @@ public class ChallengeServiceImpl implements ChallengeService {
             response.add(
                     ChallengeResponseDto.Done.builder()
                             .name(challenge.getName())
+                            .uuid(challenge.getUuid())
                             .started(started)
                             .ended(started.plusDays(7-started.getDayOfWeek().getValue()))
                             .rank(rank)
@@ -430,6 +443,7 @@ public class ChallengeServiceImpl implements ChallengeService {
 
         return ChallengeResponseDto.Detail.builder()
                 .name(challenge.getName())
+                .uuid(challenge.getUuid())
                 .type(challenge.getType())
                 .started(started)
                 .ended(started.plusDays(7-started.getDayOfWeek().getValue()))
@@ -459,6 +473,7 @@ public class ChallengeServiceImpl implements ChallengeService {
 
         challenges.forEach(c -> cInfoRes.add(ChallengeResponseDto.CInfoRes.builder()
                 .name(c.getName())
+                .uuid(c.getUuid())
                 .started(c.getStarted())
                 .ended(c.getStarted().plusDays(7-c.getStarted().getDayOfWeek().getValue()))
                 .color(userChallengeRepository.findChallengeColor(user, c))
