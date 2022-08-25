@@ -2,12 +2,12 @@ package com.dnd.ground.domain.user.service;
 
 import com.dnd.ground.domain.exerciseRecord.dto.RecordRequestDto;
 import com.dnd.ground.domain.exerciseRecord.dto.RecordResponseDto;
+import com.dnd.ground.domain.friend.dto.FriendResponseDto;
 import com.dnd.ground.domain.user.User;
 import com.dnd.ground.domain.user.dto.ActivityRecordResponseDto;
 import com.dnd.ground.domain.user.dto.HomeResponseDto;
 import com.dnd.ground.domain.user.dto.UserRequestDto;
 import com.dnd.ground.domain.user.dto.UserResponseDto;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 import java.time.LocalDateTime;
@@ -22,10 +22,10 @@ import java.time.LocalDateTime;
 public interface UserService {
     User save(User user);
     HomeResponseDto showHome(String nickname);
-    UserResponseDto.UInfo getUserInfo(String nickname);
-
-    UserResponseDto.Profile getUserProfile(String userNickname, String friendNickname);
-    ActivityRecordResponseDto getActivityRecord(UserRequestDto.LookUp requestDto);
+    UserResponseDto.Profile getUserInfo(String nickname);
+    
+    FriendResponseDto.FriendProfile getUserProfile(String userNickname, String friendNickname);
+    ActivityRecordResponseDto getActivityRecord(String nickname, LocalDateTime start, LocalDateTime end);
     RecordResponseDto.EInfo getExerciseInfo(Long exerciseId);
     UserResponseDto.DetailMap getDetailMap(Long recordId);
 

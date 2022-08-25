@@ -2,6 +2,7 @@ package com.dnd.ground.domain.user.controller;
 
 import com.dnd.ground.domain.exerciseRecord.dto.RecordRequestDto;
 import com.dnd.ground.domain.exerciseRecord.dto.RecordResponseDto;
+import com.dnd.ground.domain.friend.dto.FriendResponseDto;
 import com.dnd.ground.domain.user.dto.ActivityRecordResponseDto;
 import com.dnd.ground.domain.user.dto.HomeResponseDto;
 import com.dnd.ground.domain.user.dto.UserRequestDto;
@@ -43,13 +44,13 @@ public class UserControllerImpl implements UserController {
 
     @GetMapping("/info")
     @Operation(summary = "회원 정보 조회(마이페이지)", description = "회원의 닉네임, 소개 메시지 정보 (추후 프로필 등 추가 예정)")
-    public ResponseEntity<UserResponseDto.UInfo> getUserInfo(@RequestParam("nickname") String nickname) {
+    public ResponseEntity<UserResponseDto.Profile> getUserInfo(@RequestParam("nickname") String nickname) {
         return ResponseEntity.ok().body(userService.getUserInfo(nickname));
     }
 
     @GetMapping("/profile")
     @Operation(summary = "프로필 조회", description = "회원의 닉네임, 소개 메시지 정보 (추후 프로필 등 추가 예정)")
-    public ResponseEntity<UserResponseDto.Profile> getUserProfile(
+    public ResponseEntity<FriendResponseDto.FriendProfile> getUserProfile(
                             @ApiParam(value = "회원 닉네임", required = true) @RequestParam("user") String userNickname,
                             @ApiParam(value = "대상 닉네임", required = true) @RequestParam("friend") String friendNickname) {
 

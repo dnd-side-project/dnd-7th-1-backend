@@ -10,6 +10,7 @@ import com.dnd.ground.domain.exerciseRecord.ExerciseRecord;
 import com.dnd.ground.domain.exerciseRecord.Repository.ExerciseRecordRepository;
 import com.dnd.ground.domain.exerciseRecord.dto.RecordRequestDto;
 import com.dnd.ground.domain.exerciseRecord.dto.RecordResponseDto;
+import com.dnd.ground.domain.friend.dto.FriendResponseDto;
 import com.dnd.ground.domain.friend.repository.FriendRepository;
 import com.dnd.ground.domain.friend.service.FriendService;
 import com.dnd.ground.domain.matrix.dto.MatrixDto;
@@ -141,7 +142,7 @@ public class UserServiceImpl implements UserService{
     }
 
     /*회원 정보 조회(마이페이지)*/
-    public UserResponseDto.UInfo getUserInfo(String nickname) {
+    public UserResponseDto.Profile getUserInfo(String nickname) {
         User user = userRepository.findByNickname(nickname).orElseThrow(
                 () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
 
@@ -165,7 +166,7 @@ public class UserServiceImpl implements UserService{
         // 역대 누적 칸수
         Long allMatrixNumber = (long) matrixRepository.findMatrixByRecords(record).size();
 
-        return UserResponseDto.UInfo.builder()
+        return UserResponseDto.Profile.builder()
                 .nickname(user.getNickname())
                 .intro(user.getIntro())
                 .matrixNumber(matrixNumber)
@@ -177,7 +178,7 @@ public class UserServiceImpl implements UserService{
     }
 
     /*회원 프로필 조회*/
-    public UserResponseDto.Profile getUserProfile(String userNickname, String friendNickname) {
+    public FriendResponseDto.FriendProfile getUserProfile(String userNickname, String friendNickname) {
         User user = userRepository.findByNickname(userNickname).orElseThrow(
                 () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
 
@@ -219,7 +220,7 @@ public class UserServiceImpl implements UserService{
         //함께 진행하는 챌린지 정보
         List<ChallengeResponseDto.Progress> challenges = challengeService.findProgressChallenge(userNickname, friendNickname);
 
-        return UserResponseDto.Profile.builder()
+        return FriendResponseDto.FriendProfile.builder()
                 .nickname(friendNickname)
                 .lasted(lasted)
                 .intro(friend.getIntro())
@@ -319,13 +320,11 @@ public class UserServiceImpl implements UserService{
         String time = "";
 
         // 10초 미만이라면 앞에 0하나 붙여주기
-        if (Integer.toString(second).length() == 1){
-            time = Integer.toString(minute) + ":0" + Integer.toString(second);
-            System.out.println(time);
+        if (Integer.toString(second).length() == 1) {
+            time = minute + ":0" + second;
         }
-        else{
-            time = Integer.toString(minute) + ":" + Integer.toString(second);
-            System.out.println(time);
+        else {
+            time = minute + ":" + second;
         }
 
         // 해당 운동 기록이 참여한 챌린지들 조회
