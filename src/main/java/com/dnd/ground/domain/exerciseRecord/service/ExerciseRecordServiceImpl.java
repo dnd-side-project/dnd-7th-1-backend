@@ -14,6 +14,7 @@ import com.dnd.ground.domain.matrix.matrixRepository.MatrixRepository;
 import com.dnd.ground.domain.user.User;
 import com.dnd.ground.domain.user.dto.HomeResponseDto;
 import com.dnd.ground.domain.user.dto.RankResponseDto;
+import com.dnd.ground.domain.user.dto.UserRequestDto;
 import com.dnd.ground.domain.user.dto.UserResponseDto;
 import com.dnd.ground.domain.user.repository.UserRepository;
 import com.dnd.ground.global.exception.CNotFoundException;
@@ -33,9 +34,7 @@ import java.util.*;
  * @description 운동 기록 서비스 클래스
  * @author  박세헌
  * @since   2022-08-01
- * @updated 2022-08-24 / 1. orElseThrow() 예외 처리 - 박찬호
- *                       2. 랭킹 동점 로직, 유저 맨위
- *                       3. 기록 시작 api 반환 형태 수정 - 박세헌
+ * @updated 2022-08-26 / 컨트롤러-서비스단 전달 형태 변경 - 박세헌
  */
 
 @Service
@@ -139,9 +138,8 @@ public class ExerciseRecordServiceImpl implements ExerciseRecordService {
 
     // 기록 끝
     @Transactional
-    public ResponseEntity<?> recordEnd(EndRequestDto endRequestDto) {
+    public ResponseEntity<Boolean> recordEnd(EndRequestDto endRequestDto) {
         // 유저 찾아서 운동 기록 생성
-
         User user = userRepository.findByNickname(endRequestDto.getNickname()).orElseThrow(
                 () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
         ExerciseRecord exerciseRecord = new ExerciseRecord(user);
@@ -161,11 +159,16 @@ public class ExerciseRecordServiceImpl implements ExerciseRecordService {
         exerciseRecord.getUser().updatePosition(lastPosition.get(0), lastPosition.get(1));
 
         exerciseRecordRepository.save(exerciseRecord);
-        return new ResponseEntity("성공", HttpStatus.CREATED);
+        return new ResponseEntity(true, HttpStatus.CREATED);
     }
 
     // 랭킹 조회(누적 걸음 수 기준)  (추후 파라미터 Requestdto로 교체 예정)
-    public RankResponseDto.Step stepRanking(String nickname, LocalDateTime start, LocalDateTime end) {
+    public RankResponseDto.Step stepRanking(UserRequestDto.LookUp requestDto) {
+
+        String nickname = requestDto.getNickname();
+        LocalDateTime start = requestDto.getStart();
+        LocalDateTime end = requestDto.getEnd();
+
         User user = userRepository.findByNickname(nickname).orElseThrow(
                 () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
 

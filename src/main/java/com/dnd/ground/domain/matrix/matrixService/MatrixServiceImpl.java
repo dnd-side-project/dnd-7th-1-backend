@@ -8,6 +8,7 @@ import com.dnd.ground.domain.matrix.Matrix;
 import com.dnd.ground.domain.matrix.matrixRepository.MatrixRepository;
 import com.dnd.ground.domain.user.User;
 import com.dnd.ground.domain.user.dto.RankResponseDto;
+import com.dnd.ground.domain.user.dto.UserRequestDto;
 import com.dnd.ground.domain.user.dto.UserResponseDto;
 import com.dnd.ground.domain.user.repository.UserRepository;
 import com.dnd.ground.global.exception.CNotFoundException;
@@ -27,8 +28,7 @@ import java.util.Objects;
  * @description 운동 영역 서비스 클래스
  * @author  박세헌, 박찬호
  * @since   2022-08-01
- * @updated 1. orElseThrow() 예외 처리 - 2022.08.18 박찬호
- *          2. 랭킹 동점 로직, 유저 맨위 로직 - 2022.08.25 박세헌
+ * @updated 2022-08-26 / 컨트롤러-서비스단 전달 형태 변경 - 박세헌
  */
 
 @Service
@@ -67,7 +67,12 @@ public class MatrixServiceImpl implements MatrixService {
     }
 
     // 랭킹 조회(누적 영역의 수 기준)
-    public RankResponseDto.Area areaRanking(String nickname, LocalDateTime start, LocalDateTime end) {
+    public RankResponseDto.Area areaRanking(UserRequestDto.LookUp requestDto) {
+
+        String nickname = requestDto.getNickname();
+        LocalDateTime start = requestDto.getStart();
+        LocalDateTime end = requestDto.getEnd();
+
         User user = userRepository.findByNickname(nickname).orElseThrow(
                 () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
 

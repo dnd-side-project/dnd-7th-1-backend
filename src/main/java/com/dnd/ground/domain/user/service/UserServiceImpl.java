@@ -8,6 +8,7 @@ import com.dnd.ground.domain.challenge.repository.UserChallengeRepository;
 import com.dnd.ground.domain.challenge.service.ChallengeService;
 import com.dnd.ground.domain.exerciseRecord.ExerciseRecord;
 import com.dnd.ground.domain.exerciseRecord.Repository.ExerciseRecordRepository;
+import com.dnd.ground.domain.exerciseRecord.dto.RecordRequestDto;
 import com.dnd.ground.domain.exerciseRecord.dto.RecordResponseDto;
 import com.dnd.ground.domain.friend.dto.FriendResponseDto;
 import com.dnd.ground.domain.friend.repository.FriendRepository;
@@ -16,10 +17,7 @@ import com.dnd.ground.domain.matrix.dto.MatrixDto;
 import com.dnd.ground.domain.matrix.matrixRepository.MatrixRepository;
 import com.dnd.ground.domain.matrix.matrixService.MatrixService;
 import com.dnd.ground.domain.user.User;
-import com.dnd.ground.domain.user.dto.ActivityRecordResponseDto;
-import com.dnd.ground.domain.user.dto.HomeResponseDto;
-import com.dnd.ground.domain.user.dto.RankResponseDto;
-import com.dnd.ground.domain.user.dto.UserResponseDto;
+import com.dnd.ground.domain.user.dto.*;
 import com.dnd.ground.domain.user.repository.UserRepository;
 import com.dnd.ground.global.exception.CNotFoundException;
 import com.dnd.ground.global.exception.CommonErrorCode;
@@ -39,10 +37,7 @@ import java.util.*;
  * @description 유저 서비스 클래스
  * @author  박세헌, 박찬호
  * @since   2022-08-01
- * @updated 1.필터 상관 없이 모든 정보를 내려주도록 변경
- *          2.필터 변경 Response body 수정 (null -> 변경 값)
- *          3.orElseThrow() 예외 처리
- *          - 2022.08.24 박찬호
+ * @updated 2022-08-26 / 컨트롤러-서비스단 전달 형태 변경 - 박세헌
  */
 
 @Slf4j
@@ -238,7 +233,12 @@ public class UserServiceImpl implements UserService{
     }
 
     /* 나의 활동 기록 조회 */
-    public ActivityRecordResponseDto getActivityRecord(String nickname, LocalDateTime start, LocalDateTime end) {
+    public ActivityRecordResponseDto getActivityRecord(UserRequestDto.LookUp requestDto) {
+
+        String nickname = requestDto.getNickname();
+        LocalDateTime start = requestDto.getStart();
+        LocalDateTime end = requestDto.getEnd();
+
         User user = userRepository.findByNickname(nickname).orElseThrow(
                 () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
         List<ExerciseRecord> record = exerciseRecordRepository.findRecord(user.getId(), start, end);  // start~end 사이 운동기록 조회
@@ -387,20 +387,28 @@ public class UserServiceImpl implements UserService{
 
     /* 운동 기록의 상세 메시지 수정 */
     @Transactional
-    public ResponseEntity<?> editRecordMessage(Long recordId, String message){
+    public ResponseEntity<Boolean> editRecordMessage(RecordRequestDto.Message requestDto){
+        Long recordId = requestDto.getRecordId();
+        String message = requestDto.getMessage();
+
         ExerciseRecord exerciseRecord = exerciseRecordRepository.findById(recordId).orElseThrow(
                 () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_RECORD));
         exerciseRecord.editMessage(message);
-        return new ResponseEntity("성공", HttpStatus.OK);
+        return new ResponseEntity(true, HttpStatus.OK);
     }
 
     /* 회원 프로필 수정 */
     @Transactional
-    public ResponseEntity<?> editUserProfile(String originalNick, String editNick, String intro){
+    public ResponseEntity<Boolean> editUserProfile(UserRequestDto.Profile requestDto){
+
+        String originalNick = requestDto.getOriginalNick();
+        String editNick = requestDto.getEditNick();
+        String intro = requestDto.getIntro();
+
         User user = userRepository.findByNickname(originalNick).orElseThrow(
                 () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
         user.updateProfile(editNick, intro);
-        return new ResponseEntity("성공", HttpStatus.OK);
+        return new ResponseEntity(true, HttpStatus.OK);
     }
 
 }

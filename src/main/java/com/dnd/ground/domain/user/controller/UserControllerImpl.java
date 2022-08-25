@@ -20,8 +20,8 @@ import org.springframework.web.bind.annotation.*;
  * @description 회원 관련 컨트롤러 구현체
  * @author  박세헌, 박찬호
  * @since   2022-08-02
- * @updated 1.필터 변경 Response body 수정 (null -> 변경 값)
- *          - 2022-08-24 박찬호
+ * @updated 2022-08-26 / 컨트롤러-서비스단 전달 형태 변경 - 박세헌
+ *
  */
 
 @Api(tags = "유저")
@@ -63,7 +63,7 @@ public class UserControllerImpl implements UserController {
                     "start: 해당 날짜의 00시 00분 00초\n" +
                     "end: 해당 날짜의 23시 59분 59초")
     public ResponseEntity<ActivityRecordResponseDto> getActivityRecord(@RequestBody UserRequestDto.LookUp requestDto){
-        return ResponseEntity.ok().body(userService.getActivityRecord(requestDto.getNickname(), requestDto.getStart(), requestDto.getEnd()));
+        return ResponseEntity.ok().body(userService.getActivityRecord(requestDto));
     }
 
     @GetMapping("/info/activity/record")
@@ -98,15 +98,15 @@ public class UserControllerImpl implements UserController {
 
     @PostMapping("/info/profile/edit")
     @Operation(summary = "유저 프로필 수정", description = "닉네임, 자기소개 수정(예외 처리 예정)")
-    public ResponseEntity<?> editUserProfile(@RequestBody UserRequestDto.Profile requestDto){
+    public ResponseEntity<Boolean> editUserProfile(@RequestBody UserRequestDto.Profile requestDto){
         /* 닉네임이 비어있을때 예외 처리 필요 */
         /* 닉네임이 중복일때 예외 처리 필요 */
-        return userService.editUserProfile(requestDto.getOriginalNick(), requestDto.getEditNick(), requestDto.getIntro());
+        return userService.editUserProfile(requestDto);
     }
 
     @PostMapping("/info/activity/record/edit")
     @Operation(summary = "운동 기록 메시지 수정", description = "운동 기록 메시지 수정")
-    public ResponseEntity<?> getDetailMap(@RequestBody RecordRequestDto.Message requestDto){
-        return userService.editRecordMessage(requestDto.getRecordId(), requestDto.getMessage());
+    public ResponseEntity<Boolean> getDetailMap(@RequestBody RecordRequestDto.Message requestDto){
+        return userService.editRecordMessage(requestDto);
     }
 }
