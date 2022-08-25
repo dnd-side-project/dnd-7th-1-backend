@@ -15,7 +15,9 @@ import com.dnd.ground.domain.user.User;
 import com.dnd.ground.domain.user.dto.RankResponseDto;
 import com.dnd.ground.domain.user.dto.UserResponseDto;
 import com.dnd.ground.domain.user.repository.UserRepository;
+import com.dnd.ground.global.exception.CExceedChallengeException;
 import com.dnd.ground.global.exception.CNotFoundException;
+import com.dnd.ground.global.exception.CNotValidationException;
 import com.dnd.ground.global.exception.CommonErrorCode;
 import com.dnd.ground.global.util.UuidUtil;
 import lombok.RequiredArgsConstructor;
@@ -39,8 +41,10 @@ import java.util.*;
  * @description 챌린지와 관련된 서비스의 역할을 분리한 구현체
  * @author  박찬호, 박세헌
  * @since   2022-08-03
- * @updated 1. orElseThrow() 예외 처리
- *          - 2022.08.24 박찬호
+ * @updated 1.주최자(Master)의 상태 변경 시 예외 처리 추가
+ *          2.동시에 4개 이상의 챌린지 생성 시 예외 처리
+ *          3.잘못된 랭킹 계산에 대한 예외 처리
+ *          - 2022.08.25 박찬호
  */
 
 @Slf4j
@@ -72,6 +76,9 @@ public class ChallengeServiceImpl implements ChallengeService {
 
         challengeRepository.save(challenge);
 
+
+        requestDto.getFriends().add(master.getNickname());
+
         //챌린지 개수에 따른 색상 결정
         ChallengeColor[] color = {ChallengeColor.Red, ChallengeColor.Pink, ChallengeColor.Yellow};
 
@@ -79,9 +86,8 @@ public class ChallengeServiceImpl implements ChallengeService {
         int challengeCount = userChallengeRepository.findCountChallenge(master); //참여한 챌린지 개수 (챌린지 상태 상관X)
 
         //챌린지가 3개 이상이면 챌린지 생성 거부
-        if (challengeCount > 3) {
-            challengeRepository.deleteById(challenge.getId()); //롤백 구현 필요
-            return new ResponseEntity(HttpStatus.BAD_REQUEST); //구체적인 예외처리 필요
+        if (challengeCount >= 3) {
+            throw new CExceedChallengeException(CommonErrorCode.EXCEED_CHALLENGE, requestDto.getNickname());
         }
 
         UserChallenge masterChallenge = userChallengeRepository.save(new UserChallenge(challenge, master, color[challengeCount]));
@@ -95,9 +101,8 @@ public class ChallengeServiceImpl implements ChallengeService {
             challengeCount = userChallengeRepository.findCountChallenge(member);
 
             //챌린지가 3개 이상이면 챌린지 생성 거부
-            if (challengeCount > 3) {
-                challengeRepository.deleteById(challenge.getId()); //롤백 구현 필요
-                return new ResponseEntity(HttpStatus.BAD_REQUEST); //구체적인 예외처리 필요
+            if (challengeCount >= 3) {
+                throw new CExceedChallengeException(CommonErrorCode.EXCEED_CHALLENGE, nickname);
             }
 
             userChallengeRepository.save(new UserChallenge(challenge, member, color[challengeCount]));
@@ -120,8 +125,9 @@ public class ChallengeServiceImpl implements ChallengeService {
         UserChallenge userChallenge = userChallengeRepository.findByUserAndChallenge(user, challenge).orElseThrow(
                 () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER_CHALLENGE));
 
+        //주최자의 상태 변경X
         if (userChallenge.getStatus() == ChallengeStatus.Master) {
-            return new ResponseEntity(HttpStatus.BAD_REQUEST);
+            throw new CExceedChallengeException(CommonErrorCode.NOT_CHANGE_MASTER_STATUS, user.getNickname());
         }
         userChallenge.changeStatus(status);
 
@@ -266,12 +272,17 @@ public class ChallengeServiceImpl implements ChallengeService {
                 }
             }
 
+            //랭킹이 -1인 경우 예외 처리
+            if (rank==-1) {
+                throw new CNotValidationException(CommonErrorCode.INTERNAL_SERVER_ERROR);
+            }
+
             response.add(
                     ChallengeResponseDto.Progress.builder()
                             .name(challenge.getName())
                             .started(started)
                             .ended(started.plusDays(7-started.getDayOfWeek().getValue()))
-                            .rank(rank) //!!랭킹 == -1에 대한 예외 처리 필요
+                            .rank(rank)
                             .color(userChallengeRepository.findChallengeColor(user, challenge))
                             .build()
             );
@@ -320,12 +331,17 @@ public class ChallengeServiceImpl implements ChallengeService {
                 }
             }
 
+            //랭킹이 -1인 경우 예외 처리
+            if (rank==-1) {
+                throw new CNotValidationException(CommonErrorCode.INTERNAL_SERVER_ERROR);
+            }
+
             response.add(
                     ChallengeResponseDto.Progress.builder()
                             .name(challenge.getName())
                             .started(started)
                             .ended(started.plusDays(7-started.getDayOfWeek().getValue()))
-                            .rank(rank) //!!랭킹 == -1에 대한 예외 처리 필요
+                            .rank(rank)
                             .color(userChallengeRepository.findChallengeColor(user, challenge))
                             .build()
             );
@@ -356,12 +372,17 @@ public class ChallengeServiceImpl implements ChallengeService {
                 }
             }
 
+            //랭킹이 -1인 경우 예외 처리
+            if (rank==-1) {
+                throw new CNotValidationException(CommonErrorCode.INTERNAL_SERVER_ERROR);
+            }
+
             response.add(
                     ChallengeResponseDto.Done.builder()
                             .name(challenge.getName())
                             .started(started)
                             .ended(started.plusDays(7-started.getDayOfWeek().getValue()))
-                            .rank(rank) //!!랭킹 == -1에 대한 예외 처리 필요
+                            .rank(rank)
                             .color(userChallengeRepository.findChallengeColor(user, challenge))
                             .build()
             );
@@ -453,8 +474,7 @@ public class ChallengeServiceImpl implements ChallengeService {
         List<Challenge> challenges = challengeRepository.findChallengesBetweenStartAndEnd(user, monday, startedDate);
         List<ChallengeResponseDto.CInfoRes> cInfoRes = new ArrayList<>();
 
-        challenges.forEach(c -> cInfoRes.add(ChallengeResponseDto.CInfoRes
-                .builder()
+        challenges.forEach(c -> cInfoRes.add(ChallengeResponseDto.CInfoRes.builder()
                 .name(c.getName())
                 .started(c.getStarted())
                 .ended(c.getStarted().plusDays(7-c.getStarted().getDayOfWeek().getValue()))
