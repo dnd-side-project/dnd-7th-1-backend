@@ -122,6 +122,7 @@ public class ChallengeResponseDto {
         private String created;
     }
 
+    /*챌린지 상세 보기*/
     @Data
     @Builder
     static public class Detail {
@@ -156,5 +157,4 @@ public class ChallengeResponseDto {
         @ApiModelProperty(value="걸음 수", example="15")
         private Integer stepCount;
     }
-
 }
