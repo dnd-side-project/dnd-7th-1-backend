@@ -16,8 +16,8 @@ import java.util.List;
  * @description 챌린지와 관련한 Response DTO
  * @author  박찬호
  * @since   2022-08-12
- * @updated 1. API 명세 수정
- *          - 2022.08.18 박찬호
+ * @updated 1. 챌린지 관련 Response에 UUID 추가
+ *          - 2022.08.26 박찬호
  */
 
 
@@ -30,6 +30,9 @@ public class ChallengeResponseDto {
     static public class CInfoRes {
         @ApiModelProperty(value="챌린지 이름", example="챌린지1")
         private String name;
+
+        @ApiModelProperty(value="챌린지 UUID", example="11ed1e26d25aa6b4b02fbb2d0e652b0f")
+        private String uuid;
 
         @ApiModelProperty(value="챌린지 시작 날짜", example="2022-08-18")
         private LocalDate started;
@@ -48,6 +51,9 @@ public class ChallengeResponseDto {
     static public class Wait {
         @ApiModelProperty(value="챌린지 이름", example="챌린지1")
         private String name;
+
+        @ApiModelProperty(value="챌린지 UUID", example="11ed1e26d25aa6b4b02fbb2d0e652b0f")
+        private String uuid;
 
         @ApiModelProperty(value="챌린지 시작 날짜", example="2022-08-12")
         private LocalDate started;
@@ -72,6 +78,9 @@ public class ChallengeResponseDto {
         @ApiModelProperty(value="챌린지 이름", example="챌린지1")
         private String name;
 
+        @ApiModelProperty(value="챌린지 UUID", example="11ed1e26d25aa6b4b02fbb2d0e652b0f")
+        private String uuid;
+
         @ApiModelProperty(value="챌린지 시작 날짜", example="2022-08-15")
         private LocalDate started;
 
@@ -91,6 +100,9 @@ public class ChallengeResponseDto {
     static public class Done {
         @ApiModelProperty(value="챌린지 이름", example="챌린지1")
         private String name;
+
+        @ApiModelProperty(value="챌린지 UUID", example="11ed1e26d25aa6b4b02fbb2d0e652b0f")
+        private String uuid;
 
         @ApiModelProperty(value="챌린지 시작 날짜", example="2022-08-15")
         private LocalDate started;
@@ -112,6 +124,9 @@ public class ChallengeResponseDto {
         @ApiModelProperty(value="챌린지 이름", example="챌린지A")
         private String name;
 
+        @ApiModelProperty(value="챌린지 UUID", example="11ed1e26d25aa6b4b02fbb2d0e652b0f")
+        private String uuid;
+
         @ApiModelProperty(value="주최자 닉네임(초대자)", example="NickA")
         private String InviterNickname;
 
@@ -128,6 +143,9 @@ public class ChallengeResponseDto {
     static public class Detail {
         @ApiModelProperty(value="챌린지 이름", example="챌린지1")
         private String name;
+
+        @ApiModelProperty(value="챌린지 UUID", example="11ed1e26d25aa6b4b02fbb2d0e652b0f")
+        private String uuid;
 
         @ApiModelProperty(value="챌린지 종류(영역:Widen || 칸:Accumulate)", example="Widen")
         private ChallengeType type;
