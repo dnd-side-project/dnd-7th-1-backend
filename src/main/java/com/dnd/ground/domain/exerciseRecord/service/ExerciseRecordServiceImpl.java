@@ -179,6 +179,14 @@ public class ExerciseRecordServiceImpl implements ExerciseRecordService {
         // [Tuple(닉네임, 걸음 수)] 걸음 수 기준 내림차순 정렬
         List<Tuple> stepCount = exerciseRecordRepository.findStepCount(userAndFriends, start, end);
 
+        if (stepCount.isEmpty()){
+            for (User users : userAndFriends) {
+                stepRankings.add(new UserResponseDto.Ranking(1, (String) users.getNickname(),
+                        0L));
+            }
+            return new RankResponseDto.Step(stepRankings);
+        }
+
         int count = 0;
         int rank = 1;
 
