@@ -34,7 +34,7 @@ import java.util.*;
  * @description 운동 기록 서비스 클래스
  * @author  박세헌
  * @since   2022-08-01
- * @updated 2022-08-26 / 컨트롤러-서비스단 전달 형태 변경 - 박세헌
+ * @updated 2022-08-29 / 걸음수 랭킹 부분 오류 해결 - 박세헌
  */
 
 @Service
