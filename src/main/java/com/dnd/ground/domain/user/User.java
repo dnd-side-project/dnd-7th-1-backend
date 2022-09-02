@@ -16,8 +16,8 @@ import java.util.List;
  * @description 회원 엔티티
  * @author  박찬호, 박세헌
  * @since   2022.07.28
- * @updated 1.필터 변경 Response body 수정 (null -> 변경 값)
- *           - 2022-08-24 박찬호
+ * @updated 1. 리프레시 토큰 필드 생성 및 비즈니스 로직 추가
+ *  *          - 2022-09-02 박세헌
  */
 
 @Getter
@@ -72,6 +72,9 @@ public class User {
 //    @Column(name="picture_path", nullable = false)
 //    private String picturePath;
 
+    @Column(name="refresh_token")
+    private String refreshToken;
+
     @OneToMany(mappedBy = "friend")
     private List<Friend> friends = new ArrayList<>();
 
@@ -106,5 +109,9 @@ public class User {
     public void updateProfile(String nickname, String intro) {
         this.nickname = nickname;
         this.intro = intro;
+    }
+
+    public void updateRefreshToken(String refreshToken){
+        this.refreshToken = refreshToken;
     }
 }
