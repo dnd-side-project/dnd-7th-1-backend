@@ -4,11 +4,9 @@ import com.dnd.ground.domain.exerciseRecord.dto.RecordRequestDto;
 import com.dnd.ground.domain.exerciseRecord.dto.RecordResponseDto;
 import com.dnd.ground.domain.friend.dto.FriendResponseDto;
 import com.dnd.ground.domain.user.User;
-import com.dnd.ground.domain.user.dto.ActivityRecordResponseDto;
-import com.dnd.ground.domain.user.dto.HomeResponseDto;
-import com.dnd.ground.domain.user.dto.UserRequestDto;
-import com.dnd.ground.domain.user.dto.UserResponseDto;
+import com.dnd.ground.domain.user.dto.*;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.userdetails.UserDetails;
 
 import java.time.LocalDateTime;
 
@@ -20,7 +18,7 @@ import java.time.LocalDateTime;
  */
 
 public interface UserService {
-    User save(User user);
+    User save(JwtUserDto user);
     HomeResponseDto showHome(String nickname);
     UserResponseDto.Profile getUserInfo(String nickname);
 
@@ -35,4 +33,6 @@ public interface UserService {
 
     ResponseEntity<Boolean> editRecordMessage(RecordRequestDto.Message requestDto);
     ResponseEntity<Boolean> editUserProfile(UserRequestDto.Profile requestDto);
+
+    UserDetails loadUserByUsername(String nickname);
 }

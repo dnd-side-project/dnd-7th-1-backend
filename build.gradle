@@ -61,6 +61,12 @@ dependencies {
 	//WebClient (HTTP Request)
 	implementation 'org.springframework.boot:spring-boot-starter-webflux'
 
+	// JAVA JWT
+	implementation("com.auth0:java-jwt:3.16.0")
+
+	// Spring Security
+	implementation 'org.springframework.boot:spring-boot-starter-security'
+
 	compileOnly 'org.projectlombok:lombok'
 	runtimeOnly 'mysql:mysql-connector-java'
 	annotationProcessor 'org.projectlombok:lombok'

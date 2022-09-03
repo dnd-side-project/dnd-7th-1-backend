@@ -26,6 +26,9 @@ import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,7 +47,7 @@ import java.util.*;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class UserServiceImpl implements UserService{
+public class UserServiceImpl implements UserService, UserDetailsService{
 
     private final UserRepository userRepository;
     private final ChallengeService challengeService;
@@ -57,8 +60,21 @@ public class UserServiceImpl implements UserService{
     private final MatrixService matrixService;
 
     @Transactional
-    public User save(User user){
-        return userRepository.save(user);
+    public User save(JwtUserDto user){
+        return userRepository.save(User
+                .builder()
+                .kakaoId(user.getId())
+                .username(user.getUsername())
+                .nickname(user.getNickname())
+                .mail(user.getMail())
+                .created(LocalDateTime.now())
+                .intro("")
+                .latitude(null)
+                .longitude(null)
+                .isShowMine(true)
+                .isShowFriend(true)
+                .isPublicRecord(true)
+                .build());
     }
 
     public HomeResponseDto showHome(String nickname){
@@ -411,4 +427,15 @@ public class UserServiceImpl implements UserService{
         return new ResponseEntity(true, HttpStatus.OK);
     }
 
+    @Override
+    public UserDetails loadUserByUsername(String nickname) {
+        User user = userRepository.findByNickname(nickname).orElseThrow(); // 예외처리
+        BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+        return org.springframework.security.core.userdetails.User
+                .builder()
+                .username(nickname)
+                .password(passwordEncoder.encode(user.getKakaoId()+user.getNickname()))
+                .authorities("BASIC")
+                .build();
+        }
 }
