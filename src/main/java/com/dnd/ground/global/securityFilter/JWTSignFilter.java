@@ -3,6 +3,8 @@ package com.dnd.ground.global.securityFilter;
 import com.dnd.ground.domain.user.dto.JwtUserDto;
 import com.dnd.ground.domain.user.repository.UserRepository;
 import com.dnd.ground.domain.user.service.UserService;
+import com.dnd.ground.global.exception.CNotFoundException;
+import com.dnd.ground.global.exception.CommonErrorCode;
 import com.dnd.ground.global.util.JwtUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.json.JSONObject;
@@ -29,7 +31,7 @@ import java.io.IOException;
  *          2. password: kakaoId + 닉네임
  *          - 2022.08.24 박세헌
  * @note 1. 찬호가 카카오 유저 대한 정보를 JwtUserDto에 맞게 "/sign"으로 post요청(회원가입 or 재로그인)
- *       2. 기존 유저가 자동 로그인 되는 기능은 어디서 처리? 해당 필터에서 처리 가능 할 것 같지만 매우매우 복잡
+ *
  */
 
 public class JWTSignFilter extends UsernamePasswordAuthenticationFilter {
@@ -62,6 +64,7 @@ public class JWTSignFilter extends UsernamePasswordAuthenticationFilter {
             e.printStackTrace();
         }
 
+
         // 신규 회원이면 저장
         if (!userRepository.existsByKakaoId(userDto.getId())){
             userService.save(userDto);
@@ -89,12 +92,13 @@ public class JWTSignFilter extends UsernamePasswordAuthenticationFilter {
         // 유저 찾아서
         User principal = (User) authResult.getPrincipal();
         String accessToken = JwtUtil.makeAccessToken(principal.getUsername());
-        String refreshToken = JwtUtil.makeAccessToken(principal.getUsername());
+        String refreshToken = JwtUtil.makeRefreshToken(principal.getUsername());
 
         // Jwt토큰 발급, refresh 토큰은 저장
         response.setHeader("Aceess-Token", "Bearer "+accessToken);
         response.setHeader("Refresh-Token", "Bearer "+refreshToken);
-        com.dnd.ground.domain.user.User user = userRepository.findByNickname(principal.getUsername()).orElseThrow();
+        com.dnd.ground.domain.user.User user = userRepository.findByNickname(principal.getUsername())
+                .orElseThrow(() -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));;
         user.updateRefreshToken(refreshToken);
         userRepository.save(user);
 

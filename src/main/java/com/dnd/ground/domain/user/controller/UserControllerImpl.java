@@ -8,6 +8,8 @@ import com.dnd.ground.domain.user.dto.HomeResponseDto;
 import com.dnd.ground.domain.user.dto.UserRequestDto;
 import com.dnd.ground.domain.user.dto.UserResponseDto;
 import com.dnd.ground.domain.user.service.UserService;
+import com.dnd.ground.global.util.JwtUtil;
+import com.dnd.ground.global.util.JwtVerifyResult;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiParam;
 import io.swagger.v3.oas.annotations.Operation;
@@ -16,11 +18,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * @description 회원 관련 컨트롤러 구현체
  * @author  박세헌, 박찬호
  * @since   2022-08-02
- * @updated 2022-08-26 / 컨트롤러-서비스단 전달 형태 변경 - 박세헌
+ * @updated 2022-09-02 / 온보딩 진입시 호출 함수
  *
  */
 
@@ -108,5 +114,15 @@ public class UserControllerImpl implements UserController {
     @Operation(summary = "운동 기록 메시지 수정", description = "운동 기록 메시지 수정")
     public ResponseEntity<Boolean> getDetailMap(@RequestBody RecordRequestDto.Message requestDto){
         return userService.editRecordMessage(requestDto);
+    }
+
+    /*
+    - 클라가 앱에 처음 진입했을때 액세스 토큰이 있다면 토큰과 함께 해당 uri로 호출
+    - (JWTCheckFilter를 거친 후 닉네임 반환)
+    - 토큰이 없다면 카카오 로그인 페이지로 가야함
+    */
+    @GetMapping("/main")
+    public ResponseEntity<?> main(HttpServletRequest request){
+        return userService.showMain(request);
     }
 }

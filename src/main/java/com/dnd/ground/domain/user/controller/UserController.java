@@ -11,6 +11,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import javax.servlet.http.HttpServletRequest;
+
 /**
  * @description 회원 관련 역할 분리 인터페이스
  * @author  박세헌, 박찬호
@@ -36,4 +38,5 @@ public interface UserController {
 
     ResponseEntity<?> editUserProfile(@RequestBody UserRequestDto.Profile requestDto);
     ResponseEntity<?> getDetailMap(@RequestBody RecordRequestDto.Message requestDto);
+    ResponseEntity<?> main(HttpServletRequest request);
 }

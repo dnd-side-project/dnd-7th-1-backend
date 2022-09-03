@@ -21,6 +21,8 @@ import com.dnd.ground.domain.user.dto.*;
 import com.dnd.ground.domain.user.repository.UserRepository;
 import com.dnd.ground.global.exception.CNotFoundException;
 import com.dnd.ground.global.exception.CommonErrorCode;
+import com.dnd.ground.global.util.JwtUtil;
+import com.dnd.ground.global.util.JwtVerifyResult;
 import lombok.*;
 
 import lombok.extern.slf4j.Slf4j;
@@ -32,6 +34,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -427,6 +430,16 @@ public class UserServiceImpl implements UserService, UserDetailsService{
         return new ResponseEntity(true, HttpStatus.OK);
     }
 
+    /* 토큰으로 닉네임 찾은 후 반환하는 함수 */
+    public ResponseEntity<?> showMain(HttpServletRequest request){
+        String accessToken = request.getHeader("Access-Token");
+        JwtVerifyResult result = JwtUtil.verify(accessToken.substring("Bearer ".length()));
+        Map<String, String> nick = new HashMap<>();
+        nick.put("nickname", result.getNickname());
+        return ResponseEntity.ok(nick);
+    }
+
+    /* AuthenticationManager가 User를 검증하는 함수 */
     @Override
     public UserDetails loadUserByUsername(String nickname) {
         User user = userRepository.findByNickname(nickname).orElseThrow(); // 예외처리

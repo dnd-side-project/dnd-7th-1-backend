@@ -8,6 +8,7 @@ import com.dnd.ground.domain.user.dto.*;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import javax.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
 
 /**
@@ -33,6 +34,8 @@ public interface UserService {
 
     ResponseEntity<Boolean> editRecordMessage(RecordRequestDto.Message requestDto);
     ResponseEntity<Boolean> editUserProfile(UserRequestDto.Profile requestDto);
+
+    ResponseEntity<?> showMain(HttpServletRequest request);
 
     UserDetails loadUserByUsername(String nickname);
 }

@@ -4,6 +4,8 @@ import com.auth0.jwt.exceptions.TokenExpiredException;
 import com.dnd.ground.domain.user.User;
 import com.dnd.ground.domain.user.repository.UserRepository;
 import com.dnd.ground.domain.user.service.UserService;
+import com.dnd.ground.global.exception.CNotFoundException;
+import com.dnd.ground.global.exception.CommonErrorCode;
 import com.dnd.ground.global.util.JwtUtil;
 import com.dnd.ground.global.util.JwtVerifyResult;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -28,7 +30,7 @@ import java.util.Objects;
  *          - 2022.08.24 박세헌
  * @note 1. 매 request마다 토큰을 검사하여 securityContestHolder에 채워줌
  *       2. 해당 필터에서 자동 로그인을 구현 하면 될 것 같음
- *       (사용자가 어플을 키면 클라에서 토큰과 함께 임의의 uri로 요청을 보내면 되지 않을까..?)
+ *
  */
 
 public class JWTCheckFilter extends BasicAuthenticationFilter {
@@ -72,7 +74,8 @@ public class JWTCheckFilter extends BasicAuthenticationFilter {
 
             // 리프레시 토큰이 유효하다면
             else{
-                User user = userRepository.findByNickname(result.getNickname()).orElseThrow();
+                User user = userRepository.findByNickname(result.getNickname()).orElseThrow(
+                        () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
                 // 유저의 리프레시 토큰과 넘어온 리프레시 토큰이 같으면
                 if (Objects.equals(user.getRefreshToken(), refreshToken.substring("Bearer ".length()))){
                     // 토큰 재발급, 리프레시 토큰은 저장
