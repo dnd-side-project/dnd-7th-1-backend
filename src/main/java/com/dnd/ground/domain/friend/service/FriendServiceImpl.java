@@ -6,6 +6,8 @@ import com.dnd.ground.domain.friend.dto.FriendResponseDto;
 import com.dnd.ground.domain.friend.repository.FriendRepository;
 import com.dnd.ground.domain.user.User;
 import com.dnd.ground.domain.user.repository.UserRepository;
+import com.dnd.ground.global.exception.CNotFoundException;
+import com.dnd.ground.global.exception.CommonErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -18,9 +20,8 @@ import java.util.List;
  * @description 친구와 관련된 서비스 구현체
  * @author  박찬호
  * @since   2022-08-01
- * @updated 1. 챌린지를 진행하는 친구 목록 조회 (수정)
- *          2. 챌린지를 진행하지 않는 친구 목록 조회 (수정)
- *          - 2022.08.06 박찬호
+ * @updated 1.orElseThrow() 예외 처리
+ *          - 2022.08.24 박찬호
  */
 
 @Slf4j
@@ -37,7 +38,9 @@ public class FriendServiceImpl implements FriendService {
     public FriendResponseDto getFriends(String nickname) {
 
         //유저 및 친구 조회
-        User findUser = userRepository.findByNickname(nickname).orElseThrow(); //예외 처리 예정!
+        User findUser = userRepository.findByNickname(nickname).orElseThrow(
+                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
+
         List<Friend> findFriends = friendRepository.findFriendsById(findUser);
         List<FriendResponseDto.FInfo> infos = new ArrayList<>();
 

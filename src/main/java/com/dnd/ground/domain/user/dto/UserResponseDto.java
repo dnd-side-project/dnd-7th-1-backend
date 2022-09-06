@@ -1,14 +1,13 @@
 package com.dnd.ground.domain.user.dto;
 
 import com.dnd.ground.domain.challenge.ChallengeColor;
-import com.dnd.ground.domain.challenge.dto.ChallengeResponseDto;
 import com.dnd.ground.domain.matrix.dto.MatrixDto;
 import com.dnd.ground.domain.user.User;
-import com.fasterxml.jackson.annotation.JsonFormat;
+
 import io.swagger.annotations.ApiModelProperty;
 import lombok.*;
 
-import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -19,17 +18,25 @@ import java.util.List;
  *              4. 랭킹 정보
  * @author  박세헌, 박찬호
  * @since   2022-08-08
- * @updated 1. API 명세 수정
- *          2. UserMatrix 클래스 생성자 수정
- *          - 2022.08.18 박찬호
+ * @updated 1. Profile 클래스 이동(UserResponseDto -> FriendResponseDto) 및 이름 변경(Profile -> FriendProfile)
+ *          2. UInfo 이름 변경(UInfo -> Profile)
+ *          3. 새로운 UInfo 추가(닉네임+프로필사진 정보 추가 예정)
+ *          - 2022.08.26 박찬호
  */
 
 @Data
 public class UserResponseDto {
 
+    @Data
+    @AllArgsConstructor
+    public static class UInfo {
+        private String nickname;
+        //프로필 사진 관련 필드 추가 예정
+    }
+    
     /*회원의 정보 관련 DTO (추후 프로필 사진 관련 필드 추가 예정)*/
     @Data @Builder
-    static public class UInfo {
+    static public class Profile {
         @ApiModelProperty(value = "닉네임", example = "NickA")
         private String nickname;
 
@@ -50,37 +57,6 @@ public class UserResponseDto {
 
         @ApiModelProperty(value = "역대 누적 칸 수", example = "3000")
         private Long allMatrixNumber;
-    }
-
-    /*회원 프로필 관련 DTO*/
-    @Data
-    @Builder
-    static public class Profile {
-        @ApiModelProperty(value = "친구 닉네임", example = "NickA")
-        private String nickname;
-
-        @ApiModelProperty(value = "친구의 마지막 접속 시간", example = "2022-08-18T18:10:43.78")
-        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss", timezone = "Asia/Seoul")
-        private LocalDateTime lasted;
-
-        @ApiModelProperty(value = "친구의 소개 메시지", example = "친구의 소개 메시지 예시입니다.")
-        private String intro;
-
-        @ApiModelProperty(value = "회원과 친구 관계인지 나타내는 Boolean", example = "true")
-        private Boolean isFriend;
-
-        @ApiModelProperty(value = "이번 주 영역 개수", example = "9")
-        private Long areas;
-
-        @ApiModelProperty(value = "역대 누적 칸수", example = "1030")
-        private Long allMatrixNumber;
-
-        @ApiModelProperty(value = "역대 누적 랭킹", example = "1")
-        private Integer rank;
-
-        @ApiModelProperty(value = "회원과 함께 하는 챌린지 리스트"
-                , example = "[{\"name\": \"챌린지1\", \"started\": \"2022-08-16\", \"ended\": \"2022-08-21\", \"rank\": 1, \"color\": \"Red\"}]")
-        List<ChallengeResponseDto.Progress> challenges;
     }
 
     /*회원의 영역 정보 관련 DTO*/
@@ -117,6 +93,14 @@ public class UserResponseDto {
             this.setMatrices(matrices);
             this.setLatitude(lat);
             this.setLongitude(lon);
+        }
+
+        public void setProperties(String nickname, long matricesNumber, Double lat, Double lon) {
+            this.setNickname(nickname);
+            this.setMatricesNumber(matricesNumber);
+            this.setLatitude(lat);
+            this.setLongitude(lon);
+            this.matrices = new ArrayList<>();
         }
     }
 
