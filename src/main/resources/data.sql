@@ -87,3 +87,80 @@ insert into matrix values(19, 37.337542, -122.038444, 6);
 insert into matrix values(20, 37.337542, -122.040314, 7);
 insert into matrix values(21, 37.337542, -122.040688, 7);
 insert into matrix values(22, 37.337542, -122.041062, 7);
+
+update hibernate_sequence set next_val=124;
+
+
+-- 발표 영상 용 더미 데이터(마지막 위치 확인!!!!!!!!!!!)
+insert into user values(11,"2022-08-23 08:00", "희재횽아 화이팅!", true, true, true, 123456, null, null, "더미본인@naver.com", "희재횽아짱", "희재횽아짱이름");
+insert into user values(12,"2022-08-23 09:00", "주로 밤에 활동합니다. 밤산책최고야!", true, true, true, 123456, 37.5187680, 126.9311120, "올빼미@naver.com", "여의도올빼미", "여의도올빼미이름");
+insert into user values(13,"2022-08-23 10:00", "맛집탐방하면서 밥 먹고 산책 알지? ㅎㅎ", true, true, true, 123456, 37.5175520, 126.9292420, "합정@naver.com", "합정먹보", "합정먹보이름");
+insert into user values(14,"2022-08-23 12:00", "생활버닝이 짱이야 다 덤벼", true, true, true, 123456, 37.5215040, 126.9277460, "칼로리@naver.com", "0칼로리", "0칼로리이름");
+insert into user values(15,"2022-08-23 14:00", "우리동네 내가 다 먹을거야", true, true, true, 123456, 37.5184640, 126.9281200, "우리동네@naver.com", "몽쉘통통", "몽쉘통통이름");
+
+insert into friend values(9, "Accept", 11, 12);
+insert into friend values(10, "Accept", 11, 13);
+insert into friend values(11, "Accept", 11, 14);
+insert into friend values(12, "Accept", 11, 15);
+
+insert into challenge values(4, "2022-08-23", "너만힘드냐고?", "너만힘들어?", "2022-08-24", "Progress", "Widen", "11ed1e26d25aa6b4b02fbb2d0e652b01");
+insert into challenge values(5, "2022-08-23", "새벽운동챌린지임", "지금은새벽5시", "2022-08-24", "Progress", "Accumulate", "11ed1e26d25aa6b4b02fbb2d0e652b02");
+insert into challenge values(6, "2022-08-23", "지면 치킨임", "치킨빵챌린지", "2022-08-24", "Progress", "Widen", "11ed1e26d25aa6b4b02fbb2d0e652b03");
+
+insert into user_challenge values(7, "Pink", "Progress", 4, 11);
+insert into user_challenge values(8, "Pink", "Progress", 4, 12);
+insert into user_challenge values(9, "Yellow", "Progress", 5, 11);
+insert into user_challenge values(10, "Yellow", "Progress", 5, 13);
+insert into user_challenge values(11, "Red", "Progress", 6, 11);
+insert into user_challenge values(12, "Red", "Progress", 6, 14);
+
+-- id,거리, 끝시간, 운동시간, 메시지, 시작시간, 발걸음, 유저번호
+insert into exercise_record values(8, 585, "2022-08-25 02:39", 540, "졸려", "2022-08-25 02:30", 571, 14);
+insert into exercise_record values(9, 411, "2022-08-25 03:27", 360, "배고파", "2022-08-25 03:21", 491, 12);
+insert into exercise_record values(10, 358, "2022-08-25 04:32", 360, "살많이빠진듯", "2022-08-25 04:37", 393, 13);
+insert into exercise_record values(11, 140, "2022-08-25 05:22:38", 360, "몽쉘먹으러가야겠다", "2022-08-25 04:19:04", 164, 15);
+
+-- 0칼로리
+insert into matrix values(81,  37.5199840, 126.9299900, 8);
+insert into matrix values(82,  37.5202880, 126.9296160, 8);
+insert into matrix values(83,  37.5205920, 126.9292420, 8);
+insert into matrix values(84,  37.5208960, 126.9292420, 8);
+insert into matrix values(85,  37.5208960, 126.9288680, 8);
+insert into matrix values(86,  37.5212000, 126.9288680, 8);
+insert into matrix values(87,  37.5215040, 126.9284940, 8);
+insert into matrix values(88,  37.5215040, 126.9281200, 8);
+insert into matrix values(89,  37.5215040, 126.9277460, 8);
+insert into matrix values(90,  37.5215040, 126.9311120, 9);
+insert into matrix values(91,  37.5215040, 126.9314860, 9);
+insert into matrix values(92,  37.5212000, 126.9314860, 9);
+insert into matrix values(93,  37.5212000, 126.9318600, 9);
+insert into matrix values(94,  37.5208960, 126.9318600, 9);
+insert into matrix values(95,  37.5208960, 126.9322340, 9);
+insert into matrix values(96,  37.5205920, 126.9322340, 9);
+insert into matrix values(97,  37.5202880, 126.9326080, 9);
+insert into matrix values(98,  37.5199840, 126.9329820, 9);
+insert into matrix values(99,  37.5196800, 126.9329820, 9);
+insert into matrix values(100, 37.5196800, 126.9326080, 9);
+insert into matrix values(101, 37.5193760, 126.9326080, 9);
+insert into matrix values(102, 37.5193760, 126.9322340, 9);
+insert into matrix values(103, 37.5190720, 126.9322340, 9);
+insert into matrix values(104, 37.5190720, 126.9318600, 9);
+insert into matrix values(105, 37.5187680, 126.9318600, 9);
+insert into matrix values(106, 37.5190720, 126.9314860, 9);
+insert into matrix values(107, 37.5187680, 126.9314860, 9);
+insert into matrix values(108, 37.5187680, 126.9311120, 9);
+insert into matrix values(109, 37.5193760, 126.9273720, 11);
+insert into matrix values(110, 37.5193760, 126.9273720, 11);
+insert into matrix values(111, 37.5190720, 126.9273720, 11);
+insert into matrix values(112, 37.5187680, 126.9277460, 11);
+insert into matrix values(113, 37.5184640, 126.9281200, 11);
+insert into matrix values(114, 37.5178560, 126.9273720, 10);
+insert into matrix values(115, 37.5178560, 126.9281200, 10);
+insert into matrix values(116, 37.5181600, 126.9281200, 10);
+insert into matrix values(117, 37.5181600, 126.9284940, 10);
+insert into matrix values(118, 37.5178560, 126.9288680, 10);
+insert into matrix values(119, 37.5178560, 126.9292420, 10);
+insert into matrix values(120, 37.5178560, 126.9296160, 10);
+insert into matrix values(121, 37.5181600, 126.9296160, 10);
+insert into matrix values(122, 37.5175520, 126.9273720, 10);
+insert into matrix values(123, 37.5175520, 126.9292420, 10);
