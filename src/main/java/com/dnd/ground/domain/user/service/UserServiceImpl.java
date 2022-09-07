@@ -21,20 +21,14 @@ import com.dnd.ground.domain.user.dto.*;
 import com.dnd.ground.domain.user.repository.UserRepository;
 import com.dnd.ground.global.exception.CNotFoundException;
 import com.dnd.ground.global.exception.CommonErrorCode;
-import com.dnd.ground.global.util.JwtUtil;
-import com.dnd.ground.global.util.JwtVerifyResult;
 import lombok.*;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -43,14 +37,15 @@ import java.util.*;
  * @description 유저 서비스 클래스
  * @author  박세헌, 박찬호
  * @since   2022-08-01
- * @updated 2022-08-26 / 컨트롤러-서비스단 전달 형태 변경 - 박세헌
+ * @updated 회원 인증/인가 및 로그인 관련 메소드 이동(UserService -> AuthService)
+ *          2022-09-07 박찬호
  */
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class UserServiceImpl implements UserService, UserDetailsService{
+public class UserServiceImpl implements UserService{
 
     private final UserRepository userRepository;
     private final ChallengeService challengeService;
@@ -61,24 +56,6 @@ public class UserServiceImpl implements UserService, UserDetailsService{
     private final FriendRepository friendRepository;
     private final MatrixRepository matrixRepository;
     private final MatrixService matrixService;
-
-    @Transactional
-    public User save(JwtUserDto user){
-        return userRepository.save(User
-                .builder()
-                .kakaoId(user.getId())
-                .username(user.getUsername())
-                .nickname(user.getNickname())
-                .mail(user.getMail())
-                .created(LocalDateTime.now())
-                .intro("")
-                .latitude(null)
-                .longitude(null)
-                .isShowMine(true)
-                .isShowFriend(true)
-                .isPublicRecord(true)
-                .build());
-    }
 
     public HomeResponseDto showHome(String nickname){
         User user = userRepository.findByNickname(nickname).orElseThrow(
@@ -429,26 +406,4 @@ public class UserServiceImpl implements UserService, UserDetailsService{
         user.updateProfile(editNick, intro);
         return new ResponseEntity(true, HttpStatus.OK);
     }
-
-    /* 토큰으로 닉네임 찾은 후 반환하는 함수 */
-    public ResponseEntity<?> showMain(HttpServletRequest request){
-        String accessToken = request.getHeader("Access-Token");
-        JwtVerifyResult result = JwtUtil.verify(accessToken.substring("Bearer ".length()));
-        Map<String, String> nick = new HashMap<>();
-        nick.put("nickname", result.getNickname());
-        return ResponseEntity.ok(nick);
-    }
-
-    /* AuthenticationManager가 User를 검증하는 함수 */
-    @Override
-    public UserDetails loadUserByUsername(String nickname) {
-        User user = userRepository.findByNickname(nickname).orElseThrow(); // 예외처리
-        BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
-        return org.springframework.security.core.userdetails.User
-                .builder()
-                .username(nickname)
-                .password(passwordEncoder.encode(user.getKakaoId()+user.getNickname()))
-                .authorities("BASIC")
-                .build();
-        }
 }

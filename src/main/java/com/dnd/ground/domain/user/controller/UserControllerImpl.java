@@ -7,6 +7,7 @@ import com.dnd.ground.domain.user.dto.ActivityRecordResponseDto;
 import com.dnd.ground.domain.user.dto.HomeResponseDto;
 import com.dnd.ground.domain.user.dto.UserRequestDto;
 import com.dnd.ground.domain.user.dto.UserResponseDto;
+import com.dnd.ground.domain.user.service.AuthService;
 import com.dnd.ground.domain.user.service.UserService;
 import com.dnd.ground.global.util.JwtUtil;
 import com.dnd.ground.global.util.JwtVerifyResult;
@@ -38,6 +39,7 @@ import java.util.Map;
 public class UserControllerImpl implements UserController {
 
     private final UserService userService;
+    private final AuthService authService;
 
     @GetMapping("/home")
     @Operation(summary = "홈 화면 조회",
@@ -114,15 +116,5 @@ public class UserControllerImpl implements UserController {
     @Operation(summary = "운동 기록 메시지 수정", description = "운동 기록 메시지 수정")
     public ResponseEntity<Boolean> getDetailMap(@RequestBody RecordRequestDto.Message requestDto){
         return userService.editRecordMessage(requestDto);
-    }
-
-    /*
-    - 클라가 앱에 처음 진입했을때 액세스 토큰이 있다면 토큰과 함께 해당 uri로 호출
-    - (JWTCheckFilter를 거친 후 닉네임 반환)
-    - 토큰이 없다면 카카오 로그인 페이지로 가야함
-    */
-    @GetMapping("/main")
-    public ResponseEntity<?> main(HttpServletRequest request){
-        return userService.showMain(request);
     }
 }

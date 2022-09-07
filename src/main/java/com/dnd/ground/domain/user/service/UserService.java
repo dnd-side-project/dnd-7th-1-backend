@@ -15,11 +15,11 @@ import java.time.LocalDateTime;
  * @description 회원 서비스 인터페이스
  * @author  박세헌, 박찬호
  * @since   2022-08-01
- * @updated 2022-08-26 / 컨트롤러-서비스단 전달 형태 변경 - 박세헌
+ * @updated 회원 인증/인가 및 로그인 관련 메소드 이동(UserService -> AuthService)
+ *          2022-09-07 박찬호
  */
 
 public interface UserService {
-    User save(JwtUserDto user);
     HomeResponseDto showHome(String nickname);
     UserResponseDto.Profile getUserInfo(String nickname);
 
@@ -34,8 +34,4 @@ public interface UserService {
 
     ResponseEntity<Boolean> editRecordMessage(RecordRequestDto.Message requestDto);
     ResponseEntity<Boolean> editUserProfile(UserRequestDto.Profile requestDto);
-
-    ResponseEntity<?> showMain(HttpServletRequest request);
-
-    UserDetails loadUserByUsername(String nickname);
 }

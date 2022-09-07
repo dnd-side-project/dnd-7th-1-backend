@@ -2,7 +2,7 @@ package com.dnd.ground.global.securityFilter;
 
 import com.dnd.ground.domain.user.dto.JwtUserDto;
 import com.dnd.ground.domain.user.repository.UserRepository;
-import com.dnd.ground.domain.user.service.UserService;
+import com.dnd.ground.domain.user.service.AuthService;
 import com.dnd.ground.global.exception.CNotFoundException;
 import com.dnd.ground.global.exception.CommonErrorCode;
 import com.dnd.ground.global.util.JwtUtil;
@@ -13,9 +13,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.User;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.transaction.annotation.Transactional;
 
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
@@ -37,15 +35,15 @@ import java.io.IOException;
 public class JWTSignFilter extends UsernamePasswordAuthenticationFilter {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
-    private final UserService userService;
+    private final AuthService authService;
     private final UserRepository userRepository;
 
     public JWTSignFilter(AuthenticationManager authenticationManager,
-                         UserService userService,
+                         AuthService authService,
                          UserRepository userRepository)
     {
         super(authenticationManager);
-        this.userService = userService;
+        this.authService = authService;
         this.userRepository = userRepository;
         setFilterProcessesUrl("/sign");
     }
@@ -53,8 +51,7 @@ public class JWTSignFilter extends UsernamePasswordAuthenticationFilter {
     // 회원 가입
     @Override
     public Authentication attemptAuthentication(
-            HttpServletRequest request,
-            HttpServletResponse response) throws AuthenticationException
+            HttpServletRequest request, HttpServletResponse response) throws AuthenticationException
     {
         // 정보를 JwtUSerDto에 저장
         JwtUserDto userDto = null;
@@ -67,7 +64,7 @@ public class JWTSignFilter extends UsernamePasswordAuthenticationFilter {
 
         // 신규 회원이면 저장
         if (!userRepository.existsByKakaoId(userDto.getId())){
-            userService.save(userDto);
+            authService.save(userDto);
         }
 
         // id: 닉네임, password: kakaoId + 닉네임

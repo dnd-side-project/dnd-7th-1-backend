@@ -3,7 +3,7 @@ package com.dnd.ground.global.securityFilter;
 import com.auth0.jwt.exceptions.TokenExpiredException;
 import com.dnd.ground.domain.user.User;
 import com.dnd.ground.domain.user.repository.UserRepository;
-import com.dnd.ground.domain.user.service.UserService;
+import com.dnd.ground.domain.user.service.AuthService;
 import com.dnd.ground.global.exception.CNotFoundException;
 import com.dnd.ground.global.exception.CommonErrorCode;
 import com.dnd.ground.global.util.JwtUtil;
@@ -35,15 +35,15 @@ import java.util.Objects;
 
 public class JWTCheckFilter extends BasicAuthenticationFilter {
 
-    private final UserService userService;
+    private final AuthService authService;
     private final UserRepository userRepository;
 
     public JWTCheckFilter(AuthenticationManager authenticationManager,
-                          UserService userService,
+                          AuthService authService,
                           UserRepository userRepository)
     {
         super(authenticationManager);
-        this.userService = userService;
+        this.authService = authService;
         this.userRepository = userRepository;
     }
 
@@ -81,9 +81,12 @@ public class JWTCheckFilter extends BasicAuthenticationFilter {
                     // 토큰 재발급, 리프레시 토큰은 저장
                     accessToken = JwtUtil.makeAccessToken(result.getNickname());
                     refreshToken = JwtUtil.makeRefreshToken(result.getNickname());
+
                     response.setHeader("Aceess-Token", "Bearer "+accessToken);
                     response.setHeader("Refresh-Token", "Bearer "+refreshToken);
+
                     user.updateRefreshToken(refreshToken);
+
                     userRepository.save(user);
                 }
                 else{
@@ -93,7 +96,7 @@ public class JWTCheckFilter extends BasicAuthenticationFilter {
         }
 
         // 필터 통과
-        UserDetails user = userService.loadUserByUsername(result.getNickname());
+        UserDetails user = authService.loadUserByUsername(result.getNickname());
         UsernamePasswordAuthenticationToken userToken = new UsernamePasswordAuthenticationToken(
                 user.getUsername(), user.getPassword(), user.getAuthorities()
         );

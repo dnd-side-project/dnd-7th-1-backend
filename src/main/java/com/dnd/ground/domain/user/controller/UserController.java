@@ -38,5 +38,4 @@ public interface UserController {
 
     ResponseEntity<?> editUserProfile(@RequestBody UserRequestDto.Profile requestDto);
     ResponseEntity<?> getDetailMap(@RequestBody RecordRequestDto.Message requestDto);
-    ResponseEntity<?> main(HttpServletRequest request);
 }
