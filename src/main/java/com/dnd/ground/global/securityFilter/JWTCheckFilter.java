@@ -13,6 +13,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.security.sasl.AuthenticationException;
 import javax.servlet.FilterChain;
@@ -48,6 +49,7 @@ public class JWTCheckFilter extends BasicAuthenticationFilter {
     }
 
     @Override
+    @Transactional
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain chain) throws IOException, ServletException {
@@ -86,8 +88,6 @@ public class JWTCheckFilter extends BasicAuthenticationFilter {
                     response.setHeader("Refresh-Token", "Bearer "+refreshToken);
 
                     user.updateRefreshToken(refreshToken);
-
-                    userRepository.save(user);
                 }
                 else{
                     throw new AuthenticationException("잘못된 토큰 입니다.");

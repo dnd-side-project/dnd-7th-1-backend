@@ -14,6 +14,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
@@ -80,6 +81,7 @@ public class JWTSignFilter extends UsernamePasswordAuthenticationFilter {
 
     // 성공적으로 인증이 되었다면 넘어옴 해당 함수로 넘어옴
     @Override
+    @Transactional
     protected void successfulAuthentication(
             HttpServletRequest request,
             HttpServletResponse response,
@@ -97,7 +99,6 @@ public class JWTSignFilter extends UsernamePasswordAuthenticationFilter {
         com.dnd.ground.domain.user.User user = userRepository.findByNickname(principal.getUsername())
                 .orElseThrow(() -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));;
         user.updateRefreshToken(refreshToken);
-        userRepository.save(user);
 
         // 닉네임과 함께 response
         JSONObject json = new JSONObject();
