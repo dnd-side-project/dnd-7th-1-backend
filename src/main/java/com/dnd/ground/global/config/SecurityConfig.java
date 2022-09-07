@@ -1,6 +1,7 @@
 package com.dnd.ground.global.config;
 
 import com.dnd.ground.domain.user.repository.UserRepository;
+import com.dnd.ground.domain.user.service.AuthService;
 import com.dnd.ground.domain.user.service.UserService;
 import com.dnd.ground.global.securityFilter.JWTCheckFilter;
 import com.dnd.ground.global.securityFilter.JWTSignFilter;
@@ -33,7 +34,7 @@ import org.springframework.security.web.authentication.www.BasicAuthenticationFi
 public class SecurityConfig {
 
     private final AuthenticationConfiguration authenticationConfiguration;
-    private final UserService userService;
+    private final AuthService authService;
     private final UserRepository userRepository;
 
     @Bean
@@ -51,9 +52,9 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
         // 회원가입 or 재로그인 인증 필터
-        JWTSignFilter loginFilter = new JWTSignFilter(authenticationManager(authenticationConfiguration), userService, userRepository);
+        JWTSignFilter loginFilter = new JWTSignFilter(authenticationManager(authenticationConfiguration), authService, userRepository);
         // 매 request마다 토큰을 검사 해주는 필터
-        JWTCheckFilter checkFilter = new JWTCheckFilter(authenticationManager(authenticationConfiguration), userService, userRepository);
+        JWTCheckFilter checkFilter = new JWTCheckFilter(authenticationManager(authenticationConfiguration), authService, userRepository);
 
         http
                 .csrf().disable()  // csrf x
