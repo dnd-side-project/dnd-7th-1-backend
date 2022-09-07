@@ -1,26 +1,33 @@
 package com.dnd.ground.domain.user.controller;
 
+import com.dnd.ground.domain.exerciseRecord.dto.RecordRequestDto;
 import com.dnd.ground.domain.exerciseRecord.dto.RecordResponseDto;
+import com.dnd.ground.domain.friend.dto.FriendResponseDto;
 import com.dnd.ground.domain.user.dto.ActivityRecordResponseDto;
 import com.dnd.ground.domain.user.dto.HomeResponseDto;
 import com.dnd.ground.domain.user.dto.UserRequestDto;
 import com.dnd.ground.domain.user.dto.UserResponseDto;
 import com.dnd.ground.domain.user.service.UserService;
+import com.dnd.ground.global.util.JwtUtil;
+import com.dnd.ground.global.util.JwtVerifyResult;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiParam;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import javax.servlet.http.HttpServletRequest;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @description 회원 관련 컨트롤러 구현체
  * @author  박세헌, 박찬호
  * @since   2022-08-02
- * @updated 1. 메인 화면 필터 변경 기능 구현
- *          - 2022-08-18 박찬호
+ * @updated 2022-09-02 / 온보딩 진입시 호출 함수
+ *
  */
 
 @Api(tags = "유저")
@@ -43,26 +50,26 @@ public class UserControllerImpl implements UserController {
 
     @GetMapping("/info")
     @Operation(summary = "회원 정보 조회(마이페이지)", description = "회원의 닉네임, 소개 메시지 정보 (추후 프로필 등 추가 예정)")
-    public ResponseEntity<UserResponseDto.UInfo> getUserInfo(@RequestParam("nickname") String nickname) {
+    public ResponseEntity<UserResponseDto.Profile> getUserInfo(@RequestParam("nickname") String nickname) {
         return ResponseEntity.ok().body(userService.getUserInfo(nickname));
     }
 
     @GetMapping("/profile")
     @Operation(summary = "프로필 조회", description = "회원의 닉네임, 소개 메시지 정보 (추후 프로필 등 추가 예정)")
-    public ResponseEntity<UserResponseDto.Profile> getUserProfile(
+    public ResponseEntity<FriendResponseDto.FriendProfile> getUserProfile(
                             @ApiParam(value = "회원 닉네임", required = true) @RequestParam("user") String userNickname,
                             @ApiParam(value = "대상 닉네임", required = true) @RequestParam("friend") String friendNickname) {
 
         return ResponseEntity.ok().body(userService.getUserProfile(userNickname, friendNickname));
     }
 
-    @GetMapping("/info/activity")
+    @PostMapping("/info/activity")
     @Operation(summary = "나의 활동 기록 조회",
             description = "해당 유저의 start-end(기간) 사이 활동기록 조회\n" +
                     "start: 해당 날짜의 00시 00분 00초\n" +
                     "end: 해당 날짜의 23시 59분 59초")
     public ResponseEntity<ActivityRecordResponseDto> getActivityRecord(@RequestBody UserRequestDto.LookUp requestDto){
-        return ResponseEntity.ok().body(userService.getActivityRecord(requestDto.getNickname(), requestDto.getStart(), requestDto.getEnd()));
+        return ResponseEntity.ok().body(userService.getActivityRecord(requestDto));
     }
 
     @GetMapping("/info/activity/record")
@@ -79,19 +86,43 @@ public class UserControllerImpl implements UserController {
 
     @PostMapping("filter/mine")
     @Operation(summary = "필터 변경: 나의 기록 보기", description = "'나의 기록 보기' 옵션이 변경됩니다.(True<->False)")
-    public ResponseEntity<HttpStatus> changeFilterMine(@RequestParam("nickname") String nickname) {
-        return ResponseEntity.status(userService.changeFilterMine(nickname)).build();
+    public ResponseEntity<Boolean> changeFilterMine(@RequestParam("nickname") String nickname) {
+        return ResponseEntity.ok().body(userService.changeFilterMine(nickname));
     }
 
     @PostMapping("filter/friend")
     @Operation(summary = "필터 변경: 친구 보기", description = "'친구 보기' 옵션이 변경됩니다.(True<->False)")
-    public ResponseEntity<HttpStatus> changeFilterFriend(@RequestParam("nickname") String nickname) {
-        return ResponseEntity.status(userService.changeFilterFriend(nickname)).build();
+    public ResponseEntity<Boolean> changeFilterFriend(@RequestParam("nickname") String nickname) {
+        return ResponseEntity.ok().body(userService.changeFilterFriend(nickname));
     }
 
     @PostMapping("filter/record")
     @Operation(summary = "필터 변경: 친구들에게 보이기", description = "'친구들에게 보이기' 옵션이 변경됩니다.(True<->False)")
-    public ResponseEntity<HttpStatus> changeFilterRecord(@RequestParam("nickname") String nickname) {
-        return ResponseEntity.status(userService.changeFilterRecord(nickname)).build();
+    public ResponseEntity<Boolean> changeFilterRecord(@RequestParam("nickname") String nickname) {
+        return ResponseEntity.ok().body(userService.changeFilterRecord(nickname));
+    }
+
+    @PostMapping("/info/profile/edit")
+    @Operation(summary = "유저 프로필 수정", description = "닉네임, 자기소개 수정(예외 처리 예정)")
+    public ResponseEntity<Boolean> editUserProfile(@RequestBody UserRequestDto.Profile requestDto){
+        /* 닉네임이 비어있을때 예외 처리 필요 */
+        /* 닉네임이 중복일때 예외 처리 필요 */
+        return userService.editUserProfile(requestDto);
+    }
+
+    @PostMapping("/info/activity/record/edit")
+    @Operation(summary = "운동 기록 메시지 수정", description = "운동 기록 메시지 수정")
+    public ResponseEntity<Boolean> getDetailMap(@RequestBody RecordRequestDto.Message requestDto){
+        return userService.editRecordMessage(requestDto);
+    }
+
+    /*
+    - 클라가 앱에 처음 진입했을때 액세스 토큰이 있다면 토큰과 함께 해당 uri로 호출
+    - (JWTCheckFilter를 거친 후 닉네임 반환)
+    - 토큰이 없다면 카카오 로그인 페이지로 가야함
+    */
+    @GetMapping("/main")
+    public ResponseEntity<?> main(HttpServletRequest request){
+        return userService.showMain(request);
     }
 }

@@ -4,7 +4,6 @@ import com.dnd.ground.domain.challenge.UserChallenge;
 import com.dnd.ground.domain.exerciseRecord.ExerciseRecord;
 import com.dnd.ground.domain.friend.Friend;
 import lombok.*;
-import org.springframework.http.HttpStatus;
 
 import javax.persistence.*;
 import javax.validation.constraints.Email;
@@ -17,9 +16,8 @@ import java.util.List;
  * @description 회원 엔티티
  * @author  박찬호, 박세헌
  * @since   2022.07.28
- * @updated 1. 메인화면 필터 관련 필드 추가
- *          2. 메인 화면 필터 변경을 위한 수정자 추가
- *          -2022.08.18 박찬호
+ * @updated 1. 리프레시 토큰 필드 생성 및 비즈니스 로직 추가
+ *  *          - 2022-09-02 박세헌
  */
 
 @Getter
@@ -33,6 +31,9 @@ public class User {
     @Id @GeneratedValue
     @Column(name = "user_id")
     private Long id;
+
+    @Column(name = "kakao_id")
+    private Long kakaoId;
 
     @Column(name = "username", nullable = false)
     private String username;
@@ -65,6 +66,15 @@ public class User {
     @Column(name="is_public_record", nullable = false)
     private Boolean isPublicRecord;
 
+//    @Column(name="picture_name", nullable = false)
+//    private String pictureName;
+//
+//    @Column(name="picture_path", nullable = false)
+//    private String picturePath;
+
+    @Column(name="refresh_token")
+    private String refreshToken;
+
     @OneToMany(mappedBy = "friend")
     private List<Friend> friends = new ArrayList<>();
 
@@ -81,18 +91,27 @@ public class User {
     }
 
     //필터 변경
-    public HttpStatus changeFilterMine() {
+    public Boolean changeFilterMine() {
         this.isShowMine = !this.isShowMine;
-        return HttpStatus.OK;
+        return this.isShowMine;
     }
 
-    public HttpStatus changeFilterFriend() {
+    public Boolean changeFilterFriend() {
         this.isShowFriend = !this.isShowFriend;
-        return HttpStatus.OK;
+        return this.isShowFriend;
     }
 
-    public HttpStatus changeFilterRecord() {
+    public Boolean changeFilterRecord() {
         this.isPublicRecord = !this.isPublicRecord;
-        return HttpStatus.OK;
+        return this.isPublicRecord;
+    }
+
+    public void updateProfile(String nickname, String intro) {
+        this.nickname = nickname;
+        this.intro = intro;
+    }
+
+    public void updateRefreshToken(String refreshToken){
+        this.refreshToken = refreshToken;
     }
 }

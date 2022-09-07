@@ -1,33 +1,41 @@
 package com.dnd.ground.domain.user.service;
 
+import com.dnd.ground.domain.exerciseRecord.dto.RecordRequestDto;
 import com.dnd.ground.domain.exerciseRecord.dto.RecordResponseDto;
+import com.dnd.ground.domain.friend.dto.FriendResponseDto;
 import com.dnd.ground.domain.user.User;
-import com.dnd.ground.domain.user.dto.ActivityRecordResponseDto;
-import com.dnd.ground.domain.user.dto.HomeResponseDto;
-import com.dnd.ground.domain.user.dto.UserResponseDto;
-import org.springframework.http.HttpStatus;
+import com.dnd.ground.domain.user.dto.*;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.userdetails.UserDetails;
 
+import javax.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
 
 /**
  * @description 회원 서비스 인터페이스
  * @author  박세헌, 박찬호
  * @since   2022-08-01
- * @updated 1. 메인 화면 필터 변경 기능 구현
- *          -2022.08.18 박찬호
+ * @updated 2022-08-26 / 컨트롤러-서비스단 전달 형태 변경 - 박세헌
  */
 
 public interface UserService {
-    User save(User user);
+    User save(JwtUserDto user);
     HomeResponseDto showHome(String nickname);
-    UserResponseDto.UInfo getUserInfo(String nickname);
+    UserResponseDto.Profile getUserInfo(String nickname);
 
-    UserResponseDto.Profile getUserProfile(String userNickname, String friendNickname);
-    ActivityRecordResponseDto getActivityRecord(String nickname, LocalDateTime start, LocalDateTime end);
+    FriendResponseDto.FriendProfile getUserProfile(String userNickname, String friendNickname);
+    ActivityRecordResponseDto getActivityRecord(UserRequestDto.LookUp requestDto);
     RecordResponseDto.EInfo getExerciseInfo(Long exerciseId);
     UserResponseDto.DetailMap getDetailMap(Long recordId);
 
-    HttpStatus changeFilterMine(String nickname);
-    HttpStatus changeFilterFriend(String nickname);
-    HttpStatus changeFilterRecord(String nickname);
+    Boolean changeFilterMine(String nickname);
+    Boolean changeFilterFriend(String nickname);
+    Boolean changeFilterRecord(String nickname);
+
+    ResponseEntity<Boolean> editRecordMessage(RecordRequestDto.Message requestDto);
+    ResponseEntity<Boolean> editUserProfile(UserRequestDto.Profile requestDto);
+
+    ResponseEntity<?> showMain(HttpServletRequest request);
+
+    UserDetails loadUserByUsername(String nickname);
 }
