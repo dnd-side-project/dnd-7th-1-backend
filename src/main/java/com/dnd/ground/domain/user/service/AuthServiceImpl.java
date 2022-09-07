@@ -25,7 +25,8 @@ import java.util.Map;
  * @description 회원의 인증/인가 및 로그인 관련 서비스 구현체
  * @author  박세헌, 박찬호
  * @since   2022-09-07
- * @updated 회원 인증/인가 및 로그인 관련 메소드 이동(UserService -> AuthService)
+ * @updated 1.회원 인증/인가 및 로그인 관련 메소드 이동(UserService -> AuthService)
+ *          2.닉네임 유효성 검사 기능 구현
  *          2022-09-07 박찬호
  */
 
@@ -42,7 +43,6 @@ public class AuthServiceImpl implements AuthService, UserDetailsService {
         return userRepository.save(User
                 .builder()
                 .kakaoId(user.getId())
-                .username(user.getUsername())
                 .nickname(user.getNickname())
                 .mail(user.getMail())
                 .created(LocalDateTime.now())
@@ -79,5 +79,11 @@ public class AuthServiceImpl implements AuthService, UserDetailsService {
                 .password(passwordEncoder.encode(user.getKakaoId()+user.getNickname()))
                 .authorities("BASIC")
                 .build();
+    }
+    /*닉네임 Validation*/
+    public Boolean validateNickname(String nickname) {
+        return nickname.length() >= 2 && nickname.length() <= 6 // 2~6글자
+                && userRepository.findByNickname(nickname).isEmpty(); //중복X
+
     }
 }

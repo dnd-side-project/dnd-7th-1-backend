@@ -24,8 +24,6 @@ import java.util.Optional;
  * @updated 1. 인가 코드를 활용한 엑세스 토큰 발급 및 신규 회원 구분 API 구현
  *          2. 엑세스 토큰 정보 확인 API 구현
  *          3. 엑세스 토큰을 활용한 사용자 정보 확인 API 구현
- *
- *          **각 API 호출에 대한 NPE 처리 필요
  *          - 2022.08.23 박찬호
  */
 
@@ -48,7 +46,7 @@ public class KakaoService {
         webClient = WebClient.create();
     }
 
-    public ResponseEntity<?> kakaoLogin(String code)  {
+    public ResponseEntity<?> kakaoLogin(String code) throws NullPointerException {
         //토큰을 받기 위한 HTTP Body 생성
         MultiValueMap<String, String> getTokenBody = new LinkedMultiValueMap<>();
         getTokenBody.add("grant_type", "authorization_code");
