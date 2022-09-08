@@ -7,17 +7,19 @@ import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.Map;
 
 /**
- * @description 회원 정보와 관련한 컨트롤러
+ * @description 회원의 인증/인가 및 로그인 관련 컨트롤러
  * @author  박찬호
  * @since   2022-08-23
- * @updated 1. 컨트롤러 생성 생성
- *          - 2022.08.23 박찬호
+ * @updated 1. 닉네임 유효성 검사 기능 구현
+ *          - 2022.09.07 박찬호
  */
 
 @Api(tags = "회원 인증/인가 및 로그인")
@@ -38,9 +40,17 @@ public class AuthController {
         return authService.getNicknameByToken(request);
     }
 
+
+    @GetMapping("/validate/nickname")
+    @Operation(summary = "닉네임 유효성 검사", description = "2~6글자 || 중복X")
+    public ResponseEntity<Boolean> validateNickname(@RequestParam("nickname") String nickname) {
+        return ResponseEntity.ok(authService.validateNickname(nickname));
+    }
+
+    /**-- OAuth2.0 --**/
     @GetMapping("/auth/kakao/login")
     @Operation(summary = "카카오 토큰 발급", description = "인가코드를 활용한 카카오 토큰 발급(엑세스, 리프레시)")
-    public ResponseEntity<?> kakaoLogin(@RequestParam("code") String code) {
-        return kakaoService.kakaoLogin(code);
+    public ResponseEntity<Map<String,String>> kakaoLogin(@RequestParam("code") String code) {
+        return ResponseEntity.ok(kakaoService.kakaoLogin(code));
     }
 }
