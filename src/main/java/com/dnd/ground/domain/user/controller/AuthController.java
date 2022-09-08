@@ -7,10 +7,12 @@ import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.Map;
 
 /**
  * @description 회원의 인증/인가 및 로그인 관련 컨트롤러
@@ -47,10 +49,8 @@ public class AuthController {
 
     /**-- OAuth2.0 --**/
     @GetMapping("/auth/kakao/login")
-    @Operation(summary = "카카오 토큰 발급", description = "인가코드를 활용한 카카오 토큰 발급(엑세스, 리프레시)x")
-    public ResponseEntity<?> kakaoLogin(@RequestParam("code") String code) {
-        return kakaoService.kakaoLogin(code);
+    @Operation(summary = "카카오 토큰 발급", description = "인가코드를 활용한 카카오 토큰 발급(엑세스, 리프레시)")
+    public ResponseEntity<Map<String,String>> kakaoLogin(@RequestParam("code") String code) {
+        return ResponseEntity.ok(kakaoService.kakaoLogin(code));
     }
-
-
 }
