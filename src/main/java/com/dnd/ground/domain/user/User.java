@@ -16,8 +16,10 @@ import java.util.List;
  * @description 회원 엔티티
  * @author  박찬호, 박세헌
  * @since   2022.07.28
- * @updated 1. 리프레시 토큰 필드 생성 및 비즈니스 로직 추가
- *  *          - 2022-09-02 박세헌
+ * @updated 1. username 필드 삭제
+ *          2. 프로필 관련 필드 생성(pictureName, picturePath)
+ *          3. 프로필 변경 메소드 추가
+ *  *          - 2022-09-08 박찬호
  */
 
 @Getter
@@ -34,9 +36,6 @@ public class User {
 
     @Column(name = "kakao_id")
     private Long kakaoId;
-
-    @Column(name = "username", nullable = false)
-    private String username;
 
     @Column(name = "nickname", nullable = false, unique = true)
     private String nickname;
@@ -66,11 +65,11 @@ public class User {
     @Column(name="is_public_record", nullable = false)
     private Boolean isPublicRecord;
 
-//    @Column(name="picture_name", nullable = false)
-//    private String pictureName;
-//
-//    @Column(name="picture_path", nullable = false)
-//    private String picturePath;
+    @Column(name="picture_name", nullable = false)
+    private String pictureName;
+
+    @Column(name="picture_path", nullable = false)
+    private String picturePath;
 
     @Column(name="refresh_token")
     private String refreshToken;
@@ -90,17 +89,19 @@ public class User {
         this.longitude = longitude;
     }
 
-    //필터 변경
+    //"나의 기록 보기" 필터 변경
     public Boolean changeFilterMine() {
         this.isShowMine = !this.isShowMine;
         return this.isShowMine;
     }
 
+    //"친구 보기" 필터 변경
     public Boolean changeFilterFriend() {
         this.isShowFriend = !this.isShowFriend;
         return this.isShowFriend;
     }
 
+    //"친구들에게 보이기" 필터 변경
     public Boolean changeFilterRecord() {
         this.isPublicRecord = !this.isPublicRecord;
         return this.isPublicRecord;
@@ -109,6 +110,12 @@ public class User {
     public void updateProfile(String nickname, String intro) {
         this.nickname = nickname;
         this.intro = intro;
+    }
+
+    //프로필 사진 변경
+    public void updatePicture(String pictureName, String picturePath) {
+        this.pictureName = pictureName;
+        this.picturePath = picturePath;
     }
 
     public void updateRefreshToken(String refreshToken){
