@@ -55,6 +55,8 @@ public class AuthServiceImpl implements AuthService, UserDetailsService {
                 .isShowMine(true)
                 .isShowFriend(true)
                 .isPublicRecord(true)
+                .pictureName(user.getPictureName())
+                .picturePath(user.getPicturePath())
                 .build());
     }
 

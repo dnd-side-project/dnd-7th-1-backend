@@ -8,6 +8,7 @@ import com.dnd.ground.global.exception.CNotFoundException;
 import com.dnd.ground.global.exception.CommonErrorCode;
 import com.dnd.ground.global.util.JwtUtil;
 import com.dnd.ground.global.util.JwtVerifyResult;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -34,6 +35,7 @@ import java.util.Objects;
  *
  */
 
+@Slf4j
 public class JWTCheckFilter extends BasicAuthenticationFilter {
 
     private final AuthService authService;
@@ -63,9 +65,9 @@ public class JWTCheckFilter extends BasicAuthenticationFilter {
             JwtVerifyResult result = JwtUtil.verify(token);
             // 리프레시 토큰도 만료됐다면
             if (!JwtUtil.verify(token).isSuccess()) {
+                request.setAttribute("exception", CommonErrorCode.TOKEN_EXPIRED.getMessage());
                 throw new TokenExpiredException("토큰이 만료되었습니다!"); // 로그인 페이지로 가야해!
             }
-
             // 리프레시 토큰이 유효하다면
             else {
                 User user = userRepository.findByNickname(result.getNickname()).orElseThrow(
@@ -91,13 +93,22 @@ public class JWTCheckFilter extends BasicAuthenticationFilter {
                     chain.doFilter(request, response);
 
                 } else {
+                    request.setAttribute("exception", CommonErrorCode.WRONG_TOKEN.getMessage());
                     throw new AuthenticationException("잘못된 토큰 입니다.");
                 }
             }
-        } else {
-            // 액세스 토큰이 왔다면 (액세스 토큰 verify)
-            String token = accessToken.substring("Bearer ".length());
-            JwtVerifyResult result = JwtUtil.verify(token);
+        }
+        // 액세스 토큰이 왔다면
+        else {
+            // 액세스 토큰 verify
+            JwtVerifyResult result = null;
+            try {
+                String token = accessToken.substring("Bearer ".length());
+                result = JwtUtil.verify(token);
+            } catch (Exception e) {
+                request.setAttribute("exception", CommonErrorCode.WRONG_TOKEN.getMessage());
+                throw new AuthenticationException("잘못된 토큰 입니다.");
+            }
 
             // 필터 통과
             UserDetails user = authService.loadUserByUsername(result.getNickname());
