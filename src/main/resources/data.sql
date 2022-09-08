@@ -1,15 +1,15 @@
-insert into user values(1,"2022-08-01 01:00", "A-Intro", true, true, true, 123456, 37.330436, -122.030216, "A-mail@gmail.com", "NickA", "UserA", "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJOaWNrQSIsImV4cCI6MTY2MzQwNTM2NX0.H4U5oqkJA77OJTqZxTzzx-kaiUJn34sa_dl4EI6AQ6o");
-insert into user values(2,"2022-08-02 02:00", "B-Intro", true, true, true, 123456, 37.331184, -122.02311, "B-mail@naver.com", "NickB", "UserB", "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJOaWNrQiIsImV4cCI6MTY2MzQwNTQ4NH0.r8gzuAon6o4EG8-va5R_zZsGvEu4Kjr1dS1061wnzPI");
-insert into user values(3,"2022-08-03 03:00", "C-Intro", true, true, true, 123456, 37.337542, -122.036574, "C-mail@daum.com", "NickC", "UserC", "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJOaWNrQyIsImV4cCI6MTY2MzQwNTUwMn0.y6rdfYAaFLsax67t_vzwvW1JKdLPxCxSpzdx9zFEwy8");
+insert into user values(1,"2022-08-01 01:00", "A-Intro", true, true, true, 123456, 37.330436, -122.030216, "A-mail@gmail.com", "NickA", "user/profile/default_profile.png", "https://dnd-ground-bucket.s3.ap-northeast-2.amazonaws.com/user/profile/default_profile.png","eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJOaWNrQSIsImV4cCI6MTY2MzQwNTM2NX0.H4U5oqkJA77OJTqZxTzzx-kaiUJn34sa_dl4EI6AQ6o");
+insert into user values(2,"2022-08-02 02:00", "B-Intro", true, true, true, 123456, 37.331184, -122.02311, "B-mail@naver.com", "NickB", "user/profile/default_profile.png", "https://dnd-ground-bucket.s3.ap-northeast-2.amazonaws.com/user/profile/default_profile.png", "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJOaWNrQiIsImV4cCI6MTY2MzQwNTQ4NH0.r8gzuAon6o4EG8-va5R_zZsGvEu4Kjr1dS1061wnzPI");
+insert into user values(3,"2022-08-03 03:00", "C-Intro", true, true, true, 123456, 37.337542, -122.036574, "C-mail@daum.com", "NickC", "user/profile/default_profile.png", "https://dnd-ground-bucket.s3.ap-northeast-2.amazonaws.com/user/profile/default_profile.png", "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJOaWNrQyIsImV4cCI6MTY2MzQwNTUwMn0.y6rdfYAaFLsax67t_vzwvW1JKdLPxCxSpzdx9zFEwy8");
 
-insert into user values(4,"2022-08-04 04:00", "D-Intro", true, true, true, 123456, 37.337542, -122.038444, "D-mail@gmail.com", "NickD", "UserD", "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJOaWNrRCIsImV4cCI6MTY2MzQwNTUyMH0.DbH4AWj7awFPvYsgy871mgp9Z_LHlpLtsd94f9IUCW0");
-insert into user values(5,"2022-08-05 05:00", "E-Intro", true, true, true, 123456, 37.337542, -122.041062, "E-mail@dnd.com", "NickE", "UserE", "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJOaWNrRSIsImV4cCI6MTY2MzQwNTUzNX0.PjbYBjkVrfjbrAyogWVt5dmx3FirTR1-IBrOG5ejoC4");
+insert into user values(4,"2022-08-04 04:00", "D-Intro", true, true, true, 123456, 37.337542, -122.038444, "D-mail@gmail.com", "NickD", "user/profile/default_profile.png", "https://dnd-ground-bucket.s3.ap-northeast-2.amazonaws.com/user/profile/default_profile.png", "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJOaWNrRCIsImV4cCI6MTY2MzQwNTUyMH0.DbH4AWj7awFPvYsgy871mgp9Z_LHlpLtsd94f9IUCW0");
+insert into user values(5,"2022-08-05 05:00", "E-Intro", true, true, true, 123456, 37.337542, -122.041062, "E-mail@dnd.com", "NickE", "user/profile/default_profile.png", "https://dnd-ground-bucket.s3.ap-northeast-2.amazonaws.com/user/profile/default_profile.png", "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJOaWNrRSIsImV4cCI6MTY2MzQwNTUzNX0.PjbYBjkVrfjbrAyogWVt5dmx3FirTR1-IBrOG5ejoC4");
 
-insert into user values(6,"2022-08-06 06:00", "F-Intro", true, true, true, 123456, 37.337542, -122.041062, "F-mail@gmail.com", "NickF", "UserF", "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJOaWNrRiIsImV4cCI6MTY2MzQwNTU1NX0.Zogn6tgwsva2VZNOm0cS0hQGJVrQbfRuiodNDLtAfNU");
-insert into user values(7,"2022-08-07 07:00", "G-Intro", true, true, true, 123456, 37.337542, -122.041062, "G-mail@naver.com", "NickG", "UserG", "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJOaWNrRyIsImV4cCI6MTY2MzQwNTU3Mn0.LZ_EpNd4a4_87TfYgd_TjBIFqO7r135NGDlxmH5_HhA");
+insert into user values(6,"2022-08-06 06:00", "F-Intro", true, true, true, 123456, 37.337542, -122.041062, "F-mail@gmail.com", "NickF", "user/profile/default_profile.png", "https://dnd-ground-bucket.s3.ap-northeast-2.amazonaws.com/user/profile/default_profile.png", "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJOaWNrRiIsImV4cCI6MTY2MzQwNTU1NX0.Zogn6tgwsva2VZNOm0cS0hQGJVrQbfRuiodNDLtAfNU");
+insert into user values(7,"2022-08-07 07:00", "G-Intro", true, true, true, 123456, 37.337542, -122.041062, "G-mail@naver.com", "NickG", "user/profile/default_profile.png", "https://dnd-ground-bucket.s3.ap-northeast-2.amazonaws.com/user/profile/default_profile.png", "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJOaWNrRyIsImV4cCI6MTY2MzQwNTU3Mn0.LZ_EpNd4a4_87TfYgd_TjBIFqO7r135NGDlxmH5_HhA");
 
-insert into user values(8,"2022-08-08 08:00", "H-Intro", true, true, true, 123456, 37.337542, -122.041062, "H-mail@dnd.com", "NickH", "UserH", "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJOaWNrSCIsImV4cCI6MTY2MzQwNTU4N30.gZaVctCFPry9w-yoLwT5w8Pd_QYiVEQ_WYqy8jHg6bs");
-insert into user values(9,"2022-08-09 09:00", "I-Intro", true, true, true, 123456, 37.337542, -122.041062, "I-mail@daum.com", "NickI", "UserI", "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJOaWNrSSIsImV4cCI6MTY2MzQwNTU5OH0.OvflxWgvoAx1M3R7lMi0FrYvSoRG_WP6xxVeYZSxxs0");
+insert into user values(8,"2022-08-08 08:00", "H-Intro", true, true, true, 123456, 37.337542, -122.041062, "H-mail@dnd.com", "NickH", "user/profile/default_profile.png", "https://dnd-ground-bucket.s3.ap-northeast-2.amazonaws.com/user/profile/default_profile.png", "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJOaWNrSCIsImV4cCI6MTY2MzQwNTU4N30.gZaVctCFPry9w-yoLwT5w8Pd_QYiVEQ_WYqy8jHg6bs");
+insert into user values(9,"2022-08-09 09:00", "I-Intro", true, true, true, 123456, 37.337542, -122.041062, "I-mail@daum.com", "NickI", "user/profile/default_profile.png", "https://dnd-ground-bucket.s3.ap-northeast-2.amazonaws.com/user/profile/default_profile.png", "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJOaWNrSSIsImV4cCI6MTY2MzQwNTU5OH0.OvflxWgvoAx1M3R7lMi0FrYvSoRG_WP6xxVeYZSxxs0");
 
 -- 친구 관계 생성
 -- A-B-C는 서로 친구 관계
@@ -88,15 +88,12 @@ insert into matrix values(20, 37.337542, -122.040314, 7);
 insert into matrix values(21, 37.337542, -122.040688, 7);
 insert into matrix values(22, 37.337542, -122.041062, 7);
 
-update hibernate_sequence set next_val=124;
-
-
 -- 발표 영상 용 더미 데이터(마지막 위치 확인!!!!!!!!!!!)
-insert into user values(11,"2022-08-23 08:00", "희재횽아 화이팅!", true, true, true, 123456, null, null, "더미본인@naver.com", "희재횽아짱", "희재횽아짱이름");
-insert into user values(12,"2022-08-23 09:00", "주로 밤에 활동합니다. 밤산책최고야!", true, true, true, 123456, 37.5187680, 126.9311120, "올빼미@naver.com", "여의도올빼미", "여의도올빼미이름");
-insert into user values(13,"2022-08-23 10:00", "맛집탐방하면서 밥 먹고 산책 알지? ㅎㅎ", true, true, true, 123456, 37.5175520, 126.9292420, "합정@naver.com", "합정먹보", "합정먹보이름");
-insert into user values(14,"2022-08-23 12:00", "생활버닝이 짱이야 다 덤벼", true, true, true, 123456, 37.5215040, 126.9277460, "칼로리@naver.com", "0칼로리", "0칼로리이름");
-insert into user values(15,"2022-08-23 14:00", "우리동네 내가 다 먹을거야", true, true, true, 123456, 37.5184640, 126.9281200, "우리동네@naver.com", "몽쉘통통", "몽쉘통통이름");
+insert into user values(11,"2022-08-23 08:00", "희재횽아 화이팅!", true, true, true, 123456, null, null, "더미본인@naver.com", "희재횽아짱","user/profile/default_profile.png", "https://dnd-ground-bucket.s3.ap-northeast-2.amazonaws.com/user/profile/default_profile.png", "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJOaWNrQSIsImV4cCI6MTY2MzQwNTM2NX0.H4U5oqkJA77OJTqZxTzzx-kaiUJn34sa_dl4EI6AQ6o");
+insert into user values(12,"2022-08-23 09:00", "주로 밤에 활동합니다. 밤산책최고야!", true, true, true, 123456, 37.5187680, 126.9311120, "올빼미@naver.com", "여의도올빼미","user/profile/default_profile.png", "https://dnd-ground-bucket.s3.ap-northeast-2.amazonaws.com/user/profile/default_profile.png", "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJOaWNrQSIsImV4cCI6MTY2MzQwNTM2NX0.H4U5oqkJA77OJTqZxTzzx-kaiUJn34sa_dl4EI6AQ6o");
+insert into user values(13,"2022-08-23 10:00", "맛집탐방하면서 밥 먹고 산책 알지? ㅎㅎ", true, true, true, 123456, 37.5175520, 126.9292420, "합정@naver.com", "합정먹보","user/profile/default_profile.png", "https://dnd-ground-bucket.s3.ap-northeast-2.amazonaws.com/user/profile/default_profile.png", "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJOaWNrQSIsImV4cCI6MTY2MzQwNTM2NX0.H4U5oqkJA77OJTqZxTzzx-kaiUJn34sa_dl4EI6AQ6o");
+insert into user values(14,"2022-08-23 12:00", "생활버닝이 짱이야 다 덤벼", true, true, true, 123456, 37.5215040, 126.9277460, "칼로리@naver.com", "0칼로리", "user/profile/default_profile.png", "https://dnd-ground-bucket.s3.ap-northeast-2.amazonaws.com/user/profile/default_profile.png", "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJOaWNrQSIsImV4cCI6MTY2MzQwNTM2NX0.H4U5oqkJA77OJTqZxTzzx-kaiUJn34sa_dl4EI6AQ6o");
+insert into user values(15,"2022-08-23 14:00", "우리동네 내가 다 먹을거야", true, true, true, 123456, 37.5184640, 126.9281200, "우리동네@naver.com", "몽쉘통통","user/profile/default_profile.png", "https://dnd-ground-bucket.s3.ap-northeast-2.amazonaws.com/user/profile/default_profile.png", "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJOaWNrQSIsImV4cCI6MTY2MzQwNTM2NX0.H4U5oqkJA77OJTqZxTzzx-kaiUJn34sa_dl4EI6AQ6o");
 
 insert into friend values(9, "Accept", 11, 12);
 insert into friend values(10, "Accept", 11, 13);
@@ -164,3 +161,5 @@ insert into matrix values(120, 37.5178560, 126.9296160, 10);
 insert into matrix values(121, 37.5181600, 126.9296160, 10);
 insert into matrix values(122, 37.5175520, 126.9273720, 10);
 insert into matrix values(123, 37.5175520, 126.9292420, 10);
+
+update hibernate_sequence set next_val=124;

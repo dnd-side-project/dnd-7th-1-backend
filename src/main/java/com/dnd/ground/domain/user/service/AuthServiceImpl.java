@@ -5,6 +5,7 @@ import com.dnd.ground.domain.user.dto.JwtUserDto;
 import com.dnd.ground.domain.user.repository.UserRepository;
 import com.dnd.ground.global.exception.CNotFoundException;
 import com.dnd.ground.global.exception.CommonErrorCode;
+import com.dnd.ground.global.util.AmazonS3Service;
 import com.dnd.ground.global.util.JwtUtil;
 import com.dnd.ground.global.util.JwtVerifyResult;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * @description 회원의 인증/인가 및 로그인 관련 서비스 구현체
+ * @description 회원의 인증/인가 및 회원 정보 관련 서비스 구현체
  * @author  박세헌, 박찬호
  * @since   2022-09-07
  * @updated 1.회원 인증/인가 및 로그인 관련 메소드 이동(UserService -> AuthService)
@@ -36,6 +37,7 @@ import java.util.Map;
 public class AuthServiceImpl implements AuthService, UserDetailsService {
 
     private final UserRepository userRepository;
+    private final AmazonS3Service amazonS3Service;
 
     /*회원 저장*/
     @Transactional
@@ -80,10 +82,22 @@ public class AuthServiceImpl implements AuthService, UserDetailsService {
                 .authorities("BASIC")
                 .build();
     }
+
+    /**--회원 정보 관련 로직--**/
+
     /*닉네임 Validation*/
     public Boolean validateNickname(String nickname) {
         return nickname.length() >= 2 && nickname.length() <= 6 // 2~6글자
                 && userRepository.findByNickname(nickname).isEmpty(); //중복X
 
+    }
+
+    //회원의 프로필 사진 변경
+    public void updatePicture(User user, String pictureName, String picturePath) {
+        //버킷에 있는 파일 삭제
+        amazonS3Service.deleteFile(pictureName);
+
+        //프로필 사진 변경
+        user.updatePicture(pictureName, picturePath);
     }
 }
