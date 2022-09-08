@@ -29,6 +29,7 @@ import java.util.Map;
  * @updated 1.회원 인증/인가 및 로그인 관련 메소드 이동(UserService -> AuthService)
  *          2.닉네임 유효성 검사 기능 구현
  *          2022-09-07 박찬호
+ *          1. 토큰으로 닉네임 찾은 후 반환하는 함수 수정 - 박세헌
  */
 
 @Slf4j
@@ -54,13 +55,23 @@ public class AuthServiceImpl implements AuthService, UserDetailsService {
                 .isShowMine(true)
                 .isShowFriend(true)
                 .isPublicRecord(true)
+                .pictureName(user.getPictureName())
+                .picturePath(user.getPicturePath())
                 .build());
     }
 
     /* 토큰으로 닉네임 찾은 후 반환하는 함수 */
     public ResponseEntity<Map<String, String>> getNicknameByToken(HttpServletRequest request){
-        String accessToken = request.getHeader("Access-Token");
-        JwtVerifyResult result = JwtUtil.verify(accessToken.substring("Bearer ".length()));
+        String accessToken = request.getHeader("Authorization");
+        String refreshToken = request.getHeader("Refresh-Token");
+
+        JwtVerifyResult result = null;
+        if (accessToken != null) {
+            result = JwtUtil.verify(accessToken.substring("Bearer ".length()));
+        }
+        else{
+            result = JwtUtil.verify(refreshToken.substring("Bearer ".length()));
+        }
 
         Map<String, String> nick = new HashMap<>();
         nick.put("nickname", result.getNickname());

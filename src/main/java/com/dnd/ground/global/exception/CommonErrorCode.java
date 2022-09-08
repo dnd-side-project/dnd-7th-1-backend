@@ -8,8 +8,7 @@ import org.springframework.http.HttpStatus;
  * @description 에러 코드 구현체
  * @author  박찬호
  * @since   2022-08-24
- * @updated 1.예외 코드 추가(NOT_FOUND_USER_CHALLENGE, EXCEED_CHALLENGE, NOT_CHANGE_MASTER_STATUS)
- *          - 2022.08.25 박찬호
+ * @updated 1. 예러 코드 추가 (ACCESS_DENIED, TOKEN_EXPIRED, WRONG_TOKEN)
  */
 
 @RequiredArgsConstructor
@@ -25,6 +24,10 @@ public enum CommonErrorCode implements ErrorCode {
     NOT_FOUND_USER_CHALLENGE(HttpStatus.BAD_REQUEST, "해당 유저의 챌린지 관련 기록이 없습니다."),
 
     NOT_CHANGE_MASTER_STATUS(HttpStatus.BAD_REQUEST, "주최자의 상태를 변경할 수 없습니다."),
+
+    ACCESS_DENIED(HttpStatus.FORBIDDEN, "권한이 없습니다."),
+    TOKEN_EXPIRED(HttpStatus.FORBIDDEN, "토큰이 만료 되었습니다."),
+    WRONG_TOKEN(HttpStatus.FORBIDDEN, "잘못된 토큰 입니다."),
 
     //5XX
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 동작 중 예외가 발생했습니다."),
