@@ -26,7 +26,8 @@ public enum CommonErrorCode implements ErrorCode {
     NOT_CHANGE_MASTER_STATUS(HttpStatus.BAD_REQUEST, "주최자의 상태를 변경할 수 없습니다."),
 
     ACCESS_DENIED(HttpStatus.FORBIDDEN, "권한이 없습니다."),
-    TOKEN_EXPIRED(HttpStatus.FORBIDDEN, "토큰이 만료 되었습니다."),
+    ACCESS_TOKEN_EXPIRED(HttpStatus.FORBIDDEN, "액세스 토큰이 만료 되었습니다."),
+    REFRESH_TOKEN_EXPIRED(HttpStatus.FORBIDDEN, "리프레시 토큰이 만료 되었습니다."),
     WRONG_TOKEN(HttpStatus.FORBIDDEN, "잘못된 토큰 입니다."),
 
     //5XX

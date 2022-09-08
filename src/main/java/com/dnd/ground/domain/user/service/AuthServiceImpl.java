@@ -5,7 +5,7 @@ import com.dnd.ground.domain.user.dto.JwtUserDto;
 import com.dnd.ground.domain.user.repository.UserRepository;
 import com.dnd.ground.global.exception.CNotFoundException;
 import com.dnd.ground.global.exception.CommonErrorCode;
-import com.dnd.ground.global.util.AmazonS3Service;
+//import com.dnd.ground.global.util.AmazonS3Service;
 import com.dnd.ground.global.util.JwtUtil;
 import com.dnd.ground.global.util.JwtVerifyResult;
 import lombok.RequiredArgsConstructor;
@@ -38,7 +38,7 @@ import java.util.Map;
 public class AuthServiceImpl implements AuthService, UserDetailsService {
 
     private final UserRepository userRepository;
-    private final AmazonS3Service amazonS3Service;
+//    private final AmazonS3Service amazonS3Service;
 
     /*회원 저장*/
     @Transactional
@@ -103,12 +103,12 @@ public class AuthServiceImpl implements AuthService, UserDetailsService {
 
     }
 
-    //회원의 프로필 사진 변경
-    public void updatePicture(User user, String pictureName, String picturePath) {
-        //버킷에 있는 파일 삭제
-        amazonS3Service.deleteFile(pictureName);
-
-        //프로필 사진 변경
-        user.updatePicture(pictureName, picturePath);
-    }
+//    //회원의 프로필 사진 변경
+//    public void updatePicture(User user, String pictureName, String picturePath) {
+//        //버킷에 있는 파일 삭제
+//        amazonS3Service.deleteFile(pictureName);
+//
+//        //프로필 사진 변경
+//        user.updatePicture(pictureName, picturePath);
+//    }
 }
