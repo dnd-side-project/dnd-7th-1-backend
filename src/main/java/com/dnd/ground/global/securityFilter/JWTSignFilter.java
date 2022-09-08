@@ -62,7 +62,6 @@ public class JWTSignFilter extends UsernamePasswordAuthenticationFilter {
             e.printStackTrace();
         }
 
-
         // 신규 회원이면 저장
         if (!userRepository.existsByKakaoId(userDto.getId())){
             authService.save(userDto);
@@ -81,7 +80,6 @@ public class JWTSignFilter extends UsernamePasswordAuthenticationFilter {
 
     // 성공적으로 인증이 되었다면 넘어옴 해당 함수로 넘어옴
     @Override
-    @Transactional
     protected void successfulAuthentication(
             HttpServletRequest request,
             HttpServletResponse response,
@@ -94,11 +92,12 @@ public class JWTSignFilter extends UsernamePasswordAuthenticationFilter {
         String refreshToken = JwtUtil.makeRefreshToken(principal.getUsername());
 
         // Jwt토큰 발급, refresh 토큰은 저장
-        response.setHeader("Aceess-Token", "Bearer "+accessToken);
+        response.setHeader("Authorization", "Bearer "+accessToken);
         response.setHeader("Refresh-Token", "Bearer "+refreshToken);
         com.dnd.ground.domain.user.User user = userRepository.findByNickname(principal.getUsername())
                 .orElseThrow(() -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));;
         user.updateRefreshToken(refreshToken);
+        userRepository.save(user);
 
         // 닉네임과 함께 response
         JSONObject json = new JSONObject();

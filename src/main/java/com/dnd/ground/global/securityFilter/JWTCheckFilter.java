@@ -41,8 +41,7 @@ public class JWTCheckFilter extends BasicAuthenticationFilter {
 
     public JWTCheckFilter(AuthenticationManager authenticationManager,
                           AuthService authService,
-                          UserRepository userRepository)
-    {
+                          UserRepository userRepository) {
         super(authenticationManager);
         this.authService = authService;
         this.userRepository = userRepository;
@@ -54,53 +53,59 @@ public class JWTCheckFilter extends BasicAuthenticationFilter {
                                     HttpServletResponse response,
                                     FilterChain chain) throws IOException, ServletException {
 
-        String accessToken = request.getHeader("Access-Token");
+        String accessToken = request.getHeader("Authorization");
         String refreshToken = request.getHeader("Refresh-Token");
 
-        // 왜 토큰이 안오죠? 넘어가
-        if (accessToken == null || !accessToken.startsWith("Bearer ")){
-            chain.doFilter(request, response);
-            return;
-        }
-
-        // 액세스 토큰 verify
-        String token = accessToken.substring("Bearer ".length());
-        JwtVerifyResult result = JwtUtil.verify(token);
-
-        // 클라에서 리프레시 토큰이 왔다는건 (액세스토큰은 만료된 것)
-        if (refreshToken != null){
+        // 클라에서 액세스 토큰이 안왔다는건 (액세스토큰은 만료된 것, 리프레시 토큰이 대신 옴)
+        if (accessToken == null) {
+            // 리프레시 토큰 verify
+            String token = refreshToken.substring("Bearer ".length());
+            JwtVerifyResult result = JwtUtil.verify(token);
             // 리프레시 토큰도 만료됐다면
-            if (!JwtUtil.verify(refreshToken.substring("Bearer ".length())).isSuccess()){
+            if (!JwtUtil.verify(token).isSuccess()) {
                 throw new TokenExpiredException("토큰이 만료되었습니다!"); // 로그인 페이지로 가야해!
             }
 
             // 리프레시 토큰이 유효하다면
-            else{
+            else {
                 User user = userRepository.findByNickname(result.getNickname()).orElseThrow(
                         () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
                 // 유저의 리프레시 토큰과 넘어온 리프레시 토큰이 같으면
-                if (Objects.equals(user.getRefreshToken(), refreshToken.substring("Bearer ".length()))){
+                if (Objects.equals(user.getRefreshToken(), token)) {
+
                     // 토큰 재발급, 리프레시 토큰은 저장
                     accessToken = JwtUtil.makeAccessToken(result.getNickname());
                     refreshToken = JwtUtil.makeRefreshToken(result.getNickname());
 
-                    response.setHeader("Aceess-Token", "Bearer "+accessToken);
-                    response.setHeader("Refresh-Token", "Bearer "+refreshToken);
+                    response.setHeader("Authorization", "Bearer " + accessToken);
+                    response.setHeader("Refresh-Token", "Bearer " + refreshToken);
 
                     user.updateRefreshToken(refreshToken);
-                }
-                else{
+
+                    // 필터 통과
+                    UserDetails userDetails = authService.loadUserByUsername(result.getNickname());
+                    UsernamePasswordAuthenticationToken userToken = new UsernamePasswordAuthenticationToken(
+                            userDetails.getUsername(), userDetails.getPassword(), userDetails.getAuthorities()
+                    );
+                    SecurityContextHolder.getContext().setAuthentication(userToken);
+                    chain.doFilter(request, response);
+
+                } else {
                     throw new AuthenticationException("잘못된 토큰 입니다.");
                 }
             }
-        }
+        } else {
+            // 액세스 토큰이 왔다면 (액세스 토큰 verify)
+            String token = accessToken.substring("Bearer ".length());
+            JwtVerifyResult result = JwtUtil.verify(token);
 
-        // 필터 통과
-        UserDetails user = authService.loadUserByUsername(result.getNickname());
-        UsernamePasswordAuthenticationToken userToken = new UsernamePasswordAuthenticationToken(
-                user.getUsername(), user.getPassword(), user.getAuthorities()
-        );
-        SecurityContextHolder.getContext().setAuthentication(userToken);
-        chain.doFilter(request, response);
+            // 필터 통과
+            UserDetails user = authService.loadUserByUsername(result.getNickname());
+            UsernamePasswordAuthenticationToken userToken = new UsernamePasswordAuthenticationToken(
+                    user.getUsername(), user.getPassword(), user.getAuthorities()
+            );
+            SecurityContextHolder.getContext().setAuthentication(userToken);
+            chain.doFilter(request, response);
+        }
     }
 }
