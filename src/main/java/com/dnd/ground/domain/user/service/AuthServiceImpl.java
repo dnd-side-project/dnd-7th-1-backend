@@ -2,6 +2,9 @@ package com.dnd.ground.domain.user.service;
 
 import com.dnd.ground.domain.user.User;
 import com.dnd.ground.domain.user.dto.JwtUserDto;
+import com.dnd.ground.domain.user.dto.KakaoDto;
+import com.dnd.ground.domain.user.dto.SignResponseDto;
+import com.dnd.ground.domain.user.dto.UserRequestDto;
 import com.dnd.ground.domain.user.repository.UserRepository;
 import com.dnd.ground.global.exception.CNotFoundException;
 import com.dnd.ground.global.exception.CommonErrorCode;
@@ -26,9 +29,9 @@ import java.util.Map;
  * @description 회원의 인증/인가 및 회원 정보 관련 서비스 구현체
  * @author  박세헌, 박찬호
  * @since   2022-09-07
- * @updated 1.회원 인증/인가 및 로그인 관련 메소드 이동(UserService -> AuthService)
- *          2.닉네임 유효성 검사 기능 구현
- *          2022-09-07 박찬호
+ * @updated 1.기존 유저인지 판별하는 API 추가
+ *          2.프로필 사진 변경하는 기능 구현
+ *          2022-09-09 박찬호
  */
 
 @Slf4j
@@ -38,6 +41,7 @@ public class AuthServiceImpl implements AuthService, UserDetailsService {
 
     private final UserRepository userRepository;
     private final AmazonS3Service amazonS3Service;
+    private final KakaoService kakaoService;
 
     /*회원 저장*/
     @Transactional
@@ -54,6 +58,8 @@ public class AuthServiceImpl implements AuthService, UserDetailsService {
                 .isShowMine(true)
                 .isShowFriend(true)
                 .isPublicRecord(true)
+                .pictureName(user.getPictureName())
+                .picturePath(user.getPicturePath())
                 .build());
     }
 
@@ -92,7 +98,19 @@ public class AuthServiceImpl implements AuthService, UserDetailsService {
 
     }
 
-    //회원의 프로필 사진 변경
+    /*기존 유저인지 판별*/
+    public Boolean isOriginalUser(HttpServletRequest request) {
+        String accessToken = request.getHeader("Access-Token");
+
+        KakaoDto.TokenInfo tokenInfo = kakaoService.getTokenInfo(accessToken);
+
+        return userRepository.findByKakaoId(tokenInfo.getId()).isPresent();
+    }
+
+    /**
+     * 회원의 프로필 사진 변경
+     * 카카오 프로필을 사용하는 경우 호출하지 않음. (DB의 값을 변경하면서 S3 버킷의 파일도 변경하기 위함)
+     * */
     public void updatePicture(User user, String pictureName, String picturePath) {
         //버킷에 있는 파일 삭제
         amazonS3Service.deleteFile(pictureName);
