@@ -65,8 +65,16 @@ public class AuthServiceImpl implements AuthService, UserDetailsService {
 
     /* 토큰으로 닉네임 찾은 후 반환하는 함수 */
     public ResponseEntity<Map<String, String>> getNicknameByToken(HttpServletRequest request){
-        String accessToken = request.getHeader("Access-Token");
-        JwtVerifyResult result = JwtUtil.verify(accessToken.substring("Bearer ".length()));
+        String accessToken = request.getHeader("Authorization");
+        String refreshToken = request.getHeader("Refresh-Token");
+
+        JwtVerifyResult result = null;
+        if (accessToken != null) {
+            result = JwtUtil.verify(accessToken.substring("Bearer ".length()));
+        }
+        else{
+            result = JwtUtil.verify(refreshToken.substring("Bearer ".length()));
+        }
 
         Map<String, String> nick = new HashMap<>();
         nick.put("nickname", result.getNickname());

@@ -7,6 +7,7 @@ import com.dnd.ground.global.exception.CNotFoundException;
 import com.dnd.ground.global.exception.CommonErrorCode;
 import com.dnd.ground.global.util.JwtUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -14,6 +15,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
@@ -32,6 +34,7 @@ import java.io.IOException;
  *
  */
 
+@Slf4j
 public class JWTSignFilter extends UsernamePasswordAuthenticationFilter {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -58,9 +61,8 @@ public class JWTSignFilter extends UsernamePasswordAuthenticationFilter {
         try {
             userDto = objectMapper.readValue(request.getInputStream(), JwtUserDto.class);
         } catch (IOException e) {
-            e.printStackTrace();
+            request.setAttribute("exception", CommonErrorCode.INTERNAL_SERVER_ERROR.getMessage());
         }
-
 
         // 신규 회원이면 저장
         if (!userRepository.existsByKakaoId(userDto.getId())){
@@ -92,8 +94,10 @@ public class JWTSignFilter extends UsernamePasswordAuthenticationFilter {
         String refreshToken = JwtUtil.makeRefreshToken(principal.getUsername());
 
         // Jwt토큰 발급, refresh 토큰은 저장
-        response.setHeader("Aceess-Token", "Bearer "+accessToken);
+        response.setHeader("Authorization", "Bearer "+accessToken);
         response.setHeader("Refresh-Token", "Bearer "+refreshToken);
+        response.setContentType("application/json; charset=utf-8");
+
         com.dnd.ground.domain.user.User user = userRepository.findByNickname(principal.getUsername())
                 .orElseThrow(() -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));;
         user.updateRefreshToken(refreshToken);
