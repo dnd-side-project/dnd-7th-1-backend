@@ -1,13 +1,14 @@
 package com.dnd.ground.domain.user.service;
 
-import com.dnd.ground.domain.user.User;
 import com.dnd.ground.domain.user.dto.KakaoDto;
 import com.dnd.ground.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -17,16 +18,13 @@ import org.springframework.web.reactive.function.client.WebClient;
 import javax.annotation.PostConstruct;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 
 /**
- * @description 카카오와 관련한 서비스 클래스
+ * @description 카카오를 비롯한 회원 정보와 관련한 서비스
  * @author  박찬호
  * @since   2022-08-23
- * @updated 1. 인가 코드를 활용한 엑세스 토큰 발급 및 신규 회원 구분 API 구현
- *          2. 엑세스 토큰 정보 확인 API 구현
- *          3. 엑세스 토큰을 활용한 사용자 정보 확인 API 구현
- *          - 2022.08.23 박찬호
+ * @updated 1. 카카오 회원 정보 조회 API 수정
+ *          - 2022.09.09 박찬호
  */
 
 @RequiredArgsConstructor
@@ -48,6 +46,7 @@ public class KakaoService {
         webClient = WebClient.create();
     }
 
+    /**deprecated
     /*카카오 토큰 발급*/
     public Map<String, String> kakaoLogin(String code) throws NullPointerException {
         //토큰을 받기 위한 HTTP Body 생성
@@ -73,7 +72,8 @@ public class KakaoService {
         return tokens;
     }
 
-    /*카카오 엑세스 토큰 정보 확인*/
+    /**deprecated
+     /*카카오 엑세스 토큰 정보 확인*/
     public KakaoDto.TokenInfo getTokenInfo(String token) {
         return webClient.get()
                 .uri("https://kapi.kakao.com/v1/user/access_token_info")
@@ -84,12 +84,27 @@ public class KakaoService {
     }
 
     /*사용자 정보 확인*/
-    public KakaoDto.UserInfo getUserInfo(String token) {
-        return webClient.get()
+    public KakaoDto.UserInfo getUserInfo(String token) throws ParseException {
+        String userKakaoInfo = webClient.get()
                 .uri("https://kapi.kakao.com/v2/user/me")
                 .header("Authorization", "Bearer " + token)
                 .retrieve()
-                .bodyToMono(KakaoDto.UserInfo.class)
+                .bodyToMono(String.class)
                 .block();
+
+        JSONParser jsonParser = new JSONParser();
+
+        JSONObject jsonObject = (JSONObject) jsonParser.parse(userKakaoInfo); //Cast: String -> Json Object
+        long kakaoId = (long) jsonObject.get("id"); // 카카오 회원번호 추출
+
+        jsonObject = (JSONObject) jsonObject.get("kakao_account"); // 필요한 회원 정보가 있는 Object 분리
+        JSONObject pictureObject = (JSONObject) jsonObject.get("profile"); //프로필 사진과 관련한 Object 분리
+
+        return KakaoDto.UserInfo.builder()
+                .id(kakaoId)
+                .email((String) jsonObject.get("email"))
+                .pictureName("kakao/"+kakaoId)
+                .picturePath((String) pictureObject.get("profile_image_url"))
+                .build();
     }
 }

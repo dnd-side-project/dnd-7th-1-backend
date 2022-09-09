@@ -1,6 +1,7 @@
 package com.dnd.ground.domain.user.dto;
 
 import io.swagger.annotations.ApiModelProperty;
+import lombok.Builder;
 import lombok.Data;
 
 import java.util.Map;
@@ -9,8 +10,8 @@ import java.util.Map;
  * @description 카카오 API를 사용할 때 필요한 DTO
  * @author  박찬호
  * @since   2022-08-23
- * @updated 1. DTO 생성
- *          - 2022.08.23 박찬호
+ * @updated 1. 카카오 회원 정보 조회 API 수정
+ *          - 2022.09.09 박찬호
  */
 
 @Data
@@ -39,15 +40,19 @@ public class KakaoDto {
         private Integer app_id;
     }
 
+    @Builder
     @Data
     public static class UserInfo {
         @ApiModelProperty(value="카카오 회원 번호(우리 회원 번호X)", example="2399961704")
         private Long id;
 
-        @ApiModelProperty(value="이메일(테스트 안해본 상태)", example="koc081900@naver.com")
+        @ApiModelProperty(value="카카오 이메일", example="koc081900@naver.com")
         private String email;
 
-        @ApiModelProperty(value="사용자 정보(프로필 사진 관련)", example="{\"profile_image\":\"http://k.kakaocdn.net/dn/3O7st/btrHep5Sa9R/4lxH3JhkeZyqK0KFB1XoGk/img_640x640.jpg\",\"thumbnail_image\":\"http://k.kakaocdn.net/dn/3O7st/btrHep5Sa9R/4lxH3JhkeZyqK0KFB1XoGk/img_110x110.jpg\"}")
-        private Map<String, String> properties;
+        @ApiModelProperty(value="프로필 사진 이름(카카오 프로필 사용 시 kakao/카카오회원번호)", example="kakao/2399961704")
+        private String pictureName;
+
+        @ApiModelProperty(value="프로필 사진 URI(카카오 프로필 사용 시 kakao/카카오회원번호)", example="http:\\/\\/k.kakaocdn.net\\/dn\\/uQVeo\\/btrLgESJyjg\\/Pff3k36lRWkQ98ebAlexv1\\/img_640x640.jpg")
+        private String picturePath;
     }
 }
