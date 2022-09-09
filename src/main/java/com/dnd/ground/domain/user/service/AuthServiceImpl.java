@@ -8,7 +8,7 @@ import com.dnd.ground.domain.user.dto.UserRequestDto;
 import com.dnd.ground.domain.user.repository.UserRepository;
 import com.dnd.ground.global.exception.CNotFoundException;
 import com.dnd.ground.global.exception.CommonErrorCode;
-import com.dnd.ground.global.util.AmazonS3Service;
+//import com.dnd.ground.global.util.AmazonS3Service;
 import com.dnd.ground.global.util.JwtUtil;
 import com.dnd.ground.global.util.JwtVerifyResult;
 import lombok.RequiredArgsConstructor;

@@ -27,25 +27,33 @@ public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint 
                          AuthenticationException authException) throws IOException {
         String exception = (String) request.getAttribute("exception");
 
-        // 서버 예러
+        // 서버 에러
         if (exception.equals(CommonErrorCode.INTERNAL_SERVER_ERROR.getMessage())){
-            log.info("**토큰 만료 예외 발생** 메시지:{}", CommonErrorCode.TOKEN_EXPIRED.getMessage());
+            log.info("**서버 예외 발생** 메시지:{}", CommonErrorCode.INTERNAL_SERVER_ERROR.getMessage());
             setResponse(response, CommonErrorCode.INTERNAL_SERVER_ERROR);
         }
 
-        // 토큰 만료
-        if (exception.equals(CommonErrorCode.TOKEN_EXPIRED.getMessage())) {
-            log.info("**토큰 만료 예외 발생** 메시지:{}", CommonErrorCode.TOKEN_EXPIRED.getMessage());
-            setResponse(response, CommonErrorCode.TOKEN_EXPIRED);
+        // 액세스 토큰 만료
+        else if (exception.equals(CommonErrorCode.ACCESS_TOKEN_EXPIRED.getMessage())) {
+            log.info("**토큰 만료 예외 발생** 메시지:{}", CommonErrorCode.ACCESS_TOKEN_EXPIRED.getMessage());
+            setResponse(response, CommonErrorCode.ACCESS_TOKEN_EXPIRED);
         }
+
+        // 리프레시 토큰 만료
+        else if (exception.equals(CommonErrorCode.REFRESH_TOKEN_EXPIRED.getMessage())) {
+            log.info("**토큰 만료 예외 발생** 메시지:{}", CommonErrorCode.REFRESH_TOKEN_EXPIRED.getMessage());
+            setResponse(response, CommonErrorCode.REFRESH_TOKEN_EXPIRED);
+        }
+
         // 잘못된 토큰
-        if (exception.equals(CommonErrorCode.WRONG_TOKEN.getMessage())) {
-            log.info("**토큰 만료 예외 발생** 메시지:{}", CommonErrorCode.WRONG_TOKEN.getMessage());
+        else if (exception.equals(CommonErrorCode.WRONG_TOKEN.getMessage())) {
+            log.info("**토큰 예외 발생** 메시지:{}", CommonErrorCode.WRONG_TOKEN.getMessage());
             setResponse(response, CommonErrorCode.WRONG_TOKEN);
         }
+
         // 권한 없는 모든 경우
         else {
-            log.info("**토큰 만료 예외 발생** 메시지:{}", CommonErrorCode.ACCESS_DENIED.getMessage());
+            log.info("**권한 예외 발생** 메시지:{}", CommonErrorCode.ACCESS_DENIED.getMessage());
             setResponse(response, CommonErrorCode.ACCESS_DENIED);
         }
     }
