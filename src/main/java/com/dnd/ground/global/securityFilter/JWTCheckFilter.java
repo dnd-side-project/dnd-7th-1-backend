@@ -14,7 +14,6 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
-import org.springframework.transaction.annotation.Transactional;
 
 import javax.security.sasl.AuthenticationException;
 import javax.servlet.FilterChain;
@@ -28,7 +27,7 @@ import java.util.Objects;
  * @description 매 request마다 토큰을 검사해주는 필터
  * @author  박세헌, 박찬호
  * @since   2022-08-02
- * @updated 1. 생성
+ * @updated 1. 전체 적인 로직 수정
  *          - 2022.08.24 박세헌
  * @note 1. 매 request마다 토큰을 검사하여 securityContestHolder에 채워줌
  *       2. 해당 필터에서 자동 로그인을 구현 하면 될 것 같음
@@ -50,7 +49,6 @@ public class JWTCheckFilter extends BasicAuthenticationFilter {
     }
 
     @Override
-    @Transactional
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain chain) throws IOException, ServletException {
@@ -58,17 +56,24 @@ public class JWTCheckFilter extends BasicAuthenticationFilter {
         String accessToken = request.getHeader("Authorization");
         String refreshToken = request.getHeader("Refresh-Token");
 
-        // 클라에서 액세스 토큰이 안왔다는건 (액세스토큰은 만료된 것, 리프레시 토큰이 대신 옴)
-        if (accessToken == null) {
-            // 리프레시 토큰 verify
-            String token = refreshToken.substring("Bearer ".length());
-            JwtVerifyResult result = JwtUtil.verify(token);
-            // 리프레시 토큰도 만료됐다면
-            if (!JwtUtil.verify(token).isSuccess()) {
-                request.setAttribute("exception", CommonErrorCode.TOKEN_EXPIRED.getMessage());
-                throw new TokenExpiredException("토큰이 만료되었습니다!"); // 로그인 페이지로 가야해!
+        JwtVerifyResult result = null;
+        String token = null;
+
+        // 리프레시 토큰이 있다면
+        if (refreshToken != null) {
+            try {
+                token = refreshToken.substring("Bearer ".length());
+                result = JwtUtil.verify(token);
+            } catch (Exception e) {
+                request.setAttribute("exception", CommonErrorCode.WRONG_TOKEN.getMessage());
+                throw new AuthenticationException("잘못된 토큰 입니다.");
             }
-            // 리프레시 토큰이 유효하다면
+            // 리프레시 토큰 만료
+            if (!result.isSuccess()) {
+                request.setAttribute("exception", CommonErrorCode.REFRESH_TOKEN_EXPIRED.getMessage());
+                throw new TokenExpiredException("리프레시 토큰이 만료되었습니다.");
+            }
+            // 리프레시 토큰 유효(토큰 재발급)
             else {
                 User user = userRepository.findByNickname(result.getNickname()).orElseThrow(
                         () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
@@ -83,6 +88,7 @@ public class JWTCheckFilter extends BasicAuthenticationFilter {
                     response.setHeader("Refresh-Token", "Bearer " + refreshToken);
 
                     user.updateRefreshToken(refreshToken);
+                    userRepository.save(user);
 
                     // 필터 통과
                     UserDetails userDetails = authService.loadUserByUsername(result.getNickname());
@@ -91,25 +97,23 @@ public class JWTCheckFilter extends BasicAuthenticationFilter {
                     );
                     SecurityContextHolder.getContext().setAuthentication(userToken);
                     chain.doFilter(request, response);
-
-                } else {
-                    request.setAttribute("exception", CommonErrorCode.WRONG_TOKEN.getMessage());
-                    throw new AuthenticationException("잘못된 토큰 입니다.");
                 }
             }
         }
-        // 액세스 토큰이 왔다면
         else {
+            // 리프레시 토큰이 없는 경우(액세스 토큰)
             // 액세스 토큰 verify
-            JwtVerifyResult result = null;
             try {
-                String token = accessToken.substring("Bearer ".length());
+                token = accessToken.substring("Bearer ".length());
                 result = JwtUtil.verify(token);
             } catch (Exception e) {
                 request.setAttribute("exception", CommonErrorCode.WRONG_TOKEN.getMessage());
                 throw new AuthenticationException("잘못된 토큰 입니다.");
             }
-
+            if (!result.isSuccess()) {
+                request.setAttribute("exception", CommonErrorCode.ACCESS_TOKEN_EXPIRED.getMessage());
+                throw new TokenExpiredException("액세스 토큰이 만료되었습니다.");
+            }
             // 필터 통과
             UserDetails user = authService.loadUserByUsername(result.getNickname());
             UsernamePasswordAuthenticationToken userToken = new UsernamePasswordAuthenticationToken(
