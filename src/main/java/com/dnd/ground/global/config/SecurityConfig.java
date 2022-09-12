@@ -3,6 +3,7 @@ package com.dnd.ground.global.config;
 import com.dnd.ground.domain.user.repository.UserRepository;
 import com.dnd.ground.domain.user.service.AuthService;
 import com.dnd.ground.domain.user.service.UserService;
+import com.dnd.ground.global.exception.CustomAuthenticationEntryPoint;
 import com.dnd.ground.global.securityFilter.JWTCheckFilter;
 import com.dnd.ground.global.securityFilter.JWTSignFilter;
 import lombok.RequiredArgsConstructor;
@@ -24,8 +25,8 @@ import org.springframework.security.web.authentication.www.BasicAuthenticationFi
  * @description 스프링 시큐리티 config 클래스
  * @author  박세헌
  * @since   2022-08-24
- * @updated 1. 생성
- *          - 2022-08-24 박세헌
+ * @updated 1. authenticationEntryPoint 추가 (예외 처리)
+ *          - 2022-09-08 박세헌
  */
 
 @Configuration
@@ -66,7 +67,9 @@ public class SecurityConfig {
                 .anyRequest().authenticated() // 나머지 요청들은 권한의 종류에 상관 없이 권한이 있어야 접근 가능
                 .and()
                 .addFilterAt(loginFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterAt(checkFilter, BasicAuthenticationFilter.class);
+                .addFilterAt(checkFilter, BasicAuthenticationFilter.class)
+                .exceptionHandling()
+                .authenticationEntryPoint(new CustomAuthenticationEntryPoint());
 
         return http.build();
     }
