@@ -1,6 +1,7 @@
 package com.dnd.ground.domain.user.controller;
 
 import com.dnd.ground.domain.user.dto.UserRequestDto;
+import com.dnd.ground.domain.user.dto.UserResponseDto;
 import com.dnd.ground.domain.user.service.AuthService;
 import com.dnd.ground.domain.user.service.KakaoService;
 import io.swagger.annotations.Api;
@@ -11,7 +12,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.net.UnknownHostException;
 import java.util.Map;
 
@@ -40,15 +40,16 @@ public class AuthController {
     * 토큰이 없다면 카카오 로그인 페이지로 가야함
     */
     @GetMapping("/")
+    @Operation(summary = "자동 로그인", description = "앱에 처음 진입했을 때, 리프레시 토큰이 있으면 엑세스토큰과 함께 URI를 호출")
     public ResponseEntity<?> onBoarding(HttpServletRequest request){
         return authService.getNicknameByToken(request);
     }
 
     @PostMapping("/signup")
-    public ResponseEntity<HttpServletResponse> signUp(@RequestHeader(value="Access-Token") String accessToken,
-                                                      @RequestHeader(value="Kakao-Access-Token") String kakaoAccessToken,
-                                                      @RequestBody UserRequestDto.SignUp request) throws ParseException, UnknownHostException {
-        return ResponseEntity.ok(authService.signUp(accessToken, kakaoAccessToken, request));
+    @Operation(summary = "회원 가입", description = "Request: 헤더에 Kakao-Access-Token:카카오 엑세스토큰, 바디에 닉네임, KakaoRefreshToken\nResponse: 헤더에 자체 엑세스, 리프레시 토큰 + 바디에 닉네임")
+    public ResponseEntity<UserResponseDto.SignUp> signUp(@RequestHeader(value="Kakao-Access-Token") String kakaoAccessToken,
+                                                         @RequestBody UserRequestDto.SignUp request) throws ParseException, UnknownHostException {
+        return authService.signUp(kakaoAccessToken, request);
     }
 
     @GetMapping("/check/origin")
