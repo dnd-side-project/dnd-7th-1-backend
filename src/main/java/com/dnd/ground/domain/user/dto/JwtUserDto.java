@@ -10,8 +10,8 @@ import lombok.NoArgsConstructor;
  * @description 카카오 정보를 받기 위한 dto
  * @author  박세헌
  * @since   2022-08-24
- * @updated 1. pictureName, picturePath 필드 추가
- *          - 2022.08.24 박세헌
+ * @updated 1.카카오 리프레시 토큰 추가
+ *          - 2022.09.12 박찬호
  */
 
 @Data
@@ -24,4 +24,5 @@ public class JwtUserDto {
     private String mail;
     private String pictureName;
     private String picturePath;
+    private String kakaoRefreshToken;
 }

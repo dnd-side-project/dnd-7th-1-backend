@@ -4,20 +4,30 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 
+import javax.persistence.Column;
 import javax.validation.constraints.NotNull;
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * @description 회원 관련 Request Dto
  * @author  박세헌, 박찬호
  * @since   2022-08-18
- * @updated 1. nickname, start, end 가진 requestDto 생성
- *          2. 유저 프로필 수정 request Dto 생성
- *          - 2022-08-18 박세헌
+ * @updated 1.회원가입시 사용하는 SignUp DTO 추가
+ *          - 2022-09-12 박세헌
  */
 
 @Data
 public class UserRequestDto {
+
+    /*회원가입시 사용하는 DTO*/
+    @Data
+    static public class SignUp {
+        private String nickname;
+        private List<String> friends;
+        private String kakaoRefreshToken;
+        //..필터 추가 예정
+    }
 
     @Data
     static public class LookUp{
