@@ -20,7 +20,8 @@ import lombok.NoArgsConstructor;
 @Builder
 public class JwtUserDto {
     private Long id;  // 카카오 id
-    private String username;
     private String nickname;
     private String mail;
+    private String pictureName;
+    private String picturePath;
 }
