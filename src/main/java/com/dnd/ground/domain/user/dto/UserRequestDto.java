@@ -25,6 +25,7 @@ public class UserRequestDto {
     static public class SignUp {
         private String nickname;
         private List<String> friends;
+        private String kakaoRefreshToken;
         //..필터 추가 예정
     }
 
