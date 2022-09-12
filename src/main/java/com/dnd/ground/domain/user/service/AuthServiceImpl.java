@@ -3,7 +3,6 @@ package com.dnd.ground.domain.user.service;
 import com.dnd.ground.domain.user.User;
 import com.dnd.ground.domain.user.dto.JwtUserDto;
 import com.dnd.ground.domain.user.dto.KakaoDto;
-import com.dnd.ground.domain.user.dto.SignResponseDto;
 import com.dnd.ground.domain.user.dto.UserRequestDto;
 import com.dnd.ground.domain.user.repository.UserRepository;
 import com.dnd.ground.global.exception.CNotFoundException;
@@ -13,14 +12,22 @@ import com.dnd.ground.global.util.JwtUtil;
 import com.dnd.ground.global.util.JwtVerifyResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.json.simple.parser.ParseException;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.reactive.function.BodyInserters;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
@@ -29,9 +36,8 @@ import java.util.Map;
  * @description 회원의 인증/인가 및 회원 정보 관련 서비스 구현체
  * @author  박세헌, 박찬호
  * @since   2022-09-07
- * @updated 1.기존 유저인지 판별하는 API 추가
- *          2.프로필 사진 변경하는 기능 구현
- *          2022-09-09 박찬호
+ * @updated 1.회원가입 로직 추가
+ *          2022-09-12 박찬호
  */
 
 @Slf4j
@@ -46,8 +52,7 @@ public class AuthServiceImpl implements AuthService, UserDetailsService {
     /*회원 저장*/
     @Transactional
     public User save(JwtUserDto user){
-        return userRepository.save(User
-                .builder()
+        return userRepository.save(User.builder()
                 .kakaoId(user.getId())
                 .nickname(user.getNickname())
                 .mail(user.getMail())
@@ -61,6 +66,33 @@ public class AuthServiceImpl implements AuthService, UserDetailsService {
                 .pictureName(user.getPictureName())
                 .picturePath(user.getPicturePath())
                 .build());
+    }
+
+    /*회원 가입*/
+    public HttpServletResponse signUp(String accessToken, String kakaoAccessToken, UserRequestDto.SignUp request) throws ParseException, UnknownHostException {
+
+        //카카오 회원 정보 조회(카카오 ID, 이메일, 프로필 사진)
+        KakaoDto.UserInfo kakaoUserInfo = kakaoService.getUserInfo(kakaoAccessToken);
+
+        WebClient webClient = WebClient.create();
+
+        JwtUserDto jwtUserDto = JwtUserDto.builder()
+                .id(kakaoUserInfo.getId())
+                .nickname(request.getNickname())
+                .mail(kakaoUserInfo.getEmail())
+                .pictureName(kakaoUserInfo.getPictureName())
+                .picturePath(kakaoUserInfo.getPicturePath())
+                .build();
+
+        //카카오 토큰 발급 API 호출
+        HttpServletResponse response = webClient.post()
+                .uri("http://"+InetAddress.getLocalHost().getHostAddress()+":8080/sign")//서버 배포시 서버에 할당된 IP로 변경 예정
+                .body(Mono.just(jwtUserDto), JwtUserDto.class)
+                .retrieve()
+                .bodyToMono(HttpServletResponse.class)
+                .block();
+
+        return response;
     }
 
     /* 토큰으로 닉네임 찾은 후 반환하는 함수 */
