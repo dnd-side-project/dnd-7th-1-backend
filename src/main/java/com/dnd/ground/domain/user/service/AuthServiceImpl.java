@@ -4,11 +4,10 @@ import com.dnd.ground.domain.user.User;
 import com.dnd.ground.domain.user.dto.JwtUserDto;
 import com.dnd.ground.domain.user.dto.KakaoDto;
 import com.dnd.ground.domain.user.dto.SignResponseDto;
-import com.dnd.ground.domain.user.dto.UserRequestDto;
 import com.dnd.ground.domain.user.repository.UserRepository;
 import com.dnd.ground.global.exception.CNotFoundException;
 import com.dnd.ground.global.exception.CommonErrorCode;
-//import com.dnd.ground.global.util.AmazonS3Service;
+import com.dnd.ground.global.util.AmazonS3Service;
 import com.dnd.ground.global.util.JwtUtil;
 import com.dnd.ground.global.util.JwtVerifyResult;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +23,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 /**
  * @description 회원의 인증/인가 및 회원 정보 관련 서비스 구현체
@@ -32,6 +32,8 @@ import java.util.Map;
  * @updated 1.기존 유저인지 판별하는 API 추가
  *          2.프로필 사진 변경하는 기능 구현
  *          2022-09-09 박찬호
+ *          1. 닉네임 특수 문자 제외
+ *          2022-09-12 박세헌
  */
 
 @Slf4j
@@ -101,9 +103,11 @@ public class AuthServiceImpl implements AuthService, UserDetailsService {
 
     /*닉네임 Validation*/
     public Boolean validateNickname(String nickname) {
+        Pattern rex = Pattern.compile("[^\uAC00-\uD7A3xfe0-9a-zA-Z]");
+        System.out.println("abc"+ nickname);
         return nickname.length() >= 2 && nickname.length() <= 6 // 2~6글자
-                && userRepository.findByNickname(nickname).isEmpty(); //중복X
-
+                && userRepository.findByNickname(nickname).isEmpty() //중복X
+                && !rex.matcher(nickname).find(); // 특수문자
     }
 
     /*기존 유저인지 판별*/
