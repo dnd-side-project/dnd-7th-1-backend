@@ -4,6 +4,7 @@ import com.dnd.ground.domain.user.User;
 import com.dnd.ground.domain.user.dto.JwtUserDto;
 import com.dnd.ground.domain.user.dto.KakaoDto;
 import com.dnd.ground.domain.user.dto.UserRequestDto;
+import com.dnd.ground.domain.user.dto.UserResponseDto;
 import com.dnd.ground.domain.user.repository.UserRepository;
 import com.dnd.ground.global.exception.CNotFoundException;
 import com.dnd.ground.global.exception.CommonErrorCode;
@@ -13,19 +14,16 @@ import com.dnd.ground.global.util.JwtVerifyResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.json.simple.parser.ParseException;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.time.LocalDateTime;
@@ -75,7 +73,7 @@ public class AuthServiceImpl implements AuthService, UserDetailsService {
     }
 
     /*회원 가입*/
-    public HttpServletResponse signUp(String accessToken, String kakaoAccessToken, UserRequestDto.SignUp request) throws ParseException, UnknownHostException {
+    public ResponseEntity<UserResponseDto.SignUp> signUp(String kakaoAccessToken, UserRequestDto.SignUp request) throws ParseException, UnknownHostException {
 
         //카카오 회원 정보 조회(카카오 ID, 이메일, 프로필 사진)
         KakaoDto.UserInfo kakaoUserInfo = kakaoService.getUserInfo(kakaoAccessToken);
@@ -91,12 +89,12 @@ public class AuthServiceImpl implements AuthService, UserDetailsService {
                 .picturePath(kakaoUserInfo.getPicturePath())
                 .build();
 
-        //카카오 토큰 발급 API 호출
-        HttpServletResponse response = webClient.post()
+        //필터 호출
+        ResponseEntity<UserResponseDto.SignUp> response = webClient.post()
                 .uri("http://"+InetAddress.getLocalHost().getHostAddress()+":8080/sign")//서버 배포시 서버에 할당된 IP로 변경 예정
                 .body(Mono.just(jwtUserDto), JwtUserDto.class)
                 .retrieve()
-                .bodyToMono(HttpServletResponse.class)
+                .toEntity(UserResponseDto.SignUp.class)
                 .block();
 
         return response;

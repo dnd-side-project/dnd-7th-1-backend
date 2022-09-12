@@ -33,6 +33,12 @@ public class UserResponseDto {
         private String nickname;
         //프로필 사진 관련 필드 추가 예정
     }
+
+    /*회원가입 Response*/
+    @Data
+    public static class SignUp {
+        private String nickname;
+    }
     
     /*회원의 정보 관련 DTO (추후 프로필 사진 관련 필드 추가 예정)*/
     @Data @Builder
