@@ -15,10 +15,7 @@ import java.util.Optional;
  * @description 운동 기록 리포지토리 클래스
  * @author  박세헌
  * @since   2022-08-01
- * @updated 2022-08-16 / 1.유저의 마지막 활동 조회
- *                       - 박찬호
- *                       2. 운동 기록들의 걸음 수의 합 조회 함수
- *                       3. 운동 기록들의 거리의 합 조회 함수
+ * @updated 2022-08-23 / 1. 걸음수 합, 거리 합 함수 반환값 Optional로 변경
  *                       - 박세헌
  *
  */
@@ -49,10 +46,10 @@ public interface ExerciseRecordRepository extends JpaRepository<ExerciseRecord, 
     // 운동기록들의 걸음 수의 합 조회 함수
     @Query("select sum(e.stepCount) from User u join u.exerciseRecords e " +
             "where e in :exerciseRecords and u = :user")
-    Integer findUserStepCount(User user, List<ExerciseRecord> exerciseRecords);
+    Optional<Integer> findUserStepCount(User user, List<ExerciseRecord> exerciseRecords);
 
     // 운동기록들의 거리의 합 조회 함수
     @Query("select sum(e.distance) from User u join u.exerciseRecords e " +
             "where e in :exerciseRecords and u = :user")
-    Integer findUserDistance(User user, List<ExerciseRecord> exerciseRecords);
+    Optional<Integer> findUserDistance(User user, List<ExerciseRecord> exerciseRecords);
 }

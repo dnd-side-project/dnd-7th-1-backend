@@ -40,3 +40,4 @@ out/
 logs/
 application-dev.properties
 application-production.properties
+aws.yml

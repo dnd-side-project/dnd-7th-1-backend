@@ -4,7 +4,6 @@ import com.dnd.ground.domain.challenge.UserChallenge;
 import com.dnd.ground.domain.exerciseRecord.ExerciseRecord;
 import com.dnd.ground.domain.friend.Friend;
 import lombok.*;
-import org.springframework.http.HttpStatus;
 
 import javax.persistence.*;
 import javax.validation.constraints.Email;
@@ -17,9 +16,8 @@ import java.util.List;
  * @description 회원 엔티티
  * @author  박찬호, 박세헌
  * @since   2022.07.28
- * @updated 1. 메인화면 필터 관련 필드 추가
- *          2. 메인 화면 필터 변경을 위한 수정자 추가
- *          -2022.08.18 박찬호
+ * @updated 1. 카카오 리프레시 토큰 추가
+ *  *          - 2022-09-12 박찬호
  */
 
 @Getter
@@ -34,8 +32,8 @@ public class User {
     @Column(name = "user_id")
     private Long id;
 
-    @Column(name = "username", nullable = false)
-    private String username;
+    @Column(name = "kakao_id")
+    private Long kakaoId;
 
     @Column(name = "nickname", nullable = false, unique = true)
     private String nickname;
@@ -65,6 +63,22 @@ public class User {
     @Column(name="is_public_record", nullable = false)
     private Boolean isPublicRecord;
 
+    /**
+     * 카카오 프로필 사진 → S3 저장X | 파일 이름: kakao/카카오회원번호
+     * 자체 프로필 사진 → S3 저장 | 파일 이름: user/profile/닉네임-생성시간
+     */
+    @Column(name="picture_name", nullable = false)
+    private String pictureName;
+
+    @Column(name="picture_path", nullable = false)
+    private String picturePath;
+
+    @Column(name="refresh_token")
+    private String refreshToken;
+
+    @Column(name = "kakao_refresh_token")
+    private String kakaoRefreshToken;
+
     @OneToMany(mappedBy = "friend")
     private List<Friend> friends = new ArrayList<>();
 
@@ -80,19 +94,36 @@ public class User {
         this.longitude = longitude;
     }
 
-    //필터 변경
-    public HttpStatus changeFilterMine() {
+    //"나의 기록 보기" 필터 변경
+    public Boolean changeFilterMine() {
         this.isShowMine = !this.isShowMine;
-        return HttpStatus.OK;
+        return this.isShowMine;
     }
 
-    public HttpStatus changeFilterFriend() {
+    //"친구 보기" 필터 변경
+    public Boolean changeFilterFriend() {
         this.isShowFriend = !this.isShowFriend;
-        return HttpStatus.OK;
+        return this.isShowFriend;
     }
 
-    public HttpStatus changeFilterRecord() {
+    //"친구들에게 보이기" 필터 변경
+    public Boolean changeFilterRecord() {
         this.isPublicRecord = !this.isPublicRecord;
-        return HttpStatus.OK;
+        return this.isPublicRecord;
+    }
+
+    public void updateProfile(String nickname, String intro) {
+        this.nickname = nickname;
+        this.intro = intro;
+    }
+
+    //프로필 사진 변경
+    public void updatePicture(String pictureName, String picturePath) {
+        this.pictureName = pictureName;
+        this.picturePath = picturePath;
+    }
+
+    public void updateRefreshToken(String refreshToken){
+        this.refreshToken = refreshToken;
     }
 }

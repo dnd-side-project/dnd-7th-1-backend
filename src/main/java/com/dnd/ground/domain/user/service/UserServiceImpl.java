@@ -8,22 +8,24 @@ import com.dnd.ground.domain.challenge.repository.UserChallengeRepository;
 import com.dnd.ground.domain.challenge.service.ChallengeService;
 import com.dnd.ground.domain.exerciseRecord.ExerciseRecord;
 import com.dnd.ground.domain.exerciseRecord.Repository.ExerciseRecordRepository;
+import com.dnd.ground.domain.exerciseRecord.dto.RecordRequestDto;
 import com.dnd.ground.domain.exerciseRecord.dto.RecordResponseDto;
+import com.dnd.ground.domain.friend.dto.FriendResponseDto;
 import com.dnd.ground.domain.friend.repository.FriendRepository;
 import com.dnd.ground.domain.friend.service.FriendService;
 import com.dnd.ground.domain.matrix.dto.MatrixDto;
 import com.dnd.ground.domain.matrix.matrixRepository.MatrixRepository;
 import com.dnd.ground.domain.matrix.matrixService.MatrixService;
 import com.dnd.ground.domain.user.User;
-import com.dnd.ground.domain.user.dto.ActivityRecordResponseDto;
-import com.dnd.ground.domain.user.dto.HomeResponseDto;
-import com.dnd.ground.domain.user.dto.RankResponseDto;
-import com.dnd.ground.domain.user.dto.UserResponseDto;
+import com.dnd.ground.domain.user.dto.*;
 import com.dnd.ground.domain.user.repository.UserRepository;
+import com.dnd.ground.global.exception.CNotFoundException;
+import com.dnd.ground.global.exception.CommonErrorCode;
 import lombok.*;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,14 +37,8 @@ import java.util.*;
  * @description 유저 서비스 클래스
  * @author  박세헌, 박찬호
  * @since   2022-08-01
- * @updated 1. API 명세 수정 - 박찬호
- * @updated 2. matrixRanking함수 파라미터 변경 - 박세헌
- *          3. 활동 기록의 운동 시간 1분 미만 이면 초로 변환 - 박세헌
- *          4. 메인화면 조회 시, 필터에 따른 조회 기능 구현 - 박찬호
- *          5. 운동기록 조회에서 해당 운동 기록이 참여한 챌린지들 추가 - 박세헌
- *          6. 활동 기록의 운동 시간 1분 미만 이면 초로 변환 - 박세헌
- *          7. 메인 화면 필터 변경 기능 구현 - 박찬호
- *          - 2022.08.18 박세헌
+ * @updated 회원 인증/인가 및 로그인 관련 메소드 이동(UserService -> AuthService)
+ *          2022-09-07 박찬호
  */
 
 @Slf4j
@@ -61,24 +57,18 @@ public class UserServiceImpl implements UserService{
     private final MatrixRepository matrixRepository;
     private final MatrixService matrixService;
 
-    @Transactional
-    public User save(User user){
-        return userRepository.save(user);
-    }
-
     public HomeResponseDto showHome(String nickname){
-        User user = userRepository.findByNickname(nickname).orElseThrow();  // 예외 처리
+        User user = userRepository.findByNickname(nickname).orElseThrow(
+                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
 
         /*회원의 matrix 와 정보 (userMatrix)*/
         UserResponseDto.UserMatrix userMatrix = new UserResponseDto.UserMatrix(user);
 
-        //회원의 "나의 기록 보기" 옵션이 True일 때만 포함.
-        if (user.getIsShowMine()) {
-            List<ExerciseRecord> userRecordOfThisWeek = exerciseRecordRepository.findRecordOfThisWeek(user.getId()); // 이번주 운동기록 조회
-            List<MatrixDto> userMatrixSet = matrixRepository.findMatrixSetByRecords(userRecordOfThisWeek);  // 운동 기록의 영역 조회
+        List<ExerciseRecord> userRecordOfThisWeek = exerciseRecordRepository.findRecordOfThisWeek(user.getId()); // 이번주 운동기록 조회
+        List<MatrixDto> userMatrixSet = matrixRepository.findMatrixSetByRecords(userRecordOfThisWeek);  // 운동 기록의 영역 조회
 
-            userMatrix.setProperties(user.getNickname(), userMatrixSet.size(), userMatrixSet, user.getLatitude(), user.getLongitude());
-        }
+        //회원 정보 저장
+        userMatrix.setProperties(user.getNickname(), userMatrixSet.size(), userMatrixSet, user.getLatitude(), user.getLongitude());
 
         /*----------*/
         //진행 중인 챌린지 목록 조회 List<UserChallenge>
@@ -105,20 +95,15 @@ public class UserServiceImpl implements UserService{
         Map<String, List<MatrixDto>> friendHashMap= new HashMap<>();
         List<UserResponseDto.FriendMatrix> friendMatrices = new ArrayList<>();
 
-        //회원의 "친구 보기" 옵션이 True인 경우에만 포함
-        if (user.getIsShowFriend()) {
-            friendsNotChallenge.forEach(nf -> friendHashMap.put(nf.getNickname(),
-                    matrixRepository.findMatrixSetByRecords(exerciseRecordRepository.findRecordOfThisWeek(nf.getId()))));  // 이번주 운동기록 조회하여 영역 대입
+        friendsNotChallenge.forEach(nf -> friendHashMap.put(nf.getNickname(),
+                matrixRepository.findMatrixSetByRecords(exerciseRecordRepository.findRecordOfThisWeek(nf.getId()))));  // 이번주 운동기록 조회하여 영역 대입
 
-            for (String friendNickname : friendHashMap.keySet()) {
-                User friend = userRepository.findByNickname(friendNickname).orElseThrow(); //예외 처리 예정
+        for (String friendNickname : friendHashMap.keySet()) {
+            User friend = userRepository.findByNickname(friendNickname).orElseThrow(
+                    () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
 
-                //친구의 "친구에게 보이기" 옵션이 True인 경우에만 포함
-                if (friend.getIsPublicRecord()) {
-                    friendMatrices.add(new UserResponseDto.FriendMatrix(friendNickname, friend.getLatitude(), friend.getLongitude(),
-                            friendHashMap.get(friendNickname)));
-                }
-            }
+            friendMatrices.add(new UserResponseDto.FriendMatrix(friendNickname, friend.getLatitude(), friend.getLongitude(),
+                    friendHashMap.get(friendNickname)));
         }
 
         /*챌린지를 하는 사람들의 matrix 와 정보 (challengeMatrices)*/
@@ -136,7 +121,7 @@ public class UserServiceImpl implements UserService{
 
             challengeMatrices.add(
                     new UserResponseDto.ChallengeMatrix(
-                    friend.getNickname(), challengeNumber, challengeColor,
+                            friend.getNickname(), challengeNumber, challengeColor,
                             friend.getLatitude(), friend.getLongitude(), challengeMatrixSetDto)
             );
         }
@@ -153,8 +138,9 @@ public class UserServiceImpl implements UserService{
     }
 
     /*회원 정보 조회(마이페이지)*/
-    public UserResponseDto.UInfo getUserInfo(String nickname) {
-        User user = userRepository.findByNickname(nickname).orElseThrow();
+    public UserResponseDto.Profile getUserInfo(String nickname) {
+        User user = userRepository.findByNickname(nickname).orElseThrow(
+                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
 
         // 이번주 운동기록
         List<ExerciseRecord> recordOfThisWeek = exerciseRecordRepository.findRecordOfThisWeek(user.getId());
@@ -163,10 +149,10 @@ public class UserServiceImpl implements UserService{
         Long matrixNumber = (long) matrixRepository.findMatrixByRecords(recordOfThisWeek).size();
 
         // 이번주 걸음수
-        Integer stepCount = exerciseRecordRepository.findUserStepCount(user, recordOfThisWeek);
+        Integer stepCount = exerciseRecordRepository.findUserStepCount(user, recordOfThisWeek).orElse(0);
 
         // 이번주 거리합
-        Integer distance = exerciseRecordRepository.findUserDistance(user, recordOfThisWeek);
+        Integer distance = exerciseRecordRepository.findUserDistance(user, recordOfThisWeek).orElse(0);
 
         // 친구 수
         Integer friendNumber = friendService.getFriends(user).size();
@@ -176,7 +162,7 @@ public class UserServiceImpl implements UserService{
         // 역대 누적 칸수
         Long allMatrixNumber = (long) matrixRepository.findMatrixByRecords(record).size();
 
-        return UserResponseDto.UInfo.builder()
+        return UserResponseDto.Profile.builder()
                 .nickname(user.getNickname())
                 .intro(user.getIntro())
                 .matrixNumber(matrixNumber)
@@ -188,12 +174,17 @@ public class UserServiceImpl implements UserService{
     }
 
     /*회원 프로필 조회*/
-    public UserResponseDto.Profile getUserProfile(String userNickname, String friendNickname) {
-        User user = userRepository.findByNickname(userNickname).orElseThrow(); //예외 처리 예정
-        User friend = userRepository.findByNickname(friendNickname).orElseThrow(); //예외 처리 예정
+    public FriendResponseDto.FriendProfile getUserProfile(String userNickname, String friendNickname) {
+        User user = userRepository.findByNickname(userNickname).orElseThrow(
+                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
+
+        User friend = userRepository.findByNickname(friendNickname).orElseThrow(
+                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
 
         //마지막 활동 시간
-        LocalDateTime lasted = exerciseRecordRepository.findLastRecord(friend).orElseThrow(); //예외 처리 예정
+        LocalDateTime lasted = exerciseRecordRepository.findLastRecord(friend).orElseThrow(
+                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_RECORD)
+        );
 
         //친구 관계 확인
         Boolean isFriend = false;
@@ -219,13 +210,13 @@ public class UserServiceImpl implements UserService{
         }
 
         //이번주 영역 정보
-        areas = (long)matrixRepository.findMatrixSetByRecords(
+        areas = (long) matrixRepository.findMatrixSetByRecords(
                 exerciseRecordRepository.findRecordOfThisWeek(friend.getId())).size();
 
         //함께 진행하는 챌린지 정보
         List<ChallengeResponseDto.Progress> challenges = challengeService.findProgressChallenge(userNickname, friendNickname);
 
-        return UserResponseDto.Profile.builder()
+        return FriendResponseDto.FriendProfile.builder()
                 .nickname(friendNickname)
                 .lasted(lasted)
                 .intro(friend.getIntro())
@@ -238,8 +229,14 @@ public class UserServiceImpl implements UserService{
     }
 
     /* 나의 활동 기록 조회 */
-    public ActivityRecordResponseDto getActivityRecord(String nickname, LocalDateTime start, LocalDateTime end) {
-        User user = userRepository.findByNickname(nickname).orElseThrow();  // 예외처리 예정
+    public ActivityRecordResponseDto getActivityRecord(UserRequestDto.LookUp requestDto) {
+
+        String nickname = requestDto.getNickname();
+        LocalDateTime start = requestDto.getStart();
+        LocalDateTime end = requestDto.getEnd();
+
+        User user = userRepository.findByNickname(nickname).orElseThrow(
+                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
         List<ExerciseRecord> record = exerciseRecordRepository.findRecord(user.getId(), start, end);  // start~end 사이 운동기록 조회
         List<RecordResponseDto.activityRecord> activityRecords = new ArrayList<>();
 
@@ -251,7 +248,7 @@ public class UserServiceImpl implements UserService{
         for (ExerciseRecord exerciseRecord : record) {
 
             // 운동 시작 시간 formatting
-            String started = exerciseRecord.getStarted().format(DateTimeFormatter.ofPattern("MM월 dd일 E요일 HH:mm"));
+            String started = exerciseRecord.getStarted().format(DateTimeFormatter.ofPattern("MM월 dd일 E요일 HH:mm").withLocale(Locale.forLanguageTag("ko")));
 
             // 운동 시간 formatting
             Integer exerciseTime = exerciseRecord.getExerciseTime();
@@ -266,7 +263,7 @@ public class UserServiceImpl implements UserService{
 
             activityRecords.add(RecordResponseDto.activityRecord
                     .builder()
-                    .exerciseId(exerciseRecord.getId())
+                    .recordId(exerciseRecord.getId())
                     .matrixNumber((long) exerciseRecord.getMatrices().size())
                     .stepCount(exerciseRecord.getStepCount())
                     .distance(exerciseRecord.getDistance())
@@ -282,7 +279,17 @@ public class UserServiceImpl implements UserService{
         int totalMinute = totalExerciseTime / 60;
         int totalSecond = totalExerciseTime % 60;
 
-        String totalTime = Integer.toString(totalMinute) + ":" + Integer.toString(totalSecond);
+        String totalTime = "";
+
+        // 10초 미만이라면 앞에 0하나 붙여주기
+        if (Integer.toString(totalSecond).length() == 1){
+            totalTime = Integer.toString(totalMinute) + ":0" + Integer.toString(totalSecond);
+            System.out.println(totalTime);
+        }
+        else{
+            totalTime = Integer.toString(totalMinute) + ":" + Integer.toString(totalSecond);
+            System.out.println(totalTime);
+        }
 
         return ActivityRecordResponseDto
                 .builder()
@@ -295,10 +302,10 @@ public class UserServiceImpl implements UserService{
 
     /* 나의 운동기록에 대한 정보 조회 */
     public RecordResponseDto.EInfo getExerciseInfo(Long exerciseId){
-        ExerciseRecord exerciseRecord = exerciseRecordRepository.findById(exerciseId).orElseThrow();  // 예외 처리
-
+        ExerciseRecord exerciseRecord = exerciseRecordRepository.findById(exerciseId).orElseThrow(
+                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_RECORD));
         // 운동 시작, 끝 시간 formatting
-        String date = exerciseRecord.getStarted().format(DateTimeFormatter.ofPattern("MM월 dd일 E요일"));
+        String date = exerciseRecord.getStarted().format(DateTimeFormatter.ofPattern("MM월 dd일 E요일").withLocale(Locale.forLanguageTag("ko")));
         String started = exerciseRecord.getStarted().format(DateTimeFormatter.ofPattern("HH:mm"));
         String ended = exerciseRecord.getEnded().format(DateTimeFormatter.ofPattern("HH:mm"));
 
@@ -309,11 +316,11 @@ public class UserServiceImpl implements UserService{
         String time = "";
 
         // 10초 미만이라면 앞에 0하나 붙여주기
-        if (Integer.toString(second).length() == 1){
-            time = Integer.toString(minute) + ":0" + Integer.toString(second);
+        if (Integer.toString(second).length() == 1) {
+            time = minute + ":0" + second;
         }
-        else{
-            time = Integer.toString(minute) + ":" + Integer.toString(second);
+        else {
+            time = minute + ":" + second;
         }
 
         // 해당 운동 기록이 참여한 챌린지들 조회
@@ -338,9 +345,11 @@ public class UserServiceImpl implements UserService{
     /* 상세 지도 보기 */
     public UserResponseDto.DetailMap getDetailMap(Long recordId){
         // 운동 기록 찾기
-        ExerciseRecord exerciseRecord = exerciseRecordRepository.findById(recordId).orElseThrow();  // 예외 처리
+        ExerciseRecord exerciseRecord = exerciseRecordRepository.findById(recordId).orElseThrow(
+                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_RECORD));
         // 유저 찾기
-        User user = userRepository.findByExerciseRecord(exerciseRecord).orElseThrow();  // 예외 처리
+        User user = userRepository.findByExerciseRecord(exerciseRecord).orElseThrow(
+                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
         // 운동기록의 칸 찾기
         List<MatrixDto> matrices = matrixRepository.findMatrixSetByRecord(exerciseRecord);
 
@@ -350,23 +359,51 @@ public class UserServiceImpl implements UserService{
 
     /*필터 변경: 나의 기록 보기*/
     @Transactional
-    public HttpStatus changeFilterMine(String nickname) {
-        userRepository.findByNickname(nickname).orElseThrow().changeFilterMine();
-        return HttpStatus.OK;
+    public Boolean changeFilterMine(String nickname) {
+        return userRepository.findByNickname(nickname)
+                .orElseThrow(() -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER))
+                .changeFilterMine();
     }
 
     /*필터 변경: 친구 보기*/
     @Transactional
-    public HttpStatus changeFilterFriend(String nickname) {
-        userRepository.findByNickname(nickname).orElseThrow().changeFilterFriend();
-        return HttpStatus.OK;
+    public Boolean changeFilterFriend(String nickname) {
+        return userRepository.findByNickname(nickname)
+                .orElseThrow(() -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER))
+                .changeFilterFriend();
     }
 
     /*필터 변경: 친구들에게 보이기*/
     @Transactional
-    public HttpStatus changeFilterRecord(String nickname) {
-        userRepository.findByNickname(nickname).orElseThrow().changeFilterRecord();
-        return HttpStatus.OK;
+    public Boolean changeFilterRecord(String nickname) {
+        return userRepository.findByNickname(nickname)
+                .orElseThrow(() -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER))
+                .changeFilterRecord();
     }
 
+    /* 운동 기록의 상세 메시지 수정 */
+    @Transactional
+    public ResponseEntity<Boolean> editRecordMessage(RecordRequestDto.Message requestDto){
+        Long recordId = requestDto.getRecordId();
+        String message = requestDto.getMessage();
+
+        ExerciseRecord exerciseRecord = exerciseRecordRepository.findById(recordId).orElseThrow(
+                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_RECORD));
+        exerciseRecord.editMessage(message);
+        return new ResponseEntity(true, HttpStatus.OK);
+    }
+
+    /* 회원 프로필 수정 */
+    @Transactional
+    public ResponseEntity<Boolean> editUserProfile(UserRequestDto.Profile requestDto){
+
+        String originalNick = requestDto.getOriginalNick();
+        String editNick = requestDto.getEditNick();
+        String intro = requestDto.getIntro();
+
+        User user = userRepository.findByNickname(originalNick).orElseThrow(
+                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
+        user.updateProfile(editNick, intro);
+        return new ResponseEntity(true, HttpStatus.OK);
+    }
 }
