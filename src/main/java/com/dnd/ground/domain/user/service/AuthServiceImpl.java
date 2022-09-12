@@ -54,6 +54,7 @@ public class AuthServiceImpl implements AuthService, UserDetailsService {
     public User save(JwtUserDto user){
         return userRepository.save(User.builder()
                 .kakaoId(user.getId())
+                .kakaoRefreshToken(user.getKakaoRefreshToken())
                 .nickname(user.getNickname())
                 .mail(user.getMail())
                 .created(LocalDateTime.now())
@@ -78,6 +79,7 @@ public class AuthServiceImpl implements AuthService, UserDetailsService {
 
         JwtUserDto jwtUserDto = JwtUserDto.builder()
                 .id(kakaoUserInfo.getId())
+                .kakaoRefreshToken(request.getKakaoRefreshToken())
                 .nickname(request.getNickname())
                 .mail(kakaoUserInfo.getEmail())
                 .pictureName(kakaoUserInfo.getPictureName())

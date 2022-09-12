@@ -16,10 +16,8 @@ import java.util.List;
  * @description 회원 엔티티
  * @author  박찬호, 박세헌
  * @since   2022.07.28
- * @updated 1. username 필드 삭제
- *          2. 프로필 관련 필드 생성(pictureName, picturePath)
- *          3. 프로필 변경 메소드 추가
- *  *          - 2022-09-08 박찬호
+ * @updated 1. 카카오 리프레시 토큰 추가
+ *  *          - 2022-09-12 박찬호
  */
 
 @Getter
@@ -65,6 +63,10 @@ public class User {
     @Column(name="is_public_record", nullable = false)
     private Boolean isPublicRecord;
 
+    /**
+     * 카카오 프로필 사진 → S3 저장X | 파일 이름: kakao/카카오회원번호
+     * 자체 프로필 사진 → S3 저장 | 파일 이름: user/profile/닉네임-생성시간
+     */
     @Column(name="picture_name", nullable = false)
     private String pictureName;
 
@@ -73,6 +75,9 @@ public class User {
 
     @Column(name="refresh_token")
     private String refreshToken;
+
+    @Column(name = "kakao_refresh_token")
+    private String kakaoRefreshToken;
 
     @OneToMany(mappedBy = "friend")
     private List<Friend> friends = new ArrayList<>();
