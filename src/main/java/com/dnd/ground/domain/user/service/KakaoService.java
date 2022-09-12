@@ -1,7 +1,9 @@
 package com.dnd.ground.domain.user.service;
 
+import com.dnd.ground.domain.friend.dto.FriendResponseDto;
 import com.dnd.ground.domain.user.dto.KakaoDto;
 import com.dnd.ground.domain.user.repository.UserRepository;
+import io.netty.resolver.DefaultAddressResolverGroup;
 import lombok.RequiredArgsConstructor;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -9,11 +11,13 @@ import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.netty.http.client.HttpClient;
 
 import javax.annotation.PostConstruct;
 import java.util.HashMap;
@@ -30,8 +34,6 @@ import java.util.Map;
 @RequiredArgsConstructor
 @Service
 public class KakaoService {
-
-    private final UserRepository userRepository;
     WebClient webClient;
 
     @Value("${kakao.REST_KEY}")
@@ -107,4 +109,24 @@ public class KakaoService {
                 .picturePath((String) pictureObject.get("profile_image_url"))
                 .build();
     }
+
+    /*카카오 친구 목록 조회*/
+//    public void getKakaoFriends(String token, Integer offset) {
+//
+//        WebClient webClient2 = WebClient.builder().clientConnector(new ReactorClientHttpConnector(HttpClient.create().resolver(DefaultAddressResolverGroup.INSTANCE))).build();
+//
+//        //내가 보내주는 offset을 기준으로 페이징
+//        String block = webClient2.get()
+//                .uri(UriBuilder -> UriBuilder.path("https://kapi.kakao.com/v1/api/talk/friends") //uri builder가 문제인듯
+//                        .queryParam("offset", offset)
+//                        .queryParam("limit", 100)
+//                        .build())
+//                .header("Authorization", "Bearer " + token)
+//                .retrieve()
+//                .bodyToMono(String.class)
+//                .block();
+//
+//        System.out.println("**block:" + block);
+//    }
+
 }
