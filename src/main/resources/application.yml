@@ -24,3 +24,7 @@ logging:
   level:
     org.hibernate.SQL: debug
     org.hibernate.type: trace
+
+kakao:
+  REST_KEY: ${kakao.REST_KEY}
+  REDIRECT_URI: ${kakao.REDIRECT_URI}
