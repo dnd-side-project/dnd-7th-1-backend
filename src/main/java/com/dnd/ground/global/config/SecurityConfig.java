@@ -12,7 +12,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -25,8 +27,8 @@ import org.springframework.security.web.authentication.www.BasicAuthenticationFi
  * @description 스프링 시큐리티 config 클래스
  * @author  박세헌
  * @since   2022-08-24
- * @updated 1. authenticationEntryPoint 추가 (예외 처리)
- *          - 2022-09-08 박세헌
+ * @updated 1. 특정 url에 대해 시큐리티 룰을 무시하는 코드 구현
+ *          - 2022-09-13 박세헌
  */
 
 @Configuration
@@ -63,15 +65,21 @@ public class SecurityConfig {
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)  // 세션 x
                 )
                 .authorizeRequests()
-                .antMatchers("/", "/sign", "/auth/kakao/login").permitAll()  // 누구나 접근 가능
-                .anyRequest().authenticated() // 나머지 요청들은 권한의 종류에 상관 없이 권한이 있어야 접근 가능
+                .anyRequest().authenticated()
                 .and()
-                .addFilterAt(loginFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterAt(checkFilter, BasicAuthenticationFilter.class)
+                .addFilterBefore(loginFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(checkFilter, BasicAuthenticationFilter.class)
                 .exceptionHandling()
                 .authenticationEntryPoint(new CustomAuthenticationEntryPoint());
-
         return http.build();
+    }
+
+    /* 스프링 시큐리티 룰을 무시하게 하는 Url 규칙(여기 등록하면 규칙 적용하지 않음) */
+    @Bean
+    public WebSecurityCustomizer webSecurityCustomizer() {
+        return (web) -> web.ignoring()
+                .antMatchers("/swagger*/**", "/favicon*/**", "/v2/api-docs")
+                .antMatchers("/auth/signup", "/auth/check/origin", "/auth/kakao/login");
     }
 
 }
