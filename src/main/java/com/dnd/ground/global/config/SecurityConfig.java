@@ -79,7 +79,7 @@ public class SecurityConfig {
     public WebSecurityCustomizer webSecurityCustomizer() {
         return (web) -> web.ignoring()
                 .antMatchers("/swagger*/**", "/favicon*/**", "/v2/api-docs")
-                .antMatchers("/auth/signup", "/auth/check/origin", "/auth/kakao/login");
+                .antMatchers("/auth/signup", "/auth/check/**", "/auth/kakao/login");
     }
 
 }
