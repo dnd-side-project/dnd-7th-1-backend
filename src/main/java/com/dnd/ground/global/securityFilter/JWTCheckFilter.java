@@ -31,7 +31,6 @@ import java.util.Objects;
  *          - 2022.08.24 박세헌
  * @note 1. 매 request마다 토큰을 검사하여 securityContestHolder에 채워줌
  *       2. 해당 필터에서 자동 로그인을 구현 하면 될 것 같음
- *
  */
 
 @Slf4j
@@ -79,17 +78,6 @@ public class JWTCheckFilter extends BasicAuthenticationFilter {
                         () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
                 // 유저의 리프레시 토큰과 넘어온 리프레시 토큰이 같으면
                 if (Objects.equals(user.getRefreshToken(), token)) {
-
-                    // 토큰 재발급, 리프레시 토큰은 저장
-                    accessToken = JwtUtil.makeAccessToken(result.getNickname());
-                    refreshToken = JwtUtil.makeRefreshToken(result.getNickname());
-
-                    response.setHeader("Authorization", "Bearer " + accessToken);
-                    response.setHeader("Refresh-Token", "Bearer " + refreshToken);
-
-                    user.updateRefreshToken(refreshToken);
-                    userRepository.save(user);
-
                     // 필터 통과
                     UserDetails userDetails = authService.loadUserByUsername(result.getNickname());
                     UsernamePasswordAuthenticationToken userToken = new UsernamePasswordAuthenticationToken(
@@ -97,6 +85,10 @@ public class JWTCheckFilter extends BasicAuthenticationFilter {
                     );
                     SecurityContextHolder.getContext().setAuthentication(userToken);
                     chain.doFilter(request, response);
+                }
+                else {
+                    request.setAttribute("exception", CommonErrorCode.WRONG_TOKEN.getMessage());
+                    throw new AuthenticationException("잘못된 토큰 입니다.");
                 }
             }
         }
@@ -108,7 +100,7 @@ public class JWTCheckFilter extends BasicAuthenticationFilter {
                 result = JwtUtil.verify(token);
             } catch (Exception e) {
                 request.setAttribute("exception", CommonErrorCode.WRONG_TOKEN.getMessage());
-                throw new AuthenticationException("잘못된 토큰 입니다.");
+                throw new AuthenticationException("잘못된  토큰 입니다.");
             }
             if (!result.isSuccess()) {
                 request.setAttribute("exception", CommonErrorCode.ACCESS_TOKEN_EXPIRED.getMessage());
