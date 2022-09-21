@@ -89,6 +89,7 @@ public class AuthServiceImpl implements AuthService, UserDetailsService {
                 .picturePath(kakaoUserInfo.getPicturePath())
                 .build();
 
+
         //필터 호출
         ResponseEntity<UserResponseDto.SignUp> response = webClient.post()
                 .uri("http://"+InetAddress.getLocalHost().getHostAddress()+":8080/sign")//서버 배포시 서버에 할당된 IP로 변경 예정
@@ -139,7 +140,6 @@ public class AuthServiceImpl implements AuthService, UserDetailsService {
     /*닉네임 Validation*/
     public Boolean validateNickname(String nickname) {
         Pattern rex = Pattern.compile("[^\uAC00-\uD7A3xfe0-9a-zA-Z]");
-        System.out.println("abc"+ nickname);
         return nickname.length() >= 2 && nickname.length() <= 6 // 2~6글자
                 && userRepository.findByNickname(nickname).isEmpty() //중복X
                 && !rex.matcher(nickname).find(); // 특수문자
@@ -147,7 +147,7 @@ public class AuthServiceImpl implements AuthService, UserDetailsService {
 
     /*기존 유저인지 판별*/
     public Boolean isOriginalUser(HttpServletRequest request) {
-        String accessToken = request.getHeader("Access-Token");
+        String accessToken = request.getHeader("Kakao-Access-Token");
 
         KakaoDto.TokenInfo tokenInfo = kakaoService.getTokenInfo(accessToken);
 
