@@ -28,4 +28,6 @@ public interface AuthService {
     Boolean isOriginalUser(HttpServletRequest request);
 
     ResponseEntity<UserResponseDto.SignUp> signUp(String kakaoAccessToken, UserRequestDto.SignUp request) throws ParseException, UnknownHostException;
+
+    ResponseEntity<Boolean> issuanceToken(String refreshToken);
 }

@@ -14,6 +14,7 @@ import com.dnd.ground.global.util.JwtVerifyResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.json.simple.parser.ParseException;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -164,5 +165,30 @@ public class AuthServiceImpl implements AuthService, UserDetailsService {
 
         //프로필 사진 변경
         user.updatePicture(pictureName, picturePath);
+    }
+
+    /* 리프레시 토큰이 오면 JWTCheckFilter에서 검증 후 성공적으로 filter를 통과 했다면 해당 로직에서 토큰 재발급 */
+    public ResponseEntity<Boolean> issuanceToken(String refreshToken){
+
+        String token = refreshToken.substring("Bearer ".length());
+        JwtVerifyResult result = JwtUtil.verify(token);
+        // 토큰 재발급, 리프레시 토큰은 저장
+        String accessToken = JwtUtil.makeAccessToken(result.getNickname());
+        refreshToken = JwtUtil.makeRefreshToken(result.getNickname());
+
+        User user = userRepository.findByNickname(result.getNickname()).orElseThrow(
+                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Authorization", "Bearer " + accessToken);
+        headers.add("Refresh-Token", "Bearer " + refreshToken);
+
+        user.updateRefreshToken(refreshToken);
+        userRepository.save(user);
+
+        return ResponseEntity
+                .ok()
+                .headers(headers)
+                .body(true);
     }
 }

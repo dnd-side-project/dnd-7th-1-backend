@@ -23,6 +23,8 @@ import java.util.Map;
  *          2.닉네임 검사 URL 변경(/validate/~ -> /check/~)
  *          3.회원가입 로직 추가
  *          - 2022.09.12 박찬호
+ *          1. 토큰 재발급 api
+ *          - 2022-09-19 박세헌
  */
 
 @Api(tags = "회원 인증/인가 및 로그인")
@@ -74,5 +76,12 @@ public class AuthController {
     @Operation(summary = "카카오 토큰 발급", description = "인가코드를 활용한 카카오 토큰 발급(엑세스, 리프레시)")
     public ResponseEntity<Map<String,String>> kakaoLogin(@RequestParam("code") String code) {
         return ResponseEntity.ok(kakaoService.kakaoLogin(code));
+    }
+
+    /** 토큰 재발급 api **/
+    @GetMapping("/refreshToken")
+    @Operation(summary = "네모두 토큰 재발급", description = "리프레시 토큰이 유효 하다면 토큰을 재발급")
+    public ResponseEntity<Boolean> issuanceToken(@RequestHeader("Refresh-Token") String refreshToken){
+        return authService.issuanceToken(refreshToken);
     }
 }
