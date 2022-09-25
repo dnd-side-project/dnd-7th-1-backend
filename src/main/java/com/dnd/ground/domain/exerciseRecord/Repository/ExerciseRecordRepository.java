@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import javax.persistence.Tuple;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -15,7 +16,7 @@ import java.util.Optional;
  * @description 운동 기록 리포지토리 클래스
  * @author  박세헌
  * @since   2022-08-01
- * @updated 2022-08-23 / 1. 걸음수 합, 거리 합 함수 반환값 Optional로 변경
+ * @updated 2022-09-24 / 운동 기록 날짜 조회 (중복 제거)
  *                       - 박세헌
  *
  */
@@ -52,4 +53,9 @@ public interface ExerciseRecordRepository extends JpaRepository<ExerciseRecord, 
     @Query("select sum(e.distance) from User u join u.exerciseRecords e " +
             "where e in :exerciseRecords and u = :user")
     Optional<Integer> findUserDistance(User user, List<ExerciseRecord> exerciseRecords);
+
+    // 운동 기록 날짜 조회 (중복 제거)
+    @Query("select distinct function('date_format', e.started, '%Y-%m-%d') " +
+            "from ExerciseRecord e where e.user = :user and e.started between :start and :end")
+    List<String> findDayEventList(User user, LocalDateTime start, LocalDateTime end);
 }

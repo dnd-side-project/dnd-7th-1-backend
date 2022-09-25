@@ -29,16 +29,23 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.stream.Collectors;
+
+import static java.time.temporal.TemporalAdjusters.firstDayOfMonth;
+import static java.time.temporal.TemporalAdjusters.lastDayOfMonth;
 
 /**
  * @description 유저 서비스 클래스
  * @author  박세헌, 박찬호
  * @since   2022-08-01
- * @updated 회원 인증/인가 및 로그인 관련 메소드 이동(UserService -> AuthService)
- *          2022-09-07 박찬호
+ * @updated 운동 기록 날짜 조회 함수 추가
+ *          - 2022-09-24 박세헌
  */
 
 @Slf4j
@@ -405,5 +412,26 @@ public class UserServiceImpl implements UserService{
                 () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
         user.updateProfile(editNick, intro);
         return new ResponseEntity(true, HttpStatus.OK);
+    }
+
+    public UserResponseDto.dayEventList getDayEventList(UserRequestDto.dayEventList requestDto){
+
+        LocalDate startDay = requestDto.getYearMonth().with(firstDayOfMonth());
+        LocalDate endDay = requestDto.getYearMonth().with(lastDayOfMonth());
+
+        LocalTime startTime = LocalTime.of(0, 0, 0);
+        LocalTime endTime = LocalTime.of(23, 59, 59);
+
+        LocalDateTime start = LocalDateTime.of(startDay, startTime);
+        LocalDateTime end = LocalDateTime.of(endDay, endTime);
+
+        User user = userRepository.findByNickname(requestDto.getNickname())
+                .orElseThrow(() -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
+
+        return new UserResponseDto.dayEventList(
+                exerciseRecordRepository.findDayEventList(user, start, end)
+                .stream()
+                .map(LocalDate::parse)
+                .collect(Collectors.toList()));
     }
 }

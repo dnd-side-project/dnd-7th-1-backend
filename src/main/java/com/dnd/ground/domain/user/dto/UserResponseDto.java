@@ -7,6 +7,7 @@ import com.dnd.ground.domain.user.User;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.*;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,6 +23,8 @@ import java.util.List;
  *          2. UInfo 이름 변경(UInfo -> Profile)
  *          3. 새로운 UInfo 추가(닉네임+프로필사진 정보 추가 예정)
  *          - 2022.08.26 박찬호
+ *          1. 나의 활동 기록에서 기록이 있는 날짜 리스트 조회 dto
+ *          - 2022.09.24 박세헌
  */
 
 @Data
@@ -176,5 +179,13 @@ public class UserResponseDto {
 
         @ApiModelProperty(value = "칸 꼭지점 위도, 경도 리스트", example = "[{\"latitude\": 37.330436, \"longitude\": -122.030216}]",required = true)
         private List<MatrixDto> matrices;
+    }
+
+    /* 나의 활동 기록에서 기록이 있는 날짜 리스트 */
+    @Data
+    @AllArgsConstructor
+    static public class dayEventList{
+        @ApiModelProperty(name = "기록이 있는 날짜 리스트", example = "[2022-09-01, 2022-09-02]", dataType = "list")
+        private List<LocalDate> eventList;
     }
 }

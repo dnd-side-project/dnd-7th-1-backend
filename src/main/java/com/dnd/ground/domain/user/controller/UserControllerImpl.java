@@ -27,8 +27,8 @@ import java.util.Map;
  * @description 회원 관련 컨트롤러 구현체
  * @author  박세헌, 박찬호
  * @since   2022-08-02
- * @updated 2022-09-02 / 온보딩 진입시 호출 함수
- *
+ * @updated 운동 기록 날짜 조회 api
+ *           - 2022-09-24 박세헌
  */
 
 @Api(tags = "유저")
@@ -107,8 +107,6 @@ public class UserControllerImpl implements UserController {
     @PostMapping("/info/profile/edit")
     @Operation(summary = "유저 프로필 수정", description = "닉네임, 자기소개 수정(예외 처리 예정)")
     public ResponseEntity<Boolean> editUserProfile(@RequestBody UserRequestDto.Profile requestDto){
-        /* 닉네임이 비어있을때 예외 처리 필요 */
-        /* 닉네임이 중복일때 예외 처리 필요 */
         return userService.editUserProfile(requestDto);
     }
 
@@ -116,5 +114,11 @@ public class UserControllerImpl implements UserController {
     @Operation(summary = "운동 기록 메시지 수정", description = "운동 기록 메시지 수정")
     public ResponseEntity<Boolean> getDetailMap(@RequestBody RecordRequestDto.Message requestDto){
         return userService.editRecordMessage(requestDto);
+    }
+
+    @PostMapping("/eventList")
+    @Operation(summary = "기록이 있는 날짜 조회", description = "기록이 있는 날짜 조회")
+    public ResponseEntity<UserResponseDto.dayEventList> getDayEventList(@RequestBody UserRequestDto.dayEventList requestDto){
+        return ResponseEntity.ok(userService.getDayEventList(requestDto));
     }
 }
