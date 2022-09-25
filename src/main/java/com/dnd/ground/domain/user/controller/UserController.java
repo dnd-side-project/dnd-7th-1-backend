@@ -17,8 +17,8 @@ import javax.servlet.http.HttpServletRequest;
  * @description 회원 관련 역할 분리 인터페이스
  * @author  박세헌, 박찬호
  * @since   2022-08-02
- * @updated 1.필터 변경 Response body 수정 (null -> 변경 값)
- *          - 2022-08-24 박찬호
+ * @updated 운동 기록 날짜 조회 api
+ *          - 2022-09-24 박세헌
  */
 
 public interface UserController {
@@ -36,6 +36,8 @@ public interface UserController {
     ResponseEntity<Boolean> changeFilterFriend(@RequestParam("nickname") String nickname);
     ResponseEntity<Boolean> changeFilterRecord(@RequestParam("nickname") String nickname);
 
-    ResponseEntity<?> editUserProfile(@RequestBody UserRequestDto.Profile requestDto);
-    ResponseEntity<?> getDetailMap(@RequestBody RecordRequestDto.Message requestDto);
+    ResponseEntity<Boolean> editUserProfile(@RequestBody UserRequestDto.Profile requestDto);
+    ResponseEntity<Boolean> getDetailMap(@RequestBody RecordRequestDto.Message requestDto);
+
+    ResponseEntity<UserResponseDto.dayEventList> getDayEventList(@RequestBody UserRequestDto.dayEventList requestDto);
 }
