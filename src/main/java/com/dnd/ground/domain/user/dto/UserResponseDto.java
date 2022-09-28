@@ -1,6 +1,7 @@
 package com.dnd.ground.domain.user.dto;
 
 import com.dnd.ground.domain.challenge.ChallengeColor;
+import com.dnd.ground.domain.exerciseRecord.dto.RecordResponseDto;
 import com.dnd.ground.domain.matrix.dto.MatrixDto;
 import com.dnd.ground.domain.user.User;
 
@@ -187,5 +188,12 @@ public class UserResponseDto {
     static public class dayEventList{
         @ApiModelProperty(name = "기록이 있는 날짜 리스트", example = "[2022-09-01, 2022-09-02]", dataType = "list")
         private List<LocalDate> eventList;
+    }
+
+    /* 나의 활동 기록 조회 */
+    @Data @Builder
+    static public class ActivityRecordResponseDto {
+        @ApiModelProperty(value = "해당 날짜에 존재하는 활동 내역 정보(운동 기록 정보)")
+        List<RecordResponseDto.activityRecord> activityRecords;
     }
 }
