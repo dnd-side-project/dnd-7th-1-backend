@@ -12,12 +12,11 @@ import java.time.LocalDateTime;
  * @description 운동 기록 서비스 인터페이스
  * @author  박세헌
  * @since   2022-08-01
- * @updated 2022-08-26 / 컨트롤러-서비스단 전달 형태 변경 - 박세헌
+ * @updated 2022-08-26 / 미사용 메소드 삭제 - 박찬호
  */
 
 public interface ExerciseRecordService {
 
-    void delete(Long exerciseRecordId);
 
     HomeResponseDto recordStart(String nickname);
 
