@@ -24,7 +24,7 @@ public interface UserService {
     UserResponseDto.Profile getUserInfo(String nickname);
 
     FriendResponseDto.FriendProfile getUserProfile(String userNickname, String friendNickname);
-    ActivityRecordResponseDto getActivityRecord(UserRequestDto.LookUp requestDto);
+    UserResponseDto.ActivityRecordResponseDto getActivityRecord(UserRequestDto.LookUp requestDto);
     RecordResponseDto.EInfo getExerciseInfo(Long exerciseId);
     UserResponseDto.DetailMap getDetailMap(Long recordId);
 

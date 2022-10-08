@@ -1,6 +1,7 @@
 package com.dnd.ground.domain.user.dto;
 
 import com.dnd.ground.domain.challenge.ChallengeColor;
+import com.dnd.ground.domain.exerciseRecord.dto.RecordResponseDto;
 import com.dnd.ground.domain.matrix.dto.MatrixDto;
 import com.dnd.ground.domain.user.User;
 
@@ -23,8 +24,8 @@ import java.util.List;
  *          2. UInfo 이름 변경(UInfo -> Profile)
  *          3. 새로운 UInfo 추가(닉네임+프로필사진 정보 추가 예정)
  *          - 2022.08.26 박찬호
- *          1. 나의 활동 기록에서 기록이 있는 날짜 리스트 조회 dto
- *          - 2022.09.24 박세헌
+ *          1. 나의 활동 기록 dto 이동
+ *          - 2022.09.28 박세헌
  */
 
 @Data
@@ -187,5 +188,12 @@ public class UserResponseDto {
     static public class dayEventList{
         @ApiModelProperty(name = "기록이 있는 날짜 리스트", example = "[2022-09-01, 2022-09-02]", dataType = "list")
         private List<LocalDate> eventList;
+    }
+
+    /* 나의 활동 기록 조회 */
+    @Data @Builder
+    static public class ActivityRecordResponseDto {
+        @ApiModelProperty(value = "해당 날짜에 존재하는 활동 내역 정보(운동 기록 정보)")
+        List<RecordResponseDto.activityRecord> activityRecords;
     }
 }

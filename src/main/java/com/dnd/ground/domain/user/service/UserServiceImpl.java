@@ -44,8 +44,8 @@ import static java.time.temporal.TemporalAdjusters.lastDayOfMonth;
  * @description 유저 서비스 클래스
  * @author  박세헌, 박찬호
  * @since   2022-08-01
- * @updated 운동 기록 날짜 조회 함수 추가
- *          - 2022-09-24 박세헌
+ * @updated 나의 활동 기록에서 total값 삭제
+ *          - 2022-09-28 박세헌
  */
 
 @Slf4j
@@ -236,7 +236,7 @@ public class UserServiceImpl implements UserService{
     }
 
     /* 나의 활동 기록 조회 */
-    public ActivityRecordResponseDto getActivityRecord(UserRequestDto.LookUp requestDto) {
+    public UserResponseDto.ActivityRecordResponseDto getActivityRecord(UserRequestDto.LookUp requestDto) {
 
         String nickname = requestDto.getNickname();
         LocalDateTime start = requestDto.getStart();
@@ -247,9 +247,6 @@ public class UserServiceImpl implements UserService{
         List<ExerciseRecord> record = exerciseRecordRepository.findRecord(user.getId(), start, end);  // start~end 사이 운동기록 조회
         List<RecordResponseDto.activityRecord> activityRecords = new ArrayList<>();
 
-        Integer totalDistance = 0;  // 총 거리
-        Integer totalExerciseTime = 0;  // 총 운동 시간
-        Long totalMatrixNumber = 0L;  // 총 채운 칸의 수
 
         // 활동 내역 정보
         for (ExerciseRecord exerciseRecord : record) {
@@ -277,33 +274,11 @@ public class UserServiceImpl implements UserService{
                     .exerciseTime(time)
                     .started(started)
                     .build());
-            totalDistance += exerciseRecord.getDistance();
-            totalExerciseTime += exerciseRecord.getExerciseTime();
-            totalMatrixNumber += (long) exerciseRecord.getMatrices().size();
         }
 
-        // 총 운동 시간 formatting
-        int totalMinute = totalExerciseTime / 60;
-        int totalSecond = totalExerciseTime % 60;
-
-        String totalTime = "";
-
-        // 10초 미만이라면 앞에 0하나 붙여주기
-        if (Integer.toString(totalSecond).length() == 1){
-            totalTime = Integer.toString(totalMinute) + ":0" + Integer.toString(totalSecond);
-            System.out.println(totalTime);
-        }
-        else{
-            totalTime = Integer.toString(totalMinute) + ":" + Integer.toString(totalSecond);
-            System.out.println(totalTime);
-        }
-
-        return ActivityRecordResponseDto
+        return UserResponseDto.ActivityRecordResponseDto
                 .builder()
                 .activityRecords(activityRecords)
-                .totalMatrixNumber(totalMatrixNumber)
-                .totalDistance(totalDistance)
-                .totalExerciseTime(totalTime)
                 .build();
     }
 
