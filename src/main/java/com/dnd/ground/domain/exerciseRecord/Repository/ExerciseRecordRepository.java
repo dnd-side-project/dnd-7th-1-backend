@@ -16,8 +16,8 @@ import java.util.Optional;
  * @description 운동 기록 리포지토리 클래스
  * @author  박세헌
  * @since   2022-08-01
- * @updated 2022-09-24 / 운동 기록 날짜 조회 (중복 제거)
- *                       - 박세헌
+ * @updated 2022-09-29 / 회원의 운동 기록 리스트 조회
+ *                       - 박찬호
  *
  */
 
@@ -58,4 +58,8 @@ public interface ExerciseRecordRepository extends JpaRepository<ExerciseRecord, 
     @Query("select distinct function('date_format', e.started, '%Y-%m-%d') " +
             "from ExerciseRecord e where e.user = :user and e.started between :start and :end")
     List<String> findDayEventList(User user, LocalDateTime start, LocalDateTime end);
+
+    //회원의 운동 기록 리스트 조회
+    @Query("select e from ExerciseRecord e where e.user=:user")
+    List<ExerciseRecord> findRecordsByUser(@Param("user") User user);
 }

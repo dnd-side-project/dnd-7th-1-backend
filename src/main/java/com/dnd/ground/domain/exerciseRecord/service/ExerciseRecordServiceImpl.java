@@ -34,7 +34,7 @@ import java.util.*;
  * @description 운동 기록 서비스 클래스
  * @author  박세헌
  * @since   2022-08-01
- * @updated 2022-08-29 / 걸음수 랭킹 부분 오류 해결 - 박세헌
+ * @updated 2022-08-29 / 미사용 메소드 삭제 - 박찬호
  */
 
 @Service
@@ -48,11 +48,6 @@ public class ExerciseRecordServiceImpl implements ExerciseRecordService {
     private final FriendService friendService;
     private final ChallengeRepository challengeRepository;
     private final UserChallengeRepository userChallengeRepository;
-
-    @Transactional
-    public void delete(Long exerciseRecordId) {
-        exerciseRecordRepository.deleteById(exerciseRecordId);
-    }
 
     // 기록 시작
     // 운동기록 id, 일주일 누적 영역 반환

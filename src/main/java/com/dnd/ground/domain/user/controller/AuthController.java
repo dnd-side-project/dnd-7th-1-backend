@@ -23,8 +23,6 @@ import java.util.Map;
  *          2.닉네임 검사 URL 변경(/validate/~ -> /check/~)
  *          3.회원가입 로직 추가
  *          - 2022.09.12 박찬호
- *          1. 토큰 재발급 api
- *          - 2022-09-19 박세헌
  */
 
 @Api(tags = "회원 인증/인가 및 로그인")
@@ -54,11 +52,6 @@ public class AuthController {
         return authService.signUp(kakaoAccessToken, request);
     }
 
-    @GetMapping("/check/origin")
-    @Operation(summary = "카카오 엑세스 토큰으로 기존 유저인지 판별하기", description = "헤더에 카카오 엑세스토큰(키값:Access-Token)으로 보냄.\n기존 유저:true \n신규 유저:false")
-    public ResponseEntity<Boolean> isOriginalUser(HttpServletRequest request) {
-        return ResponseEntity.ok(authService.isOriginalUser(request));
-    }
 
     @GetMapping("/check/nickname")
     @Operation(summary = "닉네임 유효성 검사", description = "2~6글자 || 중복X")
@@ -66,10 +59,11 @@ public class AuthController {
         return ResponseEntity.ok(authService.validateNickname(nickname));
     }
 
-//    @GetMapping("/tmp")
-//    public void tmp(@RequestParam("token") String token, @RequestParam("offset") Integer offset) {
-//        kakaoService.getKakaoFriends(token, offset);
-//    }
+    @GetMapping("/refreshToken")
+    @Operation(summary = "네모두 토큰 재발급", description = "리프레시 토큰이 유효 하다면 토큰을 재발급")
+    public ResponseEntity<Boolean> issuanceToken(@RequestHeader("Refresh-Token") String refreshToken){
+        return authService.issuanceToken(refreshToken);
+    }
 
     /**-- OAuth2.0 --**/
     @GetMapping("/kakao/login")
@@ -78,10 +72,10 @@ public class AuthController {
         return ResponseEntity.ok(kakaoService.kakaoLogin(code));
     }
 
-    /** 토큰 재발급 api **/
-    @GetMapping("/refreshToken")
-    @Operation(summary = "네모두 토큰 재발급", description = "리프레시 토큰이 유효 하다면 토큰을 재발급")
-    public ResponseEntity<Boolean> issuanceToken(@RequestHeader("Refresh-Token") String refreshToken){
-        return authService.issuanceToken(refreshToken);
+
+    @GetMapping("/check/origin")
+    @Operation(summary = "카카오 엑세스 토큰으로 기존 유저인지 판별하기", description = "헤더에 카카오 엑세스토큰(키값:Access-Token)으로 보냄.\n기존 유저:true \n신규 유저:false")
+    public ResponseEntity<Boolean> isOriginalUser(HttpServletRequest request) {
+        return ResponseEntity.ok().body(authService.isOriginalUser(request));
     }
 }

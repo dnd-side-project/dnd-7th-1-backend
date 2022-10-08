@@ -30,7 +30,7 @@ public enum CommonErrorCode implements ErrorCode {
     ACCESS_TOKEN_EXPIRED(HttpStatus.FORBIDDEN, "액세스 토큰이 만료 되었습니다."),
     REFRESH_TOKEN_EXPIRED(HttpStatus.FORBIDDEN, "리프레시 토큰이 만료 되었습니다."),
     WRONG_TOKEN(HttpStatus.FORBIDDEN, "잘못된 토큰 입니다."),
-    NOT_SIGNUP_USER(HttpStatus.FORBIDDEN, "카카오 로그인만 진행하고, 회원가입은 하지 않은 유저입니다."),
+    NOT_SIGNUP_USER(HttpStatus.UNAUTHORIZED, "카카오 로그인만 진행하고, 회원가입은 하지 않은 유저입니다."),
 
     //5XX
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 동작 중 예외가 발생했습니다."),

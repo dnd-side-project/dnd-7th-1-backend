@@ -12,8 +12,8 @@ import java.util.Optional;
  * @description 유저 리포지토리 인터페이스
  * @author  박세헌, 박찬호
  * @since   2022-08-01
- * @updated 1. 카카오 id를 통해 유저가 존재하는지 확인하는 함수
- *  *            - 2022-09-02 박세헌
+ * @updated 1. 리프레시 토큰을 사용해 회원 조회하기
+ *  *            - 2022-09-23 박찬호
  */
 
 public interface UserRepository extends JpaRepository<User, Long> {
@@ -25,6 +25,10 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     Optional<User> findByKakaoId(Long id);
 
+    Optional<User> findByRefreshToken(String token);
+
     Boolean existsByKakaoId(Long id);
+
+    void deleteByNickname(String nickname);
 
 }
