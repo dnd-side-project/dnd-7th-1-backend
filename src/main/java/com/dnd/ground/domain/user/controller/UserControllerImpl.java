@@ -3,14 +3,11 @@ package com.dnd.ground.domain.user.controller;
 import com.dnd.ground.domain.exerciseRecord.dto.RecordRequestDto;
 import com.dnd.ground.domain.exerciseRecord.dto.RecordResponseDto;
 import com.dnd.ground.domain.friend.dto.FriendResponseDto;
-import com.dnd.ground.domain.user.dto.ActivityRecordResponseDto;
 import com.dnd.ground.domain.user.dto.HomeResponseDto;
 import com.dnd.ground.domain.user.dto.UserRequestDto;
 import com.dnd.ground.domain.user.dto.UserResponseDto;
 import com.dnd.ground.domain.user.service.AuthService;
 import com.dnd.ground.domain.user.service.UserService;
-import com.dnd.ground.global.util.JwtUtil;
-import com.dnd.ground.global.util.JwtVerifyResult;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiParam;
 import io.swagger.v3.oas.annotations.Operation;
@@ -18,10 +15,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import javax.servlet.http.HttpServletRequest;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * @description 회원 관련 컨트롤러 구현체
@@ -70,7 +63,7 @@ public class UserControllerImpl implements UserController {
             description = "해당 유저의 start-end(기간) 사이 활동기록 조회\n" +
                     "start: 해당 날짜의 00시 00분 00초\n" +
                     "end: 해당 날짜의 23시 59분 59초")
-    public ResponseEntity<ActivityRecordResponseDto> getActivityRecord(@RequestBody UserRequestDto.LookUp requestDto){
+    public ResponseEntity<UserResponseDto.ActivityRecordResponseDto> getActivityRecord(@RequestBody UserRequestDto.LookUp requestDto){
         return ResponseEntity.ok().body(userService.getActivityRecord(requestDto));
     }
 
