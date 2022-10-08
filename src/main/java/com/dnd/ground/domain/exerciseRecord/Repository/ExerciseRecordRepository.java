@@ -24,7 +24,7 @@ import java.util.Optional;
 public interface ExerciseRecordRepository extends JpaRepository<ExerciseRecord, Long>, ExerciseRecordQueryRepository {
 
     // 유저와 친구들의 닉네임과 (start-end)사이 운동기록의 칸 수 조회
-    @Query("select u.nickname, count(u) from User u " +
+    @Query("select u.nickname, count(u), u.picturePath from User u " +
             "join u.exerciseRecords e " +
             "join e.matrices m " +
             "where u in :userAndFriends and e.started between :start and :end " +
@@ -33,7 +33,7 @@ public interface ExerciseRecordRepository extends JpaRepository<ExerciseRecord, 
     List<Tuple> findMatrixCount(List<User> userAndFriends, LocalDateTime start, LocalDateTime end);
 
     // 유저와 친구들의 닉네임과 (start-end)사이 운동기록의 걸음 수 조회
-    @Query("select u.nickname, sum(e.stepCount) from User u " +
+    @Query("select u.nickname, sum(e.stepCount), u.picturePath from User u " +
             "join u.exerciseRecords e " +
             "where u in :userAndFriends and e.started between :start and :end " +
             "group by u " +
