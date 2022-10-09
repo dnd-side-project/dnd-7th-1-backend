@@ -513,7 +513,7 @@ public class ChallengeServiceImpl implements ChallengeService {
 
                 //랭킹 리스트에 추가
                 rankings.add(new UserResponseDto.Ranking(1, member.getNickname(),
-                        (long) matrixRepository.findMatrixSetByRecords(records).size()));
+                        (long) matrixRepository.findMatrixSetByRecords(records).size(), member.getPicturePath()));
             }
             //랭킹 정렬
             rankings = matrixService.calculateAreaRank(rankings);
@@ -554,7 +554,7 @@ public class ChallengeServiceImpl implements ChallengeService {
 
                 //랭킹 리스트에 추가
                 rankings.add(new UserResponseDto.Ranking(1, member.getNickname(),
-                        (long) matrixRepository.findMatrixSetByRecords(records).size()));
+                        (long) matrixRepository.findMatrixSetByRecords(records).size(), member.getPicturePath()));
             }
             //랭킹 정렬
             rankings = matrixService.calculateAreaRank(rankings);
