@@ -2,6 +2,7 @@ package com.dnd.ground.domain.friend.service;
 
 import com.dnd.ground.domain.challenge.repository.UserChallengeRepository;
 import com.dnd.ground.domain.friend.Friend;
+import com.dnd.ground.domain.friend.FriendStatus;
 import com.dnd.ground.domain.friend.dto.FriendResponseDto;
 import com.dnd.ground.domain.friend.repository.FriendRepository;
 import com.dnd.ground.domain.user.User;
@@ -15,13 +16,16 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * @description 친구와 관련된 서비스 구현체
  * @author  박찬호
  * @since   2022-08-01
- * @updated 1.orElseThrow() 예외 처리
- *          - 2022.08.24 박찬호
+ * @updated 1.친구 요청 API 구현
+ *          2.요청에 대한 응답 API 구현
+ *          3.친구 삭제 API 구현
+ *          - 2022.10.10 박찬호
  */
 
 @Slf4j
@@ -30,7 +34,6 @@ import java.util.List;
 public class FriendServiceImpl implements FriendService {
 
     private final FriendRepository friendRepository;
-    private final UserChallengeRepository userChallengeRepository;
     private final UserRepository userRepository;
 
     //친구 목록과 추가 정보를 함께 반환
@@ -78,6 +81,92 @@ public class FriendServiceImpl implements FriendService {
 
         return friends;
     }
+
+    /**
+     * 단건 친구 요청 *
+     * 누가 요청을 보냈는지 알기 위해 다음과 같은 명확한 기준을 세운다.
+     * 추후 친구 요청 수락을 위해 요청을 보내는 쪽이 user, 받는 쪽이 friend에 저장한다.
+     * 단, 한 친구 관계는 DB에 1번만 저장하도록 한다.
+     * @param userNickname
+     * @param friendNickname
+     * @return
+     */
+    @Transactional
+    public Boolean requestFriend(String userNickname, String friendNickname) {
+        User user = userRepository.findByNickname(userNickname).orElseThrow(
+                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER)
+        );
+
+        User friend = userRepository.findByNickname(friendNickname).orElseThrow(
+                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER)
+        );
+
+        if (friendRepository.findFriendInProgress(user, friend).isPresent() || userNickname.equals(friendNickname)) {
+            return false;
+        } {
+            Friend friendRelation = new Friend(user, friend, FriendStatus.Wait);
+            friendRepository.save(friendRelation);
+            return true;
+        }
+    }
+
+    /*친구 요청 수락, 거절 등에 대한 처리*/
+    @Transactional
+    public FriendResponseDto.ResponseResult responseFriend(String userNickname, String friendNickname, FriendStatus status) {
+        User user = userRepository.findByNickname(userNickname).orElseThrow(
+                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER)
+        );
+
+        User friend = userRepository.findByNickname(friendNickname).orElseThrow(
+                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER)
+        );
+
+        Friend friendRelation = friendRepository.findRequestFriend(user, friend).orElseThrow(
+                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_FRIEND_REQUEST)
+        );
+
+        friendRelation.updateStatus(status);
+        return new FriendResponseDto.ResponseResult(user.getNickname(), friend.getNickname(), friendRelation.getStatus());
+    }
+
+    /*친구 삭제*/
+    @Transactional
+    public Boolean deleteFriend(String userNickname, String friendNickname) {
+        User user = userRepository.findByNickname(userNickname).orElseThrow(
+                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER)
+        );
+
+        User friend = userRepository.findByNickname(friendNickname).orElseThrow(
+                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER)
+        );
+
+        Optional<Friend> friendRelation = friendRepository.findFriendRelation(user, friend);
+
+        if (friendRelation.isPresent()) {
+            friendRepository.delete(friendRelation.get());
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    @Transactional
+    public Boolean requestFriends(User user, List<User> friends) {
+        List<Friend> friendList = new ArrayList<>();
+
+        for (User friend : friends) {
+            friendList.add(
+                    Friend.builder()
+                            .user(user)
+                            .friend(friend)
+                            .status(FriendStatus.Wait)
+                            .build()
+            );
+        }
+        return null;
+    }
+
+
 
     /* 수정 필요
     //챌린지를 진행하는 친구 조회
