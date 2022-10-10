@@ -32,14 +32,13 @@ import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAdjusters;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @description 챌린지와 관련된 서비스의 역할을 분리한 구현체
  * @author  박찬호, 박세헌
  * @since   2022-08-03
- * @updated 1.챌린지 상세보기(지도) 기능 구현
- *          2.챌린지 관련 Response에 UUID 추가
- *          - 2022.08.26 박찬호
+ * @updated 1. 프로필 사진 추가 - 2022-10-10 박세헌
  */
 
 @Slf4j
@@ -106,7 +105,7 @@ public class ChallengeServiceImpl implements ChallengeService {
             userChallengeRepository.save(new UserChallenge(challenge, member, color[challengeCount]));
 
             //Response에 추가할 멤버 목록
-            users.add(new UserResponseDto.UInfo(nickname));
+            users.add(new UserResponseDto.UInfo(nickname, member.getPicturePath()));
         }
 
         return ChallengeCreateResponseDto.builder()
@@ -209,6 +208,7 @@ public class ChallengeServiceImpl implements ChallengeService {
                             .InviterNickname(userChallengeRepository.findMasterInChallenge(challenge).getNickname())
                             .message(challenge.getMessage())
                             .created(challenge.getCreated().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")))
+                            .picturePath(userChallengeRepository.findMasterInChallenge(challenge).getPicturePath())
                             .build()
             );
         }
@@ -225,8 +225,11 @@ public class ChallengeServiceImpl implements ChallengeService {
         List<ChallengeResponseDto.Wait> response = new ArrayList<>();
 
         for (Challenge challenge : waitChallenge) {
-
             LocalDate started = challenge.getStarted();
+            List<String> picturePaths = new ArrayList<>();  // 유저의 프로필 사진
+
+            userChallengeRepository.findChallengeUsers(challenge)
+                    .forEach(u -> picturePaths.add(u.getPicturePath()));
 
             response.add(
                     ChallengeResponseDto.Wait.builder()
@@ -237,6 +240,7 @@ public class ChallengeServiceImpl implements ChallengeService {
                             .totalCount(userChallengeRepository.findUCCount(challenge)) //챌린지에 참여하는 전체 인원 수
                             .readyCount(userChallengeRepository.findUCWaitCount(challenge) + 1) //Progress 상태 회원 수 + 주최자
                             .color(userChallengeRepository.findChallengeColor(user, challenge))
+                            .picturePaths(picturePaths)
                             .build()
             );
         }
@@ -255,6 +259,7 @@ public class ChallengeServiceImpl implements ChallengeService {
         for (Challenge challenge : progressChallenge) {
             Integer rank = -1; //랭킹
             LocalDate started = challenge.getStarted(); //챌린지 시작 날짜
+            List<String> picturePaths = new ArrayList<>(); // 유저들의 프로필 사진
 
             //해당 회원의 랭킹 추출
             if (challenge.getType() == ChallengeType.Widen) {
@@ -263,8 +268,8 @@ public class ChallengeServiceImpl implements ChallengeService {
                 for (UserResponseDto.Ranking ranking : rankList.getAreaRankings()) {
                     if (ranking.getNickname().equals(nickname)) {
                         rank = ranking.getRank();
-                        break;
                     }
+                    picturePaths.add(ranking.getPicturePath());
                 }
             }
             else if (challenge.getType() == ChallengeType.Accumulate) {
@@ -276,8 +281,8 @@ public class ChallengeServiceImpl implements ChallengeService {
                 for (UserResponseDto.Ranking ranking : matrixService.calculateMatrixRank(matrixCount, member)) {
                     if (ranking.getNickname().equals(nickname)) {
                         rank=ranking.getRank();
-                        break;
                     }
+                    picturePaths.add(ranking.getPicturePath());
                 }
             }
 
@@ -294,6 +299,7 @@ public class ChallengeServiceImpl implements ChallengeService {
                             .ended(started.plusDays(7-started.getDayOfWeek().getValue()))
                             .rank(rank)
                             .color(userChallengeRepository.findChallengeColor(user, challenge))
+                            .picturePaths(picturePaths)
                             .build()
             );
         }
@@ -345,6 +351,7 @@ public class ChallengeServiceImpl implements ChallengeService {
             if (rank==-1) {
                 throw new CNotValidationException(CommonErrorCode.INTERNAL_SERVER_ERROR);
             }
+
 
             response.add(
                     ChallengeResponseDto.Progress.builder()
@@ -508,7 +515,7 @@ public class ChallengeServiceImpl implements ChallengeService {
                 //개인 영역 기록 저장
                 List<MatrixDto> matrixSetByRecord = matrixRepository.findMatrixSetByRecords(records);
                 matrixList.add(
-                        new ChallengeMapResponseDto.UserMapInfo(color, member.getLatitude(), member.getLongitude(), matrixSetByRecord)
+                        new ChallengeMapResponseDto.UserMapInfo(color, member.getLatitude(), member.getLongitude(), matrixSetByRecord, member.getPicturePath())
                 );
 
                 //랭킹 리스트에 추가
@@ -528,7 +535,7 @@ public class ChallengeServiceImpl implements ChallengeService {
                 List<MatrixDto> matrixSetByRecord = matrixRepository.findMatrixSetByRecords(records);
 
                 matrixList.add(
-                        new ChallengeMapResponseDto.UserMapInfo(color, user.getLatitude(), user.getLongitude(), matrixSetByRecord)
+                        new ChallengeMapResponseDto.UserMapInfo(color, user.getLatitude(), user.getLongitude(), matrixSetByRecord, user.getPicturePath())
                 );
             }
             //랭킹 계산

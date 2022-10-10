@@ -20,8 +20,7 @@ import java.util.List;
  * @description 친구와 관련된 서비스 구현체
  * @author  박찬호
  * @since   2022-08-01
- * @updated 1.orElseThrow() 예외 처리
- *          - 2022.08.24 박찬호
+ * @updated 1. 프로필 사진 추가 - 2022-10-10 박세헌
  */
 
 @Slf4j
@@ -49,10 +48,12 @@ public class FriendServiceImpl implements FriendService {
             if (findFriend.getUser() == findUser) {
                 infos.add(FriendResponseDto.FInfo.of()
                         .nickname(findFriend.getFriend().getNickname())
+                        .picturePath(findFriend.getFriend().getPicturePath())
                         .build());
             } else if (findFriend.getFriend() == findUser) {
                 infos.add(FriendResponseDto.FInfo.of()
                         .nickname(findFriend.getUser().getNickname())
+                        .picturePath(findFriend.getFriend().getPicturePath())
                         .build());
             }
         }

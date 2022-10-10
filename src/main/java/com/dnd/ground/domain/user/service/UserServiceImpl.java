@@ -44,8 +44,7 @@ import static java.time.temporal.TemporalAdjusters.lastDayOfMonth;
  * @description 유저 서비스 클래스
  * @author  박세헌, 박찬호
  * @since   2022-08-01
- * @updated 나의 활동 기록에서 total값 삭제
- *          - 2022-09-28 박세헌
+ * @updated 1. 프로필 사진 추가 - 2022-10-10 박세헌
  */
 
 @Slf4j
@@ -234,6 +233,7 @@ public class UserServiceImpl implements UserService{
                 .allMatrixNumber(allMatrixNumber)
                 .rank(rank)
                 .challenges(challenges)
+                .picturePath(friend.getPicturePath())
                 .build();
     }
 
@@ -338,7 +338,7 @@ public class UserServiceImpl implements UserService{
         List<MatrixDto> matrices = matrixRepository.findMatrixSetByRecord(exerciseRecord);
 
         return new UserResponseDto.DetailMap(user.getLatitude(),
-                user.getLongitude(), matrices);
+                user.getLongitude(), matrices, user.getPicturePath());
     }
 
     /*필터 변경: 나의 기록 보기*/

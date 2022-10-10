@@ -16,8 +16,7 @@ import java.util.List;
  * @description 챌린지와 관련한 Response DTO
  * @author  박찬호
  * @since   2022-08-12
- * @updated 1. 챌린지 관련 Response에 UUID 추가
- *          - 2022.08.26 박찬호
+ * @updated 1. 프로필 사진 추가 - 2022-10-10 박세헌
  */
 
 
@@ -69,6 +68,9 @@ public class ChallengeResponseDto {
 
         @ApiModelProperty(value="챌린지 색깔(Red, Pink, Yellow)", example="Red")
         private ChallengeColor color;
+
+        @ApiModelProperty(value="인원들의 프로필 사진 URI 리스트(카카오 프로필 사용 시 kakao/카카오회원번호)", example="http:\\/\\/k.kakaocdn.net\\/dn\\/uQVeo\\/btrLgESJyjg\\/Pff3k36lRWkQ98ebAlexv1\\/img_640x640.jpg")
+        private List<String> picturePaths;
     }
 
     /*진행 중 상태의 챌린지 정보*/
@@ -92,6 +94,9 @@ public class ChallengeResponseDto {
 
         @ApiModelProperty(value="챌린지 색깔", example="Red")
         private ChallengeColor color;
+
+        @ApiModelProperty(value="인원들의 프로필 사진 URI 리스트(카카오 프로필 사용 시 kakao/카카오회원번호)", example="http:\\/\\/k.kakaocdn.net\\/dn\\/uQVeo\\/btrLgESJyjg\\/Pff3k36lRWkQ98ebAlexv1\\/img_640x640.jpg")
+        private List<String> picturePaths;
     }
 
     /*진행 완료 상태의 챌린지 정보*/
@@ -115,6 +120,9 @@ public class ChallengeResponseDto {
 
         @ApiModelProperty(value="챌린지 색깔", example="Red")
         private ChallengeColor color;
+
+        @ApiModelProperty(value="인원들의 프로필 사진 URI 리스트(카카오 프로필 사용 시 kakao/카카오회원번호)", example="http:\\/\\/k.kakaocdn.net\\/dn\\/uQVeo\\/btrLgESJyjg\\/Pff3k36lRWkQ98ebAlexv1\\/img_640x640.jpg")
+        private List<String> picturePaths;
     }
 
     /*초대 받은 챌린지 정보*/
@@ -135,6 +143,9 @@ public class ChallengeResponseDto {
 
         @ApiModelProperty(value="초대 시간(yyyy-MM-dd hh:mm)", example="2022-08-12 22:10")
         private String created;
+
+        @ApiModelProperty(value="주최자의 프로필 사진 URI(카카오 프로필 사용 시 kakao/카카오회원번호)", example="http:\\/\\/k.kakaocdn.net\\/dn\\/uQVeo\\/btrLgESJyjg\\/Pff3k36lRWkQ98ebAlexv1\\/img_640x640.jpg")
+        private String picturePath;
     }
 
     /*챌린지 상세 보기*/

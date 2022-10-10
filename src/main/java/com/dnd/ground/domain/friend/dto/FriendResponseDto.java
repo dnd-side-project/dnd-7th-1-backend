@@ -14,8 +14,7 @@ import java.util.List;
  * @description 친구와 관련한 정보 조회용 Response DTO
  * @author  박찬호
  * @since   2022-08-02
- * @updated 1. Profile 클래스 이동(UserResponseDto -> FriendResponseDto) 및 이름 변경(Profile -> FriendProfile)
- *          - 2022.08.26 박찬호
+ * @updated 1. 프로필 사진 추가 - 2022-10-10 박세헌
  */
 
 @Data @Builder
@@ -33,12 +32,16 @@ public class FriendResponseDto {
     static public class FInfo {
 
         @Builder(builderMethodName = "of")
-        public FInfo(String nickname) {
+        public FInfo(String nickname, String picturePath) {
             this.nickname = nickname;
+            this.picturePath = picturePath;
         }
         
         @ApiModelProperty(value="닉네임", example="NickA")
         private String nickname;
+
+        @ApiModelProperty(value="프로필 사진 URI(카카오 프로필 사용 시 kakao/카카오회원번호)", example="http:\\/\\/k.kakaocdn.net\\/dn\\/uQVeo\\/btrLgESJyjg\\/Pff3k36lRWkQ98ebAlexv1\\/img_640x640.jpg")
+        private String picturePath;
     }
 
     /*회원 프로필 관련 DTO*/
@@ -70,6 +73,9 @@ public class FriendResponseDto {
         @ApiModelProperty(value = "회원과 함께 하는 챌린지 리스트"
                 , example = "[{\"name\": \"챌린지1\", \"started\": \"2022-08-16\", \"ended\": \"2022-08-21\", \"rank\": 1, \"color\": \"Red\"}]")
         List<ChallengeResponseDto.Progress> challenges;
+
+        @ApiModelProperty(value="프로필 사진 URI(카카오 프로필 사용 시 kakao/카카오회원번호)", example="http:\\/\\/k.kakaocdn.net\\/dn\\/uQVeo\\/btrLgESJyjg\\/Pff3k36lRWkQ98ebAlexv1\\/img_640x640.jpg")
+        private String picturePath;
     }
 
 }

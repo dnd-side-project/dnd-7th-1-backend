@@ -20,12 +20,7 @@ import java.util.List;
  *              4. 랭킹 정보
  * @author  박세헌, 박찬호
  * @since   2022-08-08
- * @updated 1. Profile 클래스 이동(UserResponseDto -> FriendResponseDto) 및 이름 변경(Profile -> FriendProfile)
- *          2. UInfo 이름 변경(UInfo -> Profile)
- *          3. 새로운 UInfo 추가(닉네임+프로필사진 정보 추가 예정)
- *          - 2022.08.26 박찬호
- *          1. 나의 활동 기록 dto 이동
- *          - 2022.09.28 박세헌
+ * @updated 1. 프로필 사진 추가 - 2022-10-10 박세헌
  */
 
 @Data
@@ -37,8 +32,8 @@ public class UserResponseDto {
         @ApiModelProperty(value = "닉네임", example = "NickA")
         private String nickname;
 
-//        @ApiModelProperty(value="프로필 사진 URI(카카오 프로필 사용 시 kakao/카카오회원번호)", example="http:\\/\\/k.kakaocdn.net\\/dn\\/uQVeo\\/btrLgESJyjg\\/Pff3k36lRWkQ98ebAlexv1\\/img_640x640.jpg")
-//        private String picturePath;
+        @ApiModelProperty(value="프로필 사진 URI(카카오 프로필 사용 시 kakao/카카오회원번호)", example="http:\\/\\/k.kakaocdn.net\\/dn\\/uQVeo\\/btrLgESJyjg\\/Pff3k36lRWkQ98ebAlexv1\\/img_640x640.jpg")
+        private String picturePath;
     }
 
     /*회원가입 Response*/
@@ -207,6 +202,9 @@ public class UserResponseDto {
 
         @ApiModelProperty(value = "칸 꼭지점 위도, 경도 리스트", example = "[{\"latitude\": 37.330436, \"longitude\": -122.030216}]",required = true)
         private List<MatrixDto> matrices;
+
+        @ApiModelProperty(value="프로필 사진 URI(카카오 프로필 사용 시 kakao/카카오회원번호)", example="http:\\/\\/k.kakaocdn.net\\/dn\\/uQVeo\\/btrLgESJyjg\\/Pff3k36lRWkQ98ebAlexv1\\/img_640x640.jpg")
+        private String picturePath;
     }
 
     /* 나의 활동 기록에서 기록이 있는 날짜 리스트 */
