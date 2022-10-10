@@ -44,8 +44,8 @@ import static java.time.temporal.TemporalAdjusters.lastDayOfMonth;
  * @description 유저 서비스 클래스
  * @author  박세헌, 박찬호
  * @since   2022-08-01
- * @updated 나의 활동 기록에서 total값 삭제
- *          - 2022-09-28 박세헌
+ * @updated 1.FriendRepository의 쿼리 수정에 따른 코드 변경(친구 관계 조회)
+ *          - 2022-10-10 박찬호
  */
 
 @Slf4j
@@ -196,8 +196,7 @@ public class UserServiceImpl implements UserService{
         //친구 관계 확인
         Boolean isFriend = false;
 
-        if (friendRepository.findFriendRelation(user, friend).isPresent()
-                || friendRepository.findFriendRelation(friend, user).isPresent()) {
+        if (friendRepository.findFriendRelation(user, friend).isPresent()) {
             isFriend = true;
         }
 
