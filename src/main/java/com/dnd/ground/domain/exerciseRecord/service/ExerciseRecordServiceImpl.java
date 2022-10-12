@@ -97,7 +97,7 @@ public class ExerciseRecordServiceImpl implements ExerciseRecordService {
                     () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
 
             friendMatrices.add(new UserResponseDto.FriendMatrix(friendNickname, friend.getLatitude(), friend.getLongitude(),
-                    friendHashMap.get(friendNickname)));
+                    friendHashMap.get(friendNickname), friend.getPicturePath()));
         }
 
         /*챌린지를 하는 사람들의 matrix 와 정보 (challengeMatrices)*/
@@ -116,7 +116,8 @@ public class ExerciseRecordServiceImpl implements ExerciseRecordService {
             challengeMatrices.add(
                     new UserResponseDto.ChallengeMatrix(
                             friend.getNickname(), challengeNumber, challengeColor,
-                            friend.getLatitude(), friend.getLongitude(), challengeMatrixSetDto)
+                            friend.getLatitude(), friend.getLongitude(), challengeMatrixSetDto,
+                            friend.getPicturePath())
             );
         }
 
@@ -171,13 +172,13 @@ public class ExerciseRecordServiceImpl implements ExerciseRecordService {
         userAndFriends.add(0, user);  // 유저 추가
         List<UserResponseDto.Ranking> stepRankings = new ArrayList<>(); // [랭킹, 닉네임, 걸음 수]
 
-        // [Tuple(닉네임, 걸음 수)] 걸음 수 기준 내림차순 정렬
+        // [Tuple(닉네임, 걸음 수, 프로필 path)] 걸음 수 기준 내림차순 정렬
         List<Tuple> stepCount = exerciseRecordRepository.findStepCount(userAndFriends, start, end);
 
         if (stepCount.isEmpty()){
             for (User users : userAndFriends) {
                 stepRankings.add(new UserResponseDto.Ranking(1, (String) users.getNickname(),
-                        0L));
+                        0L, users.getPicturePath()));
             }
             return new RankResponseDto.Step(stepRankings);
         }
@@ -193,11 +194,11 @@ public class ExerciseRecordServiceImpl implements ExerciseRecordService {
                 // 유저 찾았으면 저장해둠
                 if (Objects.equals(info.get(0), user.getNickname())) {
                     stepRankings.add(0, new UserResponseDto.Ranking(rank, (String) info.get(0),
-                            (Long) info.get(1)));
+                            (Long) info.get(1), user.getPicturePath()));
                 }
 
                 stepRankings.add(new UserResponseDto.Ranking(rank, (String) info.get(0),
-                        (Long) info.get(1)));
+                        (Long) info.get(1), (String) info.get(2)));
                 count += 1;
                 continue;
             }
@@ -209,10 +210,10 @@ public class ExerciseRecordServiceImpl implements ExerciseRecordService {
             // 유저 찾았으면 저장해둠
             if (Objects.equals(info.get(0), user.getNickname())) {
                 stepRankings.add(0, new UserResponseDto.Ranking(rank, (String) info.get(0),
-                        (Long) info.get(1)));
+                        (Long) info.get(1), user.getPicturePath()));
             }
             stepRankings.add(new UserResponseDto.Ranking(rank, (String) info.get(0),
-                    (Long) info.get(1)));
+                    (Long) info.get(1), (String) info.get(2)));
             matrixNumber = (Long) info.get(1);  // 걸음 수 update!
         }
         return new RankResponseDto.Step(stepRankings);

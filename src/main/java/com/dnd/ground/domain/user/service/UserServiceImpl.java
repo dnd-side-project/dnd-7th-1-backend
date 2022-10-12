@@ -75,7 +75,7 @@ public class UserServiceImpl implements UserService{
         List<MatrixDto> userMatrixSet = matrixRepository.findMatrixSetByRecords(userRecordOfThisWeek);  // 운동 기록의 영역 조회
 
         //회원 정보 저장
-        userMatrix.setProperties(user.getNickname(), userMatrixSet.size(), userMatrixSet, user.getLatitude(), user.getLongitude());
+        userMatrix.setProperties(user.getNickname(), userMatrixSet.size(), userMatrixSet, user.getLatitude(), user.getLongitude(), user.getPicturePath());
 
         /*----------*/
         //진행 중인 챌린지 목록 조회 List<UserChallenge>
@@ -110,7 +110,7 @@ public class UserServiceImpl implements UserService{
                     () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
 
             friendMatrices.add(new UserResponseDto.FriendMatrix(friendNickname, friend.getLatitude(), friend.getLongitude(),
-                    friendHashMap.get(friendNickname)));
+                    friendHashMap.get(friendNickname), friend.getPicturePath()));
         }
 
         /*챌린지를 하는 사람들의 matrix 와 정보 (challengeMatrices)*/
@@ -129,7 +129,8 @@ public class UserServiceImpl implements UserService{
             challengeMatrices.add(
                     new UserResponseDto.ChallengeMatrix(
                             friend.getNickname(), challengeNumber, challengeColor,
-                            friend.getLatitude(), friend.getLongitude(), challengeMatrixSetDto)
+                            friend.getLatitude(), friend.getLongitude(), challengeMatrixSetDto,
+                            friend.getPicturePath())
             );
         }
 
@@ -177,6 +178,7 @@ public class UserServiceImpl implements UserService{
                 .distance(distance)
                 .friendNumber(friendNumber)
                 .allMatrixNumber(allMatrixNumber)
+                .picturePath(user.getPicturePath())
                 .build();
     }
 
@@ -231,6 +233,7 @@ public class UserServiceImpl implements UserService{
                 .allMatrixNumber(allMatrixNumber)
                 .rank(rank)
                 .challenges(challenges)
+                .picturePath(friend.getPicturePath())
                 .build();
     }
 
@@ -335,7 +338,7 @@ public class UserServiceImpl implements UserService{
         List<MatrixDto> matrices = matrixRepository.findMatrixSetByRecord(exerciseRecord);
 
         return new UserResponseDto.DetailMap(user.getLatitude(),
-                user.getLongitude(), matrices);
+                user.getLongitude(), matrices, user.getPicturePath());
     }
 
     /*필터 변경: 나의 기록 보기*/

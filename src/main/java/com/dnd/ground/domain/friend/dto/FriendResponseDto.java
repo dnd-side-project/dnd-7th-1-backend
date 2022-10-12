@@ -35,12 +35,16 @@ public class FriendResponseDto {
     static public class FInfo {
 
         @Builder(builderMethodName = "of")
-        public FInfo(String nickname) {
+        public FInfo(String nickname, String picturePath) {
             this.nickname = nickname;
+            this.picturePath = picturePath;
         }
         
         @ApiModelProperty(value="닉네임", example="NickA")
         private String nickname;
+
+        @ApiModelProperty(value="프로필 사진 URI(카카오 프로필 사용 시 kakao/카카오회원번호)", example="http:\\/\\/k.kakaocdn.net\\/dn\\/uQVeo\\/btrLgESJyjg\\/Pff3k36lRWkQ98ebAlexv1\\/img_640x640.jpg")
+        private String picturePath;
     }
 
     /*회원 프로필 관련 DTO*/
@@ -72,6 +76,9 @@ public class FriendResponseDto {
         @ApiModelProperty(value = "회원과 함께 하는 챌린지 리스트"
                 , example = "[{\"name\": \"챌린지1\", \"started\": \"2022-08-16\", \"ended\": \"2022-08-21\", \"rank\": 1, \"color\": \"Red\"}]")
         List<ChallengeResponseDto.Progress> challenges;
+
+        @ApiModelProperty(value="프로필 사진 URI(카카오 프로필 사용 시 kakao/카카오회원번호)", example="http:\\/\\/k.kakaocdn.net\\/dn\\/uQVeo\\/btrLgESJyjg\\/Pff3k36lRWkQ98ebAlexv1\\/img_640x640.jpg")
+        private String picturePath;
     }
 
     /*친구 요청 수락, 거절 등에 대한 결과*/

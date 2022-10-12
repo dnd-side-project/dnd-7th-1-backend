@@ -52,10 +52,12 @@ public class FriendServiceImpl implements FriendService {
             if (findFriend.getUser() == findUser) {
                 infos.add(FriendResponseDto.FInfo.of()
                         .nickname(findFriend.getFriend().getNickname())
+                        .picturePath(findFriend.getFriend().getPicturePath())
                         .build());
             } else if (findFriend.getFriend() == findUser) {
                 infos.add(FriendResponseDto.FInfo.of()
                         .nickname(findFriend.getUser().getNickname())
+                        .picturePath(findFriend.getFriend().getPicturePath())
                         .build());
             }
         }
