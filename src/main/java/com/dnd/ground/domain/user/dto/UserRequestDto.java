@@ -3,6 +3,7 @@ package com.dnd.ground.domain.user.dto;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.persistence.Column;
 import javax.validation.constraints.NotNull;
@@ -59,6 +60,8 @@ public class UserRequestDto {
         @ApiModelProperty(name = "유저의 소개글", example = "소개글 예시")
         private String intro;
 
+        @ApiModelProperty(name = "네모두 기본 사진으로 하는지", example = "false")
+        private Boolean isBasic;
     }
 
     /* 운동 기록 날짜 조회시 사용하는 dto */

@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * @description 회원 관련 컨트롤러 구현체
@@ -98,9 +99,10 @@ public class UserControllerImpl implements UserController {
     }
 
     @PostMapping("/info/profile/edit")
-    @Operation(summary = "유저 프로필 수정", description = "닉네임, 자기소개 수정(예외 처리 예정)")
-    public ResponseEntity<Boolean> editUserProfile(@RequestBody UserRequestDto.Profile requestDto){
-        return userService.editUserProfile(requestDto);
+    @Operation(summary = "유저 프로필 수정", description = "닉네임, 자기소개, 프로필 사진 수정")
+    public ResponseEntity<Boolean> editUserProfile(@RequestPart(required = false) MultipartFile multipartFile,
+                                                   @RequestPart UserRequestDto.Profile requestDto){
+        return userService.editUserProfile(multipartFile, requestDto);
     }
 
     @PostMapping("/info/activity/record/edit")
