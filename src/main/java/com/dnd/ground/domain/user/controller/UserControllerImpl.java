@@ -109,7 +109,7 @@ public class UserControllerImpl implements UserController {
         return userService.editRecordMessage(requestDto);
     }
 
-    @PostMapping("/eventList")
+    @PostMapping("/event-list")
     @Operation(summary = "기록이 있는 날짜 조회", description = "기록이 있는 날짜 조회")
     public ResponseEntity<UserResponseDto.dayEventList> getDayEventList(@RequestBody UserRequestDto.dayEventList requestDto){
         return ResponseEntity.ok(userService.getDayEventList(requestDto));

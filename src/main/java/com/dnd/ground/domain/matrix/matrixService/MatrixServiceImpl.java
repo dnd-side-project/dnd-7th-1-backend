@@ -57,7 +57,7 @@ public class MatrixServiceImpl implements MatrixService {
         LocalDateTime start = user.getCreated();
         LocalDateTime end = LocalDateTime.now();
 
-        // [Tuple(닉네임, 이번주 누적 칸수)] 칸수 기준 내림차순 정렬
+        // [Tuple(닉네임, 이번주 누적 칸수, 프로필 path)] 칸수 기준 내림차순 정렬
         List<Tuple> matrixCount = exerciseRecordRepository.findMatrixCount(userAndFriends, start, end);
 
         // 랭킹 계산[랭킹, 닉네임, 칸의 수]
@@ -82,11 +82,11 @@ public class MatrixServiceImpl implements MatrixService {
 
         // 유저의 닉네임과 영역의 수 대입
         areaRankings.add(new UserResponseDto.Ranking(1, user.getNickname(),
-                (long) matrixRepository.findMatrixSetByRecords(exerciseRecordRepository.findRecord(user.getId(), start, end)).size()));
+                (long) matrixRepository.findMatrixSetByRecords(exerciseRecordRepository.findRecord(user.getId(), start, end)).size(), user.getPicturePath()));
 
         // 친구들의 닉네임과 영역의 수 대입
         friends.forEach(f -> areaRankings.add(new UserResponseDto.Ranking(1, f.getNickname(),
-                (long) matrixRepository.findMatrixSetByRecords(exerciseRecordRepository.findRecord(f.getId(), start, end)).size())));
+                (long) matrixRepository.findMatrixSetByRecords(exerciseRecordRepository.findRecord(f.getId(), start, end)).size(), f.getPicturePath())));
 
         // 랭킹 계산 후 반환
         return new RankResponseDto.Area(calculateUserAreaRank(areaRankings, user));
@@ -102,7 +102,8 @@ public class MatrixServiceImpl implements MatrixService {
                     new UserResponseDto.Ranking(
                             1,
                             m.getNickname(),
-                            (long) matrixRepository.findMatrixSetByRecords(exerciseRecordRepository.findRecord(m.getId(), start, end)).size())
+                            (long) matrixRepository.findMatrixSetByRecords(exerciseRecordRepository.findRecord(m.getId(), start, end)).size(),
+                            m.getPicturePath())
             );
         }
 
@@ -122,7 +123,7 @@ public class MatrixServiceImpl implements MatrixService {
             for (Tuple info : matrixCount) {
                 if (Objects.equals(info.get(1), matrixNumber)) {  // 전 유저와 칸수가 같다면 랭크 유지
                     matrixRankings.add(new UserResponseDto.Ranking(rank, (String) info.get(0),
-                            (Long) info.get(1)));
+                            (Long) info.get(1), (String) info.get(2)));
                     count += 1;
                     continue;
                 }
@@ -130,20 +131,20 @@ public class MatrixServiceImpl implements MatrixService {
                 count += 1;
                 rank = count;
                 matrixRankings.add(new UserResponseDto.Ranking(rank, (String) info.get(0),
-                        (Long) info.get(1)));
+                        (Long) info.get(1), (String) info.get(2)));
                 matrixNumber = (Long) info.get(1);  // 칸 수 update!
             }
             rank += 1;
             // 나머지 0점인 유저들 추가
             for (int i = count; i < member.size(); i++) {
-                matrixRankings.add(new UserResponseDto.Ranking(rank, member.get(i).getNickname(), 0L));
+                matrixRankings.add(new UserResponseDto.Ranking(rank, member.get(i).getNickname(), 0L, member.get(i).getPicturePath()));
             }
         }
 
         // 전부다 0점이라면
         else {
             for (int i = count; i < member.size(); i++) {
-                matrixRankings.add(new UserResponseDto.Ranking(rank, member.get(i).getNickname(), 0L));
+                matrixRankings.add(new UserResponseDto.Ranking(rank, member.get(i).getNickname(), 0L, member.get(i).getPicturePath()));
             }
         }
 
@@ -191,11 +192,11 @@ public class MatrixServiceImpl implements MatrixService {
                     // 유저 찾았으면 저장해둠
                     if (Objects.equals((String)info.get(0), user.getNickname())) {
                         matrixRankings.add(0, new UserResponseDto.Ranking(rank, (String) info.get(0),
-                                (Long) info.get(1)));
+                                (Long) info.get(1), user.getPicturePath()));
                     }
 
                     matrixRankings.add(new UserResponseDto.Ranking(rank, (String) info.get(0),
-                            (Long) info.get(1)));
+                            (Long) info.get(1), (String) info.get(2)));
                     count += 1;
                     continue;
                 }
@@ -207,11 +208,11 @@ public class MatrixServiceImpl implements MatrixService {
                 // 유저 찾았으면 저장해둠
                 if (Objects.equals((String)info.get(0), user.getNickname())) {
                     matrixRankings.add(0, new UserResponseDto.Ranking(rank, (String) info.get(0),
-                            (Long) info.get(1)));
+                            (Long) info.get(1), user.getPicturePath()));
                 }
 
                 matrixRankings.add(new UserResponseDto.Ranking(rank, (String) info.get(0),
-                        (Long) info.get(1)));
+                        (Long) info.get(1), (String) info.get(2)));
                 matrixNumber = (Long) info.get(1);  // 칸 수 update!
             }
             rank = count+1;
@@ -220,18 +221,18 @@ public class MatrixServiceImpl implements MatrixService {
                 // 유저 찾았으면 저장해둠
                 if (Objects.equals(member.get(i).getNickname(), user.getNickname())) {
                     matrixRankings.add(0, new UserResponseDto.Ranking(rank, user.getNickname(),
-                            0L));
+                            0L, user.getPicturePath()));
                 }
-                matrixRankings.add(new UserResponseDto.Ranking(rank, member.get(i).getNickname(), 0L));
+                matrixRankings.add(new UserResponseDto.Ranking(rank, member.get(i).getNickname(), 0L,member.get(i).getPicturePath()));
             }
         }
 
         // 전부다 0점이라면
         else {
             // 맨앞 유저 추가
-            matrixRankings.add(new UserResponseDto.Ranking(rank, user.getNickname(), 0L));
+            matrixRankings.add(new UserResponseDto.Ranking(rank, user.getNickname(), 0L, user.getPicturePath()));
             for (int i = count; i < member.size(); i++) {
-                matrixRankings.add(new UserResponseDto.Ranking(rank, member.get(i).getNickname(), 0L));
+                matrixRankings.add(new UserResponseDto.Ranking(rank, member.get(i).getNickname(), 0L, member.get(i).getPicturePath()));
             }
         }
 
@@ -254,7 +255,7 @@ public class MatrixServiceImpl implements MatrixService {
 
                 // 유저 찾았으면 저장해둠
                 if (Objects.equals(areaRankings.get(i).getNickname(), user.getNickname())) {
-                    areaRankings.add(0, new UserResponseDto.Ranking(rank, user.getNickname(), areaRankings.get(i).getScore()));
+                    areaRankings.add(0, new UserResponseDto.Ranking(rank, user.getNickname(), areaRankings.get(i).getScore(), user.getPicturePath()));
                     i += 1;
                     areaRankings.get(i).setRank(rank);
                     areaNumber = areaRankings.get(i).getScore();
@@ -271,7 +272,7 @@ public class MatrixServiceImpl implements MatrixService {
 
             // 유저 찾았으면 저장해둠
             if (Objects.equals(areaRankings.get(i).getNickname(), user.getNickname())) {
-                areaRankings.add(0, new UserResponseDto.Ranking(rank, user.getNickname(), areaRankings.get(i).getScore()));
+                areaRankings.add(0, new UserResponseDto.Ranking(rank, user.getNickname(), areaRankings.get(i).getScore(), user.getPicturePath()));
                 i += 1;
                 areaRankings.get(i).setRank(rank);
                 areaNumber = areaRankings.get(i).getScore();
