@@ -8,8 +8,8 @@ import org.springframework.http.HttpStatus;
  * @description 에러 코드 구현체
  * @author  박찬호
  * @since   2022-08-24
- * @updated 1. 에러 코드 추가 (NOT_SIGNUP_USER)
- *          -2022.09.25 박찬호
+ * @updated 1. 에러 코드 추가 (NOT_FOUND_FRIEND_REQUEST)
+ *          -2022.10.10 박찬호
  */
 
 @RequiredArgsConstructor
@@ -25,6 +25,8 @@ public enum CommonErrorCode implements ErrorCode {
     NOT_FOUND_USER_CHALLENGE(HttpStatus.BAD_REQUEST, "해당 유저의 챌린지 관련 기록이 없습니다."),
 
     NOT_CHANGE_MASTER_STATUS(HttpStatus.BAD_REQUEST, "주최자의 상태를 변경할 수 없습니다."),
+
+    NOT_FOUND_FRIEND_REQUEST(HttpStatus.BAD_REQUEST, "친구 요청 기록이 없습니다."),
 
     ACCESS_DENIED(HttpStatus.FORBIDDEN, "권한이 없습니다."),
     ACCESS_TOKEN_EXPIRED(HttpStatus.FORBIDDEN, "액세스 토큰이 만료 되었습니다."),

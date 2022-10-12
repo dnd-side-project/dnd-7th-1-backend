@@ -1,8 +1,10 @@
 package com.dnd.ground.domain.friend.dto;
 
 import com.dnd.ground.domain.challenge.dto.ChallengeResponseDto;
+import com.dnd.ground.domain.friend.FriendStatus;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.annotations.ApiModelProperty;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -14,7 +16,8 @@ import java.util.List;
  * @description 친구와 관련한 정보 조회용 Response DTO
  * @author  박찬호
  * @since   2022-08-02
- * @updated 1. 프로필 사진 추가 - 2022-10-10 박세헌
+ * @updated 1.친구 요청에 대한 응답 처리 결과 반환용 DTO 생성 (ResponseResult)
+ *          - 2022.10.10 박찬호
  */
 
 @Data @Builder
@@ -76,6 +79,19 @@ public class FriendResponseDto {
 
         @ApiModelProperty(value="프로필 사진 URI(카카오 프로필 사용 시 kakao/카카오회원번호)", example="http:\\/\\/k.kakaocdn.net\\/dn\\/uQVeo\\/btrLgESJyjg\\/Pff3k36lRWkQ98ebAlexv1\\/img_640x640.jpg")
         private String picturePath;
+    }
+
+    /*친구 요청 수락, 거절 등에 대한 결과*/
+    @Data @AllArgsConstructor
+    static public class ResponseResult {
+        @ApiModelProperty(value = "회원 닉네임(요청받은 사람)", example = "NickA")
+        private String userNickname;
+
+        @ApiModelProperty(value = "친구 닉네임(요청한 사람)", example = "NickB")
+        private String friendNickname;
+
+        @ApiModelProperty(value = "변경된 상태(결과: Accept, Reject)", example = "Accept")
+        private FriendStatus status;
     }
 
 }

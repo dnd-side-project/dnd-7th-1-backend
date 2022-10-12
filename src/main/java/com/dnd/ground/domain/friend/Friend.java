@@ -1,23 +1,22 @@
 package com.dnd.ground.domain.friend;
 
 import com.dnd.ground.domain.user.User;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import javax.persistence.*;
 
 /**
  * @description 친구 엔티티
  * @author  박찬호
- * @since   2022-07-28
- * @updated 2022-07-28 / 엔티티 생성
+ * @since   2022.07.28
+ * @updated 1.상태 변경 메소드 추가
+ *          -2022.10.10 박찬호
  */
 
 @Getter
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Builder
 @Table(name="friend")
 @Entity
 public class Friend {
@@ -43,6 +42,11 @@ public class Friend {
         this.user = user;
         this.friend = friend;
         this.status = status;
+    }
+
+    //친구 상태 변경
+    public void updateStatus(FriendStatus status) {
+        this.status=status;
     }
 
 }
