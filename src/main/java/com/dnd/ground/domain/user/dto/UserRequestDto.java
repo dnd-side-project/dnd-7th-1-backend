@@ -24,9 +24,17 @@ public class UserRequestDto {
     /*회원가입시 사용하는 DTO*/
     @Data
     static public class SignUp {
+        @ApiModelProperty(name = "유저의 닉네임", example = "NickA", required = true)
         private String nickname;
+
+        @ApiModelProperty(name = "친구 리스트(닉네임)", example = "[NickA]", required = true)
         private List<String> friends;
+
+        @ApiModelProperty(name = "카카오 리프레시 토큰", example = "2LqQd2jnW50rHbOyGyyKu_xNRv4p2Jri7wWsso7RCj11mgAAAYLKLqJq", required = true)
         private String kakaoRefreshToken;
+
+        @ApiModelProperty(name = "내 위치 공개", example = "true", required = true)
+        private Boolean isPublicRecord;
         //..필터 추가 예정
     }
 
