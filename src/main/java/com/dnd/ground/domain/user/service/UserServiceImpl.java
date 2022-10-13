@@ -32,7 +32,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -44,8 +43,8 @@ import static java.time.temporal.TemporalAdjusters.lastDayOfMonth;
  * @description 유저 서비스 클래스
  * @author  박세헌, 박찬호
  * @since   2022-08-01
- * @updated 1.FriendRepository의 쿼리 수정에 따른 코드 변경(친구 관계 조회)
- *          - 2022-10-10 박찬호
+ * @updated 1. 내 프로필 조회
+ *          - 2022-10-13 박세헌
  */
 
 @Slf4j
@@ -146,7 +145,7 @@ public class UserServiceImpl implements UserService{
     }
 
     /*회원 정보 조회(마이페이지)*/
-    public UserResponseDto.Profile getUserInfo(String nickname) {
+    public UserResponseDto.MyPage getUserInfo(String nickname) {
         User user = userRepository.findByNickname(nickname).orElseThrow(
                 () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
 
@@ -170,7 +169,7 @@ public class UserServiceImpl implements UserService{
         // 역대 누적 칸수
         Long allMatrixNumber = (long) matrixRepository.findMatrixByRecords(record).size();
 
-        return UserResponseDto.Profile.builder()
+        return UserResponseDto.MyPage.builder()
                 .nickname(user.getNickname())
                 .intro(user.getIntro())
                 .matrixNumber(matrixNumber)
@@ -410,5 +409,17 @@ public class UserServiceImpl implements UserService{
                 .stream()
                 .map(LocalDate::parse)
                 .collect(Collectors.toList()));
+    }
+
+    public UserResponseDto.Profile getUserProfile(String nickname){
+        User user = userRepository.findByNickname(nickname).orElseThrow(
+                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
+
+        return UserResponseDto.Profile.builder()
+                .nickname(user.getNickname())
+                .intro(user.getIntro())
+                .mail(user.getMail())
+                .picturePath(user.getPicturePath())
+                .build();
     }
 }

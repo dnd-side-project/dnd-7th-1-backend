@@ -20,7 +20,8 @@ import java.util.List;
  *              4. 랭킹 정보
  * @author  박세헌, 박찬호
  * @since   2022-08-08
- * @updated 1. 프로필 사진 추가 - 2022-10-10 박세헌
+ * @updated 1. 내 프로필 dto 생성
+ *  *          - 2022-10-13 박세헌
  */
 
 @Data
@@ -42,9 +43,9 @@ public class UserResponseDto {
         private String nickname;
     }
     
-    /*회원의 정보 관련 DTO*/
+    /*마이페이지 관련 DTO*/
     @Data @Builder
-    static public class Profile {
+    static public class MyPage {
         @ApiModelProperty(value = "닉네임", example = "NickA")
         private String nickname;
 
@@ -65,6 +66,22 @@ public class UserResponseDto {
 
         @ApiModelProperty(value = "역대 누적 칸 수", example = "3000")
         private Long allMatrixNumber;
+
+        @ApiModelProperty(value="프로필 사진 URI(카카오 프로필 사용 시 kakao/카카오회원번호)", example="http:\\/\\/k.kakaocdn.net\\/dn\\/uQVeo\\/btrLgESJyjg\\/Pff3k36lRWkQ98ebAlexv1\\/img_640x640.jpg")
+        private String picturePath;
+    }
+
+    /*유저의 프로필 관련 DTO*/
+    @Data @Builder
+    static public class Profile {
+        @ApiModelProperty(value = "닉네임", example = "NickA")
+        private String nickname;
+
+        @ApiModelProperty(value = "소개 메시지", example = "소개 메시지 예시입니다.")
+        private String intro;
+
+        @ApiModelProperty(value = "유저 메일", example = "A-mail@gmail.com")
+        private String mail;
 
         @ApiModelProperty(value="프로필 사진 URI(카카오 프로필 사용 시 kakao/카카오회원번호)", example="http:\\/\\/k.kakaocdn.net\\/dn\\/uQVeo\\/btrLgESJyjg\\/Pff3k36lRWkQ98ebAlexv1\\/img_640x640.jpg")
         private String picturePath;
