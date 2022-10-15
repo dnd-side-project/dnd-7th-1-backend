@@ -23,7 +23,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 public interface UserController {
     ResponseEntity<?> home(@RequestParam("nickName") String nickName);
-    ResponseEntity<UserResponseDto.Profile> getUserInfo(@RequestParam("nickname") String nickname);
+    ResponseEntity<UserResponseDto.MyPage> getUserInfo(@RequestParam("nickname") String nickname);
     ResponseEntity<FriendResponseDto.FriendProfile> getUserProfile(
             @ApiParam(value = "회원 닉네임", required = true) @RequestParam("user") String userNickname,
             @ApiParam(value = "대상 닉네임", required = true) @RequestParam("friend") String friendNickname);
@@ -42,4 +42,6 @@ public interface UserController {
     ResponseEntity<Boolean> getDetailMap(@RequestBody RecordRequestDto.Message requestDto);
 
     ResponseEntity<UserResponseDto.dayEventList> getDayEventList(@RequestBody UserRequestDto.dayEventList requestDto);
+
+    ResponseEntity<UserResponseDto.Profile> getMyProfile(@RequestParam String nickname);
 }

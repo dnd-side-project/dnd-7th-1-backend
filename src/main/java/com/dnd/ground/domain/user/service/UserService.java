@@ -3,12 +3,10 @@ package com.dnd.ground.domain.user.service;
 import com.dnd.ground.domain.exerciseRecord.dto.RecordRequestDto;
 import com.dnd.ground.domain.exerciseRecord.dto.RecordResponseDto;
 import com.dnd.ground.domain.friend.dto.FriendResponseDto;
-import com.dnd.ground.domain.user.User;
 import com.dnd.ground.domain.user.dto.*;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.multipart.MultipartFile;
-
 import javax.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
 
@@ -22,7 +20,7 @@ import java.time.LocalDateTime;
 
 public interface UserService {
     HomeResponseDto showHome(String nickname);
-    UserResponseDto.Profile getUserInfo(String nickname);
+    UserResponseDto.MyPage getUserInfo(String nickname);
 
     FriendResponseDto.FriendProfile getUserProfile(String userNickname, String friendNickname);
     UserResponseDto.ActivityRecordResponseDto getActivityRecord(UserRequestDto.LookUp requestDto);
@@ -37,4 +35,6 @@ public interface UserService {
     ResponseEntity<Boolean> editUserProfile(MultipartFile multipartFile, UserRequestDto.Profile requestDto);
 
     UserResponseDto.dayEventList getDayEventList(UserRequestDto.dayEventList requestDto);
+
+    UserResponseDto.Profile getUserProfile(String nickname);
 }

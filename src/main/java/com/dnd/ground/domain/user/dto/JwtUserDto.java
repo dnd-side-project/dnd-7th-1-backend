@@ -11,7 +11,8 @@ import lombok.NoArgsConstructor;
  * @description 카카오 정보를 받기 위한 dto
  * @author  박세헌
  * @since   2022-08-24
- * @updated 1. api 명세 추가 - 2022-09-13 박세헌
+ * @updated 내 위치 공개 변수 추가
+ *          - 2022-10-13 박세헌
  */
 
 @Data
@@ -37,4 +38,7 @@ public class JwtUserDto {
 
     @ApiModelProperty(value="카카오로부터 받은 리프레시 토큰", example="2LqQd2jnW50rHbOyGyyKu_xNRv4p2Jri7wWsso7RCj11mgAAAYLKLqJq")
     private String kakaoRefreshToken;
+
+    @ApiModelProperty(name = "내 위치 공개", example = "true", required = true)
+    private Boolean isPublicRecord;
 }

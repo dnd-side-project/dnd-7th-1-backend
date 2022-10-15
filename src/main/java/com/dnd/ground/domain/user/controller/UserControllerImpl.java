@@ -21,8 +21,8 @@ import org.springframework.web.multipart.MultipartFile;
  * @description 회원 관련 컨트롤러 구현체
  * @author  박세헌, 박찬호
  * @since   2022-08-02
- * @updated 운동 기록 날짜 조회 api
- *           - 2022-09-24 박세헌
+ * @updated 1. 내 프로필 조회
+ *  *         - 2022-10-13 박세헌
  */
 
 @Api(tags = "유저")
@@ -46,7 +46,7 @@ public class UserControllerImpl implements UserController {
 
     @GetMapping("/info")
     @Operation(summary = "회원 정보 조회(마이페이지)", description = "회원의 닉네임, 소개 메시지 정보 (추후 프로필 등 추가 예정)")
-    public ResponseEntity<UserResponseDto.Profile> getUserInfo(@RequestParam("nickname") String nickname) {
+    public ResponseEntity<UserResponseDto.MyPage> getUserInfo(@RequestParam("nickname") String nickname) {
         return ResponseEntity.ok().body(userService.getUserInfo(nickname));
     }
 
@@ -115,5 +115,11 @@ public class UserControllerImpl implements UserController {
     @Operation(summary = "기록이 있는 날짜 조회", description = "기록이 있는 날짜 조회")
     public ResponseEntity<UserResponseDto.dayEventList> getDayEventList(@RequestBody UserRequestDto.dayEventList requestDto){
         return ResponseEntity.ok(userService.getDayEventList(requestDto));
+    }
+
+    @GetMapping("/info/profile")
+    @Operation(summary = "내 프로필 조회", description = "내 프로필 조회")
+    public ResponseEntity<UserResponseDto.Profile> getMyProfile(@RequestParam String nickname){
+        return ResponseEntity.ok(userService.getUserProfile(nickname));
     }
 }

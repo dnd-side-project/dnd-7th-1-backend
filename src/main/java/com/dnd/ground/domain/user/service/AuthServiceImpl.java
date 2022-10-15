@@ -36,12 +36,8 @@ import java.util.regex.Pattern;
  * @description 회원의 인증/인가 및 회원 정보 관련 서비스 구현체
  * @author  박세헌, 박찬호
  * @since   2022-09-07
- * @updated 1.회원가입 로직 추가
- *          2022-09-12 박찬호
- * @updated 1.기존 유저인지 판별하는 API 추가 - 박찬호
- *          2.프로필 사진 변경하는 기능 구현 - 박찬호
- *          3.닉네임 특수 문자 제외 - 박세헌
- *          2022-09-12
+ * @updated 회원 가입시 내위치 공개 허용 변수 추가
+ *          - 2022-10-13 박세헌
  */
 
 @Slf4j
@@ -67,7 +63,7 @@ public class AuthServiceImpl implements AuthService, UserDetailsService {
                 .longitude(null)
                 .isShowMine(true)
                 .isShowFriend(true)
-                .isPublicRecord(true)
+                .isPublicRecord(user.getIsPublicRecord())
                 .pictureName(user.getPictureName())
                 .picturePath(user.getPicturePath())
                 .build());
@@ -85,6 +81,7 @@ public class AuthServiceImpl implements AuthService, UserDetailsService {
                 .id(kakaoUserInfo.getId())
                 .kakaoRefreshToken(request.getKakaoRefreshToken())
                 .nickname(request.getNickname())
+                .isPublicRecord(request.getIsPublicRecord())
                 .mail(kakaoUserInfo.getEmail())
                 .pictureName(kakaoUserInfo.getPictureName())
                 .picturePath(kakaoUserInfo.getPicturePath())
