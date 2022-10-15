@@ -5,6 +5,10 @@ import com.dnd.ground.domain.exerciseRecord.dto.RecordResponseDto;
 import com.dnd.ground.domain.friend.dto.FriendResponseDto;
 import com.dnd.ground.domain.user.dto.*;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.web.multipart.MultipartFile;
+import javax.servlet.http.HttpServletRequest;
+import java.time.LocalDateTime;
 
 /**
  * @description 회원 서비스 인터페이스
@@ -28,7 +32,7 @@ public interface UserService {
     Boolean changeFilterRecord(String nickname);
 
     ResponseEntity<Boolean> editRecordMessage(RecordRequestDto.Message requestDto);
-    ResponseEntity<Boolean> editUserProfile(UserRequestDto.Profile requestDto);
+    ResponseEntity<Boolean> editUserProfile(MultipartFile multipartFile, UserRequestDto.Profile requestDto);
 
     UserResponseDto.dayEventList getDayEventList(UserRequestDto.dayEventList requestDto);
 

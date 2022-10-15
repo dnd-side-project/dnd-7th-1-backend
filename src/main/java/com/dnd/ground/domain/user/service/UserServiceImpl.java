@@ -21,6 +21,7 @@ import com.dnd.ground.domain.user.dto.*;
 import com.dnd.ground.domain.user.repository.UserRepository;
 import com.dnd.ground.global.exception.CNotFoundException;
 import com.dnd.ground.global.exception.CommonErrorCode;
+import com.dnd.ground.global.util.AmazonS3Service;
 import lombok.*;
 
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +29,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -62,6 +65,8 @@ public class UserServiceImpl implements UserService{
     private final FriendRepository friendRepository;
     private final MatrixRepository matrixRepository;
     private final MatrixService matrixService;
+    private final AmazonS3Service amazonS3Service;
+    private final AuthService authService;
 
     public HomeResponseDto showHome(String nickname){
         User user = userRepository.findByNickname(nickname).orElseThrow(
@@ -378,16 +383,36 @@ public class UserServiceImpl implements UserService{
 
     /* 회원 프로필 수정 */
     @Transactional
-    public ResponseEntity<Boolean> editUserProfile(UserRequestDto.Profile requestDto){
-
+    public ResponseEntity<Boolean> editUserProfile(MultipartFile file, UserRequestDto.Profile requestDto){
         String originalNick = requestDto.getOriginalNick();
         String editNick = requestDto.getEditNick();
         String intro = requestDto.getIntro();
 
         User user = userRepository.findByNickname(originalNick).orElseThrow(
                 () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
+
+        String pictureName;
+        String picturePath;
+
+        // 기본 이미지로 변경
+        if (requestDto.getIsBasic()){
+            amazonS3Service.deleteFile(user.getPictureName());
+            pictureName = "user/profile/default_profile.png";
+            picturePath = "https://dnd-ground-bucket.s3.ap-northeast-2.amazonaws.com/user/profile/default_profile.png";
+            user.updatePicture(pictureName, picturePath);
+        }
+        else{
+            // 기본 이미지가 아닌 유저의 사진으로 변경
+            if (!file.isEmpty()){
+                amazonS3Service.deleteFile(user.getPictureName());
+                Map<String, String> fileInfo = amazonS3Service.uploadToS3(file, "user/profile", createFileName(file.getOriginalFilename()));
+                pictureName = fileInfo.get("fileName");
+                picturePath = fileInfo.get("filePath");
+                user.updatePicture(pictureName, picturePath);
+            }
+        }
         user.updateProfile(editNick, intro);
-        return new ResponseEntity(true, HttpStatus.OK);
+        return authService.issuanceTokenByNickname(user.getNickname());
     }
 
     public UserResponseDto.dayEventList getDayEventList(UserRequestDto.dayEventList requestDto){
@@ -411,6 +436,17 @@ public class UserServiceImpl implements UserService{
                 .collect(Collectors.toList()));
     }
 
+    private String createFileName(String fileName) {
+        return UUID.randomUUID().toString().concat(getFileExtension(fileName));
+    }
+
+    private String getFileExtension(String fileName) {
+        try {
+            return fileName.substring(fileName.lastIndexOf("."));
+        } catch (StringIndexOutOfBoundsException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "잘못된 형식의 파일(" + fileName + ") 입니다.");
+        }
+        
     public UserResponseDto.Profile getUserProfile(String nickname){
         User user = userRepository.findByNickname(nickname).orElseThrow(
                 () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));

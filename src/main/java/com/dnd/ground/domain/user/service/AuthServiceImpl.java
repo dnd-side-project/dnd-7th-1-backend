@@ -188,4 +188,25 @@ public class AuthServiceImpl implements AuthService, UserDetailsService {
                 .headers(headers)
                 .body(true);
     }
+    /* 새로운 닉네임으로 토큰 재발급 */
+    public ResponseEntity<Boolean> issuanceTokenByNickname(String nickname){
+        String accessToken = JwtUtil.makeAccessToken(nickname);
+        String refreshToken = JwtUtil.makeRefreshToken(nickname);
+
+        User user = userRepository.findByNickname(nickname).orElseThrow(
+                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Authorization", "Bearer " + accessToken);
+        headers.add("Refresh-Token", "Bearer " + refreshToken);
+
+        user.updateRefreshToken(refreshToken);
+        userRepository.save(user);
+
+        return ResponseEntity
+                .ok()
+                .headers(headers)
+                .body(true);
+    }
+
 }
