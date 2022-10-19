@@ -188,13 +188,6 @@ public class MatrixServiceImpl implements MatrixService {
             Long matrixNumber = (Long) matrixCount.get(0).get(1);  // 맨 처음 user의 칸 수
             for (Tuple info : matrixCount) {
                 if (Objects.equals(info.get(1), matrixNumber)) {  // 전 유저와 칸수가 같다면 랭크 유지
-
-                    // 유저 찾았으면 저장해둠
-                    if (Objects.equals((String)info.get(0), user.getNickname())) {
-                        matrixRankings.add(0, new UserResponseDto.Ranking(rank, (String) info.get(0),
-                                (Long) info.get(1), user.getPicturePath()));
-                    }
-
                     matrixRankings.add(new UserResponseDto.Ranking(rank, (String) info.get(0),
                             (Long) info.get(1), (String) info.get(2)));
                     count += 1;
@@ -205,12 +198,6 @@ public class MatrixServiceImpl implements MatrixService {
                 count += 1;
                 rank = count;
 
-                // 유저 찾았으면 저장해둠
-                if (Objects.equals((String)info.get(0), user.getNickname())) {
-                    matrixRankings.add(0, new UserResponseDto.Ranking(rank, (String) info.get(0),
-                            (Long) info.get(1), user.getPicturePath()));
-                }
-
                 matrixRankings.add(new UserResponseDto.Ranking(rank, (String) info.get(0),
                         (Long) info.get(1), (String) info.get(2)));
                 matrixNumber = (Long) info.get(1);  // 칸 수 update!
@@ -218,11 +205,6 @@ public class MatrixServiceImpl implements MatrixService {
             rank = count+1;
             // 나머지 0점인 유저들 추가
             for (int i = count; i < member.size(); i++) {
-                // 유저 찾았으면 저장해둠
-                if (Objects.equals(member.get(i).getNickname(), user.getNickname())) {
-                    matrixRankings.add(0, new UserResponseDto.Ranking(rank, user.getNickname(),
-                            0L, user.getPicturePath()));
-                }
                 matrixRankings.add(new UserResponseDto.Ranking(rank, member.get(i).getNickname(), 0L,member.get(i).getPicturePath()));
             }
         }
@@ -230,7 +212,6 @@ public class MatrixServiceImpl implements MatrixService {
         // 전부다 0점이라면
         else {
             // 맨앞 유저 추가
-            matrixRankings.add(new UserResponseDto.Ranking(rank, user.getNickname(), 0L, user.getPicturePath()));
             for (int i = count; i < member.size(); i++) {
                 matrixRankings.add(new UserResponseDto.Ranking(rank, member.get(i).getNickname(), 0L, member.get(i).getPicturePath()));
             }
