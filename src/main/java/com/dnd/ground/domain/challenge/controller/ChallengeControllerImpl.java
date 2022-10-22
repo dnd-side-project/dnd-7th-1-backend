@@ -33,7 +33,7 @@ public class ChallengeControllerImpl implements ChallengeController {
     private final ChallengeService challengeService;
 
     @PostMapping("/")
-    @Operation(summary = "챌린지 생성", description = "챌린지 생성")
+    @Operation(summary = "챌린지 생성", description = "챌린지 생성(Type: 영역 넓히기(Widen), 칸 누적하기(Accumulate)")
     public ResponseEntity<ChallengeCreateResponseDto> createChallenge(@RequestBody ChallengeCreateRequestDto challengeCreateRequestDto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(challengeService.createChallenge(challengeCreateRequestDto));
     }
