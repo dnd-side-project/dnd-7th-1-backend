@@ -25,10 +25,6 @@ import java.util.Set;
 @AllArgsConstructor
 public class ChallengeCreateRequestDto {
 
-    @NotNull(message = "UUID가 필요합니다.")
-    @ApiModelProperty(value="UUID", example="11ed1e42ae1af37a895b2f2416025f66", required = true)
-    private String uuid;
-
     @NotNull(message = "주최자의 닉네임이 필요합니다.")
     @ApiModelProperty(value="닉네임", example="NickA", required = true)
     private String nickname;

@@ -78,4 +78,11 @@ public class AuthController {
     public ResponseEntity<Boolean> isOriginalUser(HttpServletRequest request) {
         return ResponseEntity.ok().body(authService.isOriginalUser(request));
     }
+
+    @GetMapping("/kakao/friend")
+    @Operation(summary = "카카오 엑세스 토큰으로 카카오 친구 불러오기", description = "검수 전이라 팀 멤버들만 친구로 조회할 수 있음.\n현재 페이징 적용X")
+    public ResponseEntity<?> getKakaoFriends(@RequestHeader("Kakao-Access-Token") String token,
+                                 @RequestParam("offset") Integer offset) {
+        return ResponseEntity.ok(kakaoService.getKakaoFriends(token, offset));
+    }
 }

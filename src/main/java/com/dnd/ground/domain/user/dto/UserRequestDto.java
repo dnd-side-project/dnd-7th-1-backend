@@ -3,9 +3,7 @@ package com.dnd.ground.domain.user.dto;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
-import org.springframework.web.multipart.MultipartFile;
 
-import javax.persistence.Column;
 import javax.validation.constraints.NotNull;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -15,8 +13,8 @@ import java.util.List;
  * @description 회원 관련 Request Dto
  * @author  박세헌, 박찬호
  * @since   2022-08-18
- * @updated 운동 기록 날짜 조회시 사용하는 dto
- *          - 2022-09-24 박세헌
+ * @updated 1.회원 정보 수정 구현 완료
+ *          - 2022-10-22 박찬호
  */
 
 @Data
@@ -59,16 +57,16 @@ public class UserRequestDto {
 
         @NotNull
         @ApiModelProperty(name = "유저의 원래 닉네임", example = "NickA", required = true)
-        private String originalNick;
+        private String originNickname;
 
         @NotNull
         @ApiModelProperty(name = "수정한 닉네임", example = "NickB", required = true)
-        private String editNick;
+        private String editNickname;
 
         @ApiModelProperty(name = "유저의 소개글", example = "소개글 예시")
         private String intro;
 
-        @ApiModelProperty(name = "네모두 기본 사진으로 하는지", example = "false")
+        @ApiModelProperty(name = "네모두 기본 사진 변경 여부", example = "false")
         private Boolean isBasic;
     }
 

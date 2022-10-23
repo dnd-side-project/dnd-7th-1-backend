@@ -5,17 +5,14 @@ import com.dnd.ground.domain.exerciseRecord.dto.RecordResponseDto;
 import com.dnd.ground.domain.friend.dto.FriendResponseDto;
 import com.dnd.ground.domain.user.dto.*;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.multipart.MultipartFile;
-import javax.servlet.http.HttpServletRequest;
-import java.time.LocalDateTime;
 
 /**
  * @description 회원 서비스 인터페이스
  * @author  박세헌, 박찬호
  * @since   2022-08-01
- * @updated 운동 기록 날짜 조회 함수 추가
- *          - 2022-09-24 박세헌
+ * @updated 1.회원 정보 수정 구현 완료
+ *          - 2022-10-22 박찬호
  */
 
 public interface UserService {
@@ -32,7 +29,7 @@ public interface UserService {
     Boolean changeFilterRecord(String nickname);
 
     ResponseEntity<Boolean> editRecordMessage(RecordRequestDto.Message requestDto);
-    ResponseEntity<Boolean> editUserProfile(MultipartFile multipartFile, UserRequestDto.Profile requestDto);
+    ResponseEntity<UserResponseDto.UInfo> editUserProfile(MultipartFile multipartFile, UserRequestDto.Profile requestDto);
 
     UserResponseDto.dayEventList getDayEventList(UserRequestDto.dayEventList requestDto);
 
