@@ -190,13 +190,6 @@ public class ExerciseRecordServiceImpl implements ExerciseRecordService {
         for (Tuple info : stepCount) {
             // 전 유저와 걸음 수가 같다면 랭크 유지
             if (Objects.equals(info.get(1), matrixNumber)) {
-
-                // 유저 찾았으면 저장해둠
-                if (Objects.equals(info.get(0), user.getNickname())) {
-                    stepRankings.add(0, new UserResponseDto.Ranking(rank, (String) info.get(0),
-                            (Long) info.get(1), user.getPicturePath()));
-                }
-
                 stepRankings.add(new UserResponseDto.Ranking(rank, (String) info.get(0),
                         (Long) info.get(1), (String) info.get(2)));
                 count += 1;
@@ -206,12 +199,6 @@ public class ExerciseRecordServiceImpl implements ExerciseRecordService {
             // 전 유저보다 걸음수가 작다면 앞에 있는 사람수 만큼이 자신 랭킹
             count += 1;
             rank = count;
-
-            // 유저 찾았으면 저장해둠
-            if (Objects.equals(info.get(0), user.getNickname())) {
-                stepRankings.add(0, new UserResponseDto.Ranking(rank, (String) info.get(0),
-                        (Long) info.get(1), user.getPicturePath()));
-            }
             stepRankings.add(new UserResponseDto.Ranking(rank, (String) info.get(0),
                     (Long) info.get(1), (String) info.get(2)));
             matrixNumber = (Long) info.get(1);  // 걸음 수 update!
