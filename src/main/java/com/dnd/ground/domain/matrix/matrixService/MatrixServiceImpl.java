@@ -233,16 +233,6 @@ public class MatrixServiceImpl implements MatrixService {
 
             // 전 유저와 영역 수가 같다면 랭크 유지
             if (Objects.equals(areaRankings.get(i).getScore(), areaNumber)){
-
-                // 유저 찾았으면 저장해둠
-                if (Objects.equals(areaRankings.get(i).getNickname(), user.getNickname())) {
-                    areaRankings.add(0, new UserResponseDto.Ranking(rank, user.getNickname(), areaRankings.get(i).getScore(), user.getPicturePath()));
-                    i += 1;
-                    areaRankings.get(i).setRank(rank);
-                    areaNumber = areaRankings.get(i).getScore();
-                    continue;
-                }
-
                 areaRankings.get(i).setRank(rank);
                 count += 1;
                 continue;
@@ -250,15 +240,6 @@ public class MatrixServiceImpl implements MatrixService {
             // 전 유저보다 영역수 가 작다면 앞에 있는 사람수 만큼이 자신 랭킹
             count += 1;
             rank = count;
-
-            // 유저 찾았으면 저장해둠
-            if (Objects.equals(areaRankings.get(i).getNickname(), user.getNickname())) {
-                areaRankings.add(0, new UserResponseDto.Ranking(rank, user.getNickname(), areaRankings.get(i).getScore(), user.getPicturePath()));
-                i += 1;
-                areaRankings.get(i).setRank(rank);
-                areaNumber = areaRankings.get(i).getScore();
-                continue;
-            }
 
             areaRankings.get(i).setRank(rank);
             areaNumber = areaRankings.get(i).getScore();  // 영역 수 update!
