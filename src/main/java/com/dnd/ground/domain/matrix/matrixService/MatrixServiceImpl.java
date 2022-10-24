@@ -211,10 +211,7 @@ public class MatrixServiceImpl implements MatrixService {
 
         // 전부다 0점이라면
         else {
-<<<<<<< HEAD
-=======
             // 맨앞 유저 추가
->>>>>>> d35e3dc00f6a890565e834c2cbd71041fae4d492
             for (int i = count; i < member.size(); i++) {
                 matrixRankings.add(new UserResponseDto.Ranking(rank, member.get(i).getNickname(), 0L, member.get(i).getPicturePath()));
             }
