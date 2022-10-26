@@ -63,7 +63,7 @@ public interface ChallengeRepository extends JpaRepository<Challenge, Long> {
     List<Challenge> findChallengeInWait(@Param("user") User user);
 
     //챌린지 시작 시간이 start~end 사이인 챌린지 조회
-    @Query("select c from Challenge c inner join UserChallenge uc on uc.challenge = c where (uc.status='Progress' or uc.status='Done') " +
+    @Query("select c from Challenge c inner join UserChallenge uc on uc.challenge = c where (uc.status='Progress' or uc.status='Done' or uc.status='MasterDone') " +
             "and uc.user = :user and c.started between :start and :end")
     List<Challenge> findChallengesBetweenStartAndEnd(@Param("user") User user,
                                                      @Param("start") LocalDate start,

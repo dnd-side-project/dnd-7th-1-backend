@@ -36,8 +36,9 @@ import java.util.*;
 /**
  * @author 박찬호, 박세헌
  * @description 챌린지와 관련된 서비스의 역할을 분리한 구현체
- * @updated 1. 프로필 사진 추가 - 2022-10-10 박세헌
  * @since 2022-08-03
+ * @updated 1. 챌린지 삭제 구현
+ *          2022-10-26 박찬호
  */
 
 @Slf4j
@@ -78,10 +79,10 @@ public class ChallengeServiceImpl implements ChallengeService {
         //주최자의 챌린지 생성 과정
         int challengeCount = userChallengeRepository.findCountChallenge(master); //참여한 챌린지 개수 (챌린지 상태 상관X)
 
-        //챌린지가 3개 이상이면 챌린지 생성 거부
-        if (challengeCount >= 3) {
-            throw new CExceedChallengeException(CommonErrorCode.EXCEED_CHALLENGE, requestDto.getNickname());
-        }
+//        //챌린지가 4개 이상이면 챌린지 생성 거부
+//        if (challengeCount > 3) {
+//            throw new CExceedChallengeException(CommonErrorCode.EXCEED_CHALLENGE, requestDto.getNickname());
+//        }
 
         UserChallenge masterChallenge = userChallengeRepository.save(new UserChallenge(challenge, master, color[challengeCount]));
         masterChallenge.changeStatus(ChallengeStatus.Master);
@@ -93,10 +94,10 @@ public class ChallengeServiceImpl implements ChallengeService {
 
             challengeCount = userChallengeRepository.findCountChallenge(member);
 
-            //챌린지가 3개 이상이면 챌린지 생성 거부
-            if (challengeCount >= 3) {
-                throw new CExceedChallengeException(CommonErrorCode.EXCEED_CHALLENGE, nickname);
-            }
+//            //챌린지가 3개 이상이면 챌린지 생성 거부
+//            if (challengeCount > 3) {
+//                throw new CExceedChallengeException(CommonErrorCode.EXCEED_CHALLENGE, nickname);
+//            }
 
             userChallengeRepository.save(new UserChallenge(challenge, member, color[challengeCount]));
 
@@ -150,16 +151,20 @@ public class ChallengeServiceImpl implements ChallengeService {
             //Wait, Reject 상태의 유저 삭제
             countUser += userChallengeRepository.deleteUCByChallenge(challenge);
 
-            List<UserChallenge> userChallenge = userChallengeRepository.findUCByChallenge(challenge);
+            List<UserChallenge> userChallenges = userChallengeRepository.findUCByChallenge(challenge);
 
             //주최자만 남은 경우 챌린지와 주최자 삭제
-            if (userChallenge.size() == 1) {
-                userChallengeRepository.delete(userChallenge.get(0));
+            if (userChallenges.size() == 1) {
+                userChallengeRepository.delete(userChallenges.get(0));
                 challengeRepository.delete(challenge);
                 countDelete++;
             }
             //챌린지 진행 상태로 변경
             else {
+                for (UserChallenge userChallenge : userChallenges) {
+                    if (userChallenge.getStatus() != ChallengeStatus.Master)
+                        userChallenge.changeStatus(ChallengeStatus.Progress);
+                }
                 challenge.updateStatus(ChallengeStatus.Progress);
             }
         }
@@ -177,11 +182,18 @@ public class ChallengeServiceImpl implements ChallengeService {
 
         for (Challenge challenge : challenges) {
             //챌린지 완료
+
             challenge.updateStatus(ChallengeStatus.Done);
 
             //각 유저들도 완료 상태 변경
-            List<UserChallenge> userChallenge = userChallengeRepository.findUCByChallenge(challenge);
-            userChallenge.forEach(uc -> uc.changeStatus(ChallengeStatus.Done));
+            List<UserChallenge> userChallenges = userChallengeRepository.findUCByChallenge(challenge);
+
+            for (UserChallenge userChallenge : userChallenges) {
+                if (userChallenge.getStatus() == ChallengeStatus.Master)
+                    userChallenge.changeStatus(ChallengeStatus.MasterDone);
+                else
+                    userChallenge.changeStatus(ChallengeStatus.Done);
+            }
         }
 
         log.info("**챌린지 종료 메소드 실행** 현재 시간:{} | 종료된 챌린지 개수:{}", LocalDateTime.now(), challenges.size());
@@ -234,7 +246,7 @@ public class ChallengeServiceImpl implements ChallengeService {
                             .started(started)
                             .ended(started.plusDays(7 - started.getDayOfWeek().getValue()))
                             .totalCount(userChallengeRepository.findUCCount(challenge)) //챌린지에 참여하는 전체 인원 수
-                            .readyCount(userChallengeRepository.findUCWaitCount(challenge) + 1) //Progress 상태 회원 수 + 주최자
+                            .readyCount(userChallengeRepository.findUCWaitCount(challenge)) //Progress 상태 회원 수 + 주최자
                             .color(userChallengeRepository.findChallengeColor(user, challenge))
                             .picturePaths(picturePaths)
                             .build()
@@ -555,8 +567,8 @@ public class ChallengeServiceImpl implements ChallengeService {
     }
 
     /*챌린지 종류에 따른 랭킹 계산 메소드*/
-    public List<UserResponseDto.Ranking> calculateChallengeRanking(
-            Challenge challenge, List<User> members, LocalDate started, LocalDate ended, ChallengeType type) {
+    public List<UserResponseDto.Ranking> calculateChallengeRanking(Challenge challenge, List<User> members,
+                                                                   LocalDate started, LocalDate ended, ChallengeType type) {
 
         List<ExerciseRecord> records = new ArrayList<>();
         List<UserResponseDto.Ranking> rankings = new ArrayList<>();
@@ -580,5 +592,27 @@ public class ChallengeServiceImpl implements ChallengeService {
         }
 
         return rankings;
+    }
+
+    /*챌린지 삭제*/
+    public Boolean deleteChallenge(ChallengeRequestDto.CInfo request) {
+        User user = userRepository.findByNickname(request.getNickname()).orElseThrow(
+                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
+
+        Challenge challenge = challengeRepository.findByUuid(request.getUuid()).orElseThrow(
+                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_CHALLENGE));
+
+        UserChallenge userChallenge = userChallengeRepository.findByUserAndChallenge(user, challenge).orElseThrow(
+                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER_CHALLENGE));
+
+        //주최자만 삭제 가능.
+        if (userChallenge.getStatus() != ChallengeStatus.Master) {
+            return false;
+        } else {
+            List<UserChallenge> userChallenges = userChallengeRepository.findUCByChallenge(challenge);
+            userChallengeRepository.deleteAll(userChallenges);
+            challengeRepository.delete(challenge);
+            return true;
+        }
     }
 }
