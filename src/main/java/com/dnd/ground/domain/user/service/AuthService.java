@@ -16,8 +16,8 @@ import java.util.Map;
  * @description 회원의 인증/인가 및 회원 정보 관련 서비스 인터페이스
  * @author  박세헌, 박찬호
  * @since   2022-09-07
- * @updated 1.회원가입 로직 추가
- *          2022-09-12 박찬호
+ * @updated 1.회원 정보 수정 구현 완료
+ *          - 2022-10-22 박찬호
  */
 public interface AuthService {
     User save(JwtUserDto user);
@@ -30,4 +30,6 @@ public interface AuthService {
     ResponseEntity<UserResponseDto.SignUp> signUp(String kakaoAccessToken, UserRequestDto.SignUp request) throws ParseException, UnknownHostException;
 
     ResponseEntity<Boolean> issuanceToken(String refreshToken);
+
+    ResponseEntity<UserResponseDto.UInfo> issuanceTokenByNickname(String nickname);
 }

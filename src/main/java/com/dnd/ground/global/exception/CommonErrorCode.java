@@ -34,6 +34,8 @@ public enum CommonErrorCode implements ErrorCode {
     WRONG_TOKEN(HttpStatus.FORBIDDEN, "잘못된 토큰 입니다."),
     NOT_SIGNUP_USER(HttpStatus.UNAUTHORIZED, "카카오 로그인만 진행하고, 회원가입은 하지 않은 유저입니다."),
 
+    DUPLICATE_NICKNAME(HttpStatus.BAD_REQUEST, "중복된 닉네임입니다."),
+
     //5XX
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 동작 중 예외가 발생했습니다."),
     SQL_INTEGRITY_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "SQL 처리 중 무결성 문제가 발생했습니다."),

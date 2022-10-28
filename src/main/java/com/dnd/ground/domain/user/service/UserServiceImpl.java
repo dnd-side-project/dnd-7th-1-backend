@@ -20,7 +20,9 @@ import com.dnd.ground.domain.user.User;
 import com.dnd.ground.domain.user.dto.*;
 import com.dnd.ground.domain.user.repository.UserRepository;
 import com.dnd.ground.global.exception.CNotFoundException;
+import com.dnd.ground.global.exception.CNotValidationException;
 import com.dnd.ground.global.exception.CommonErrorCode;
+import com.dnd.ground.global.util.AmazonS3Service;
 import lombok.*;
 
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +30,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -43,8 +46,8 @@ import static java.time.temporal.TemporalAdjusters.lastDayOfMonth;
  * @description 유저 서비스 클래스
  * @author  박세헌, 박찬호
  * @since   2022-08-01
- * @updated 1. 내 프로필 조회
- *          - 2022-10-13 박세헌
+ * @updated 1.회원 정보 수정 구현 완료
+ *          - 2022-10-22 박찬호
  */
 
 @Slf4j
@@ -62,6 +65,8 @@ public class UserServiceImpl implements UserService{
     private final FriendRepository friendRepository;
     private final MatrixRepository matrixRepository;
     private final MatrixService matrixService;
+    private final AmazonS3Service amazonS3Service;
+    private final AuthService authService;
 
     public HomeResponseDto showHome(String nickname){
         User user = userRepository.findByNickname(nickname).orElseThrow(
@@ -378,16 +383,39 @@ public class UserServiceImpl implements UserService{
 
     /* 회원 프로필 수정 */
     @Transactional
-    public ResponseEntity<Boolean> editUserProfile(UserRequestDto.Profile requestDto){
+    public ResponseEntity<UserResponseDto.UInfo> editUserProfile(MultipartFile file, UserRequestDto.Profile requestDto){
+        String originalNick = requestDto.getOriginNickname();
+        String editNick = requestDto.getEditNickname();
 
-        String originalNick = requestDto.getOriginalNick();
-        String editNick = requestDto.getEditNick();
-        String intro = requestDto.getIntro();
+        //변경될 닉네임 중복 검사
+        if (!editNick.equals(originalNick) && !authService.validateNickname(editNick))
+            throw new CNotValidationException(CommonErrorCode.DUPLICATE_NICKNAME);
 
         User user = userRepository.findByNickname(originalNick).orElseThrow(
                 () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
-        user.updateProfile(editNick, intro);
-        return new ResponseEntity(true, HttpStatus.OK);
+
+        String intro = requestDto.getIntro();
+        String pictureName = user.getPictureName();
+        String picturePath = user.getPicturePath();
+
+        // 기본 이미지로 변경
+        if (requestDto.getIsBasic()){
+            amazonS3Service.deleteFile(user.getPictureName());
+            pictureName = "user/profile/default_profile.png";
+            picturePath = "https://dnd-ground-bucket.s3.ap-northeast-2.amazonaws.com/user/profile/default_profile.png";
+        }
+        else {
+            // 기본 이미지가 아닌 유저의 사진으로 변경 (프로필 사진 이름: 닉네임+카카오ID (Ex. NickA18345)
+            if (!file.isEmpty()){
+                amazonS3Service.deleteFile(user.getPictureName());
+                Map<String, String> fileInfo = amazonS3Service.uploadToS3(file, "user/profile", editNick+user.getKakaoId().toString());
+                pictureName = fileInfo.get("fileName");
+                picturePath = fileInfo.get("filePath");
+            }
+        }
+        user.updateProfile(editNick, intro, pictureName, picturePath);
+
+        return authService.issuanceTokenByNickname(user.getNickname());
     }
 
     public UserResponseDto.dayEventList getDayEventList(UserRequestDto.dayEventList requestDto){
@@ -411,6 +439,7 @@ public class UserServiceImpl implements UserService{
                 .collect(Collectors.toList()));
     }
 
+    /*마이페이지 프로필 조회*/
     public UserResponseDto.Profile getUserProfile(String nickname){
         User user = userRepository.findByNickname(nickname).orElseThrow(
                 () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));

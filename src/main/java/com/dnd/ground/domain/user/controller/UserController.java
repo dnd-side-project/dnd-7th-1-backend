@@ -9,14 +9,16 @@ import io.swagger.annotations.ApiParam;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.multipart.MultipartFile;
 
 
 /**
  * @description 회원 관련 역할 분리 인터페이스
  * @author  박세헌, 박찬호
  * @since   2022-08-02
- * @updated 운동 기록 날짜 조회 api
- *          - 2022-09-24 박세헌
+ * @updated 1.회원 정보 수정 구현 완료
+ *          - 2022-10-22 박찬호
  */
 
 public interface UserController {
@@ -34,7 +36,9 @@ public interface UserController {
     ResponseEntity<Boolean> changeFilterFriend(@RequestParam("nickname") String nickname);
     ResponseEntity<Boolean> changeFilterRecord(@RequestParam("nickname") String nickname);
 
-    ResponseEntity<Boolean> editUserProfile(@RequestBody UserRequestDto.Profile requestDto);
+    ResponseEntity<UserResponseDto.UInfo> editUserProfile(@RequestPart(required = false) MultipartFile multipartFile,
+                                            @RequestPart UserRequestDto.Profile requestDto);
+
     ResponseEntity<Boolean> getDetailMap(@RequestBody RecordRequestDto.Message requestDto);
 
     ResponseEntity<UserResponseDto.dayEventList> getDayEventList(@RequestBody UserRequestDto.dayEventList requestDto);

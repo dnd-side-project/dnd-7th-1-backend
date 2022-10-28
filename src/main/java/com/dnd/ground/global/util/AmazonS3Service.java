@@ -8,8 +8,10 @@ import com.amazonaws.services.s3.model.PutObjectRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -37,7 +39,7 @@ public class AmazonS3Service {
     private String filePath;
 
     /*S3에 파일 업로드*/
-    public Map<String, String> uploadToS3(MultipartFile file, String path, String name) throws IOException {
+    public Map<String, String> uploadToS3(MultipartFile file, String path, String name) {
         String fileName = path + "/" + name; //S3에 저장될 파일 이름
 
         //사진에 대한 정보 추가
@@ -49,6 +51,8 @@ public class AmazonS3Service {
         try (InputStream inputStream = file.getInputStream()) {
             amazonS3Client.putObject(new PutObjectRequest(bucket, fileName, inputStream, objectMetadata)
                             .withCannedAcl(CannedAccessControlList.PublicRead));
+        } catch(IOException e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "이미지 업로드에 실패했습니다.");
         }
 
         Map<String, String> fileInfo = new HashMap<>();

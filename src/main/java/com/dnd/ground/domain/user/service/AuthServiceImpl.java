@@ -36,8 +36,8 @@ import java.util.regex.Pattern;
  * @description 회원의 인증/인가 및 회원 정보 관련 서비스 구현체
  * @author  박세헌, 박찬호
  * @since   2022-09-07
- * @updated 회원 가입시 내위치 공개 허용 변수 추가
- *          - 2022-10-13 박세헌
+ * @updated 1.회원 정보 수정 구현 완료
+ *          - 2022-10-22 박찬호
  */
 
 @Slf4j
@@ -152,18 +152,6 @@ public class AuthServiceImpl implements AuthService, UserDetailsService {
         return userRepository.findByKakaoId(tokenInfo.getId()).isPresent();
     }
 
-    /**
-     * 회원의 프로필 사진 변경
-     * 카카오 프로필을 사용하는 경우 호출하지 않음. (DB의 값을 변경하면서 S3 버킷의 파일도 변경하기 위함)
-     * */
-    public void updatePicture(User user, String pictureName, String picturePath) {
-        //버킷에 있는 파일 삭제
-        amazonS3Service.deleteFile(pictureName);
-
-        //프로필 사진 변경
-        user.updatePicture(pictureName, picturePath);
-    }
-
     /* 리프레시 토큰이 오면 JWTCheckFilter에서 검증 후 성공적으로 filter를 통과 했다면 해당 로직에서 토큰 재발급 */
     public ResponseEntity<Boolean> issuanceToken(String refreshToken){
 
@@ -188,4 +176,25 @@ public class AuthServiceImpl implements AuthService, UserDetailsService {
                 .headers(headers)
                 .body(true);
     }
+    /* 새로운 닉네임으로 토큰 재발급 */
+    public ResponseEntity<UserResponseDto.UInfo> issuanceTokenByNickname(String nickname){
+        String accessToken = JwtUtil.makeAccessToken(nickname);
+        String refreshToken = JwtUtil.makeRefreshToken(nickname);
+
+        User user = userRepository.findByNickname(nickname).orElseThrow(
+                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Authorization", "Bearer " + accessToken);
+        headers.add("Refresh-Token", "Bearer " + refreshToken);
+
+        user.updateRefreshToken(refreshToken);
+        userRepository.save(user);
+
+        return ResponseEntity
+                .ok()
+                .headers(headers)
+                .body(new UserResponseDto.UInfo(user.getNickname(), user.getPicturePath()));
+    }
+
 }
