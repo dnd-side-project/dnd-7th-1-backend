@@ -10,14 +10,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 /**
  * @description 친구와 관련된 컨트롤러 구현체
  * @author  박찬호
  * @since   2022-08-01
- * @updated 1.친구 요청 API 구현
- *          2.요청에 대한 응답 API 구현
- *          3.친구 삭제 API 구현
- *          - 2022.10.10 박찬호
+ * @updated 1.친구 목록 조회 페이징 적용
+ *          2.친구 요청 목록 조회 기능 구현
+ *          - 2022.10.29 박찬호
  */
 
 @Api(tags = "친구")
@@ -29,10 +30,17 @@ public class FriendControllerImpl implements FriendController {
 
     private final FriendService friendService;
 
-    @GetMapping("/list/{nickname}")
-    @Operation(summary = "친구 목록 조회", description = "닉네임을 통해 수락 상태의 친구 조회")
-    public ResponseEntity<FriendResponseDto> getFriends(@PathVariable("nickname") String nickname) {
-        return ResponseEntity.ok(friendService.getFriends(nickname));
+    @GetMapping("/list")
+    @Operation(summary = "친구 목록 조회", description = "닉네임을 통해 수락 상태의 친구 조회\n서버에서 15명씩 결과를 내려주고, 결과값의 isLast=false이면 경우 뒤에 친구가 더 있다는 뜻이므로, offset+1로 요청하면 됨.")
+    public ResponseEntity<FriendResponseDto> getFriends(@RequestParam("nickname") String nickname,
+                                                        @RequestParam("offset") Integer offset) {
+        return ResponseEntity.ok(friendService.getFriends(nickname, offset));
+    }
+
+    @GetMapping("/receive")
+    @Operation(summary = "친구 요청 목록 조회", description = "요청 대기 상태의 친구 목록 조회")
+    public ResponseEntity<List<FriendResponseDto.FInfo>> getReceiveRequest(@RequestParam("nickname") String nickname) {
+        return ResponseEntity.ok(friendService.getReceiveRequest(nickname));
     }
 
     @PostMapping("/request")
@@ -53,12 +61,4 @@ public class FriendControllerImpl implements FriendController {
         return ResponseEntity.ok(friendService.deleteFriend(request.getUserNickname(), request.getFriendNickname()));
     }
 
-//    @PostMapping("/request")
-//    public ResponseEntity<?> requestFriends(@RequestParam("user") String userNickname, @RequestParam("friend") String friendNickname) {
-//        return ResponseEntity.ok(friendService.requestFriends(
-//                userRepository.findByNickname(userNickname).orElseThrow(),
-//                Arrays.asList(userRepository.findByNickname(friendNickname).orElseThrow())
-//                )
-//        );
-//    }
 }

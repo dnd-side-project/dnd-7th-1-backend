@@ -16,8 +16,8 @@ import java.util.List;
  * @description 친구와 관련한 정보 조회용 Response DTO
  * @author  박찬호
  * @since   2022-08-02
- * @updated 1.친구 요청에 대한 응답 처리 결과 반환용 DTO 생성 (ResponseResult)
- *          - 2022.10.10 박찬호
+ * @updated 1.페이징 적용에 따른 isLast 필드 추가
+ *          - 2022.10.29 박찬호
  */
 
 @Data @Builder
@@ -28,6 +28,9 @@ public class FriendResponseDto {
 
     @ApiModelProperty(value="친구 수", example="3")
     private Integer size;
+
+    @ApiModelProperty(value="마지막 페이지 여부", example = "true")
+    private Boolean isLast;
 
     
     //친구와 관련한 정보 모음
@@ -61,8 +64,8 @@ public class FriendResponseDto {
         @ApiModelProperty(value = "친구의 소개 메시지", example = "친구의 소개 메시지 예시입니다.")
         private String intro;
 
-        @ApiModelProperty(value = "회원과 친구 관계인지 나타내는 Boolean", example = "true")
-        private Boolean isFriend;
+        @ApiModelProperty(value = "회원과 친구 관계에 대한 정보\nAccept: 친구\nRequesting: 친구 요청중\nResponseWait: 수락 대기중\nNoFriend: 친구 아님", example = "RequestWait")
+        private FriendStatus isFriend;
 
         @ApiModelProperty(value = "이번 주 영역 개수", example = "9")
         private Long areas;
@@ -84,10 +87,10 @@ public class FriendResponseDto {
     /*친구 요청 수락, 거절 등에 대한 결과*/
     @Data @AllArgsConstructor
     static public class ResponseResult {
-        @ApiModelProperty(value = "회원 닉네임(요청받은 사람)", example = "NickA")
+        @ApiModelProperty(value = "회원 닉네임(요청하는 사람)", example = "NickA")
         private String userNickname;
 
-        @ApiModelProperty(value = "친구 닉네임(요청한 사람)", example = "NickB")
+        @ApiModelProperty(value = "친구 닉네임(요청받는 사람)", example = "NickB")
         private String friendNickname;
 
         @ApiModelProperty(value = "변경된 상태(결과: Accept, Reject)", example = "Accept")

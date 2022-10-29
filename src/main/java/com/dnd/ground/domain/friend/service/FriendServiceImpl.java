@@ -1,6 +1,5 @@
 package com.dnd.ground.domain.friend.service;
 
-import com.dnd.ground.domain.challenge.repository.UserChallengeRepository;
 import com.dnd.ground.domain.friend.Friend;
 import com.dnd.ground.domain.friend.FriendStatus;
 import com.dnd.ground.domain.friend.dto.FriendResponseDto;
@@ -11,6 +10,7 @@ import com.dnd.ground.global.exception.CNotFoundException;
 import com.dnd.ground.global.exception.CommonErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,10 +22,9 @@ import java.util.Optional;
  * @description 친구와 관련된 서비스 구현체
  * @author  박찬호
  * @since   2022-08-01
- * @updated 1.친구 요청 API 구현
- *          2.요청에 대한 응답 API 구현
- *          3.친구 삭제 API 구현
- *          - 2022.10.10 박찬호
+ * @updated 1.친구 목록 조회 페이징 적용
+ *          2.친구 요청 목록 조회 기능 구현
+ *          - 2022.10.29 박찬호
  */
 
 @Slf4j
@@ -36,25 +35,32 @@ public class FriendServiceImpl implements FriendService {
     private final FriendRepository friendRepository;
     private final UserRepository userRepository;
 
+    private final Integer FRIEND_PAGING_NUMBER = 3;
+
     //친구 목록과 추가 정보를 함께 반환
     @Transactional
-    public FriendResponseDto getFriends(String nickname) {
+    public FriendResponseDto getFriends(String nickname, Integer offset) {
 
         //유저 및 친구 조회
-        User findUser = userRepository.findByNickname(nickname).orElseThrow(
+        User user = userRepository.findByNickname(nickname).orElseThrow(
                 () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
 
-        List<Friend> findFriends = friendRepository.findFriendsById(findUser);
         List<FriendResponseDto.FInfo> infos = new ArrayList<>();
+        boolean isLast = false;
 
-        //친구 정보 모음
+        PageRequest pageRequest = PageRequest.of(offset, FRIEND_PAGING_NUMBER);
+        List<Friend> findFriends = friendRepository.findFriendsByUserOrFriendAndStatus(user, user, FriendStatus.Accept, pageRequest).getContent();
+
+        if (findFriends.size() <= FRIEND_PAGING_NUMBER-1)
+            isLast = true;
+
         for (Friend findFriend : findFriends) {
-            if (findFriend.getUser() == findUser) {
+            if (findFriend.getUser() == user) {
                 infos.add(FriendResponseDto.FInfo.of()
                         .nickname(findFriend.getFriend().getNickname())
                         .picturePath(findFriend.getFriend().getPicturePath())
                         .build());
-            } else if (findFriend.getFriend() == findUser) {
+            } else if (findFriend.getFriend() == user) {
                 infos.add(FriendResponseDto.FInfo.of()
                         .nickname(findFriend.getUser().getNickname())
                         .picturePath(findFriend.getFriend().getPicturePath())
@@ -65,12 +71,33 @@ public class FriendServiceImpl implements FriendService {
         return FriendResponseDto.builder()
                 .infos(infos)
                 .size(findFriends.size())
+                .isLast(isLast)
                 .build();
+    }
+
+    //요청받은 친구 목록 조회
+    public List<FriendResponseDto.FInfo> getReceiveRequest(String nickname) {
+        User user = userRepository.findByNickname(nickname).orElseThrow(
+                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
+
+        List<FriendResponseDto.FInfo> response = new ArrayList<>();
+
+        List<User> receiveRequest = friendRepository.findReceiveRequest(user);
+
+        for (User friend : receiveRequest) {
+            response.add(
+                    FriendResponseDto.FInfo.of()
+                            .nickname(friend.getNickname())
+                            .picturePath(friend.getPicturePath())
+                            .build()
+            );
+        }
+        return response;
     }
 
     //List<User> 형태의 친구 목록 반환
     public List<User> getFriends(User user) {
-        List<Friend> findFriends = friendRepository.findFriendsById(user);
+        List<Friend> findFriends = friendRepository.findFriendsByUser(user);
         List<User> friends = new ArrayList<>();
 
         for (Friend findFriend : findFriends) {
@@ -152,57 +179,26 @@ public class FriendServiceImpl implements FriendService {
         }
     }
 
-    @Transactional
-    public Boolean requestFriends(User user, List<User> friends) {
-        List<Friend> friendList = new ArrayList<>();
+    /*회원과 친구가 어떤 관계인지 나타내는 메소드*/
+    public FriendStatus getFriendStatus(User user, User friend) {
+        Optional<Friend> friendRelationOpt = friendRepository.findFriendRelation(user, friend);
+        FriendStatus isFriend = null;
 
-        for (User friend : friends) {
-            friendList.add(
-                    Friend.builder()
-                            .user(user)
-                            .friend(friend)
-                            .status(FriendStatus.Wait)
-                            .build()
-            );
-        }
-        return null;
-    }
+        if (friendRelationOpt.isPresent()) {
+            Friend friendRelation = friendRelationOpt.get();
 
-
-
-    /* 수정 필요
-    //챌린지를 진행하는 친구 조회
-    public List<User> getChallenge(User user) {
-        //친구 조회
-        List<User> friends = getFriends(user);
-
-        //챌린지가 없는 친구 삭제
-        for (int i = 0 ; i<friends.size() ; i++) {
-            User friend = friends.get(i);
-            if (friend.getChallenges().isEmpty() || userChallengeRepository.findNotChallenging(friend).isPresent()) {
-                friends.remove(friend);
-                i--;
+            if (friendRelation.getStatus() == FriendStatus.Accept) {
+                isFriend = FriendStatus.Accept;
             }
-        }
-
-        return friends;
-    }
-
-    //챌린지를 진행하지 않는 친구 조회
-    public List<User> getNotChallenge(User user) {
-        //친구 조회
-        List<User> friends = getFriends(user);
-
-        //챌린지가 있는 친구 삭제
-        for (int i = 0 ; i<friends.size() ; i++) {
-            User friend = friends.get(i);
-            if (friend.getChallenges().isEmpty() || userChallengeRepository.findChallenging(friend).isPresent()) {
-                friends.remove(friend);
-                i--;
+            else if(friendRelation.getStatus() == FriendStatus.Wait) {
+                if (friendRelation.getUser() == user)
+                    isFriend = FriendStatus.Requesting;
+                else
+                    isFriend = FriendStatus.ResponseWait;
             }
+        } else {
+            isFriend = FriendStatus.NoFriend;
         }
-
-        return friends;
+        return isFriend;
     }
-     */
 }
