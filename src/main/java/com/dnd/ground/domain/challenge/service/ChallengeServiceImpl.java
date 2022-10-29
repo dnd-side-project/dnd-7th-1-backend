@@ -73,6 +73,14 @@ public class ChallengeServiceImpl implements ChallengeService {
 
         List<UserResponseDto.UInfo> users = new ArrayList<>();
 
+        /**
+         * 고정크기인 배열을 사용하는 만큼, 챌린지 최대 개수와 색상에 대한 정보가 딱 맞아야함.
+         * 예를 들어, 최대 챌린지가 5개까지 가능한 경우 배열에 5개의 색상이 미리 정의되어 있어야함.
+         * 그렇지 않으면 ArrayIndexOutOfBoundException 발생.
+         * -> try-catch문으로 예외처리.
+         */
+        String targetNickname = null;
+
         //챌린지 개수에 따른 색상 결정
         ChallengeColor[] color = {ChallengeColor.Red, ChallengeColor.Pink, ChallengeColor.Yellow};
 
@@ -84,33 +92,39 @@ public class ChallengeServiceImpl implements ChallengeService {
 //            throw new CExceedChallengeException(CommonErrorCode.EXCEED_CHALLENGE, requestDto.getNickname());
 //        }
 
-        UserChallenge masterChallenge = userChallengeRepository.save(new UserChallenge(challenge, master, color[challengeCount]));
-        masterChallenge.changeStatus(ChallengeStatus.Master);
+        try {
+            UserChallenge masterChallenge = userChallengeRepository.save(new UserChallenge(challenge, master, color[challengeCount]));
+            masterChallenge.changeStatus(ChallengeStatus.Master);
 
-        //챌린지 멤버의 챌린지 생성 과정
-        for (String nickname : requestDto.getFriends()) {
-            User member = userRepository.findByNickname(nickname).orElseThrow(
-                    () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
+            //챌린지 멤버의 챌린지 생성 과정
+            for (String nickname : requestDto.getFriends()) {
+                User member = userRepository.findByNickname(nickname).orElseThrow(
+                        () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
 
-            challengeCount = userChallengeRepository.findCountChallenge(member);
+                challengeCount = userChallengeRepository.findCountChallenge(member);
+                targetNickname = nickname; //예외 발생시 코드로 알려주기 위함.
 
 //            //챌린지가 3개 이상이면 챌린지 생성 거부
 //            if (challengeCount > 3) {
 //                throw new CExceedChallengeException(CommonErrorCode.EXCEED_CHALLENGE, nickname);
 //            }
 
-            userChallengeRepository.save(new UserChallenge(challenge, member, color[challengeCount]));
+                userChallengeRepository.save(new UserChallenge(challenge, member, color[challengeCount]));
 
-            //Response에 추가할 멤버 목록
-            users.add(new UserResponseDto.UInfo(nickname, member.getPicturePath()));
+                //Response에 추가할 멤버 목록
+                users.add(new UserResponseDto.UInfo(nickname, member.getPicturePath()));
+            }
+
+            return ChallengeCreateResponseDto.builder()
+                    .users(users)
+                    .message(challenge.getMessage())
+                    .started(challenge.getStarted())
+                    .ended(challenge.getStarted().plusDays(7 - challenge.getStarted().getDayOfWeek().getValue()))
+                    .build();
+        } catch (IndexOutOfBoundsException e) {
+            throw new CExceedChallengeException(CommonErrorCode.EXCEED_CHALLENGE, targetNickname);
         }
 
-        return ChallengeCreateResponseDto.builder()
-                .users(users)
-                .message(challenge.getMessage())
-                .started(challenge.getStarted())
-                .ended(challenge.getStarted().plusDays(7 - challenge.getStarted().getDayOfWeek().getValue()))
-                .build();
     }
 
     /*유저-챌린지 상태 변경*/
