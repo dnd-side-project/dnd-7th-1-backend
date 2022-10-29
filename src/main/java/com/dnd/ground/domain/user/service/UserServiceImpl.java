@@ -10,6 +10,7 @@ import com.dnd.ground.domain.exerciseRecord.ExerciseRecord;
 import com.dnd.ground.domain.exerciseRecord.Repository.ExerciseRecordRepository;
 import com.dnd.ground.domain.exerciseRecord.dto.RecordRequestDto;
 import com.dnd.ground.domain.exerciseRecord.dto.RecordResponseDto;
+import com.dnd.ground.domain.friend.FriendStatus;
 import com.dnd.ground.domain.friend.dto.FriendResponseDto;
 import com.dnd.ground.domain.friend.repository.FriendRepository;
 import com.dnd.ground.domain.friend.service.FriendService;
@@ -46,8 +47,8 @@ import static java.time.temporal.TemporalAdjusters.lastDayOfMonth;
  * @description 유저 서비스 클래스
  * @author  박세헌, 박찬호
  * @since   2022-08-01
- * @updated 1.회원 정보 수정 구현 완료
- *          - 2022-10-22 박찬호
+ * @updated 1.회원 정보 수정 시 기본 이미지는 삭제안하도록 수정
+ *          - 2022-10-29 박찬호
  */
 
 @Slf4j
@@ -195,16 +196,14 @@ public class UserServiceImpl implements UserService{
                 () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
 
         //마지막 활동 시간
-        LocalDateTime lasted = exerciseRecordRepository.findLastRecord(friend).orElseThrow(
-                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_RECORD)
-        );
+        Optional<LocalDateTime> lastedOpt = exerciseRecordRepository.findLastRecord(friend);
+        LocalDateTime lasted = null;
+        if (lastedOpt.isPresent())
+            lasted = lastedOpt.get();
+
 
         //친구 관계 확인
-        Boolean isFriend = false;
-
-        if (friendRepository.findFriendRelation(user, friend).isPresent()) {
-            isFriend = true;
-        }
+        FriendStatus isFriend = friendService.getFriendStatus(user, friend);
 
         //랭킹 추출 (이번 주 영역, 역대 누적 칸수, 랭킹)
         Integer rank = -1;
@@ -400,9 +399,10 @@ public class UserServiceImpl implements UserService{
 
         // 기본 이미지로 변경
         if (requestDto.getIsBasic()){
-            amazonS3Service.deleteFile(user.getPictureName());
             pictureName = "user/profile/default_profile.png";
             picturePath = "https://dnd-ground-bucket.s3.ap-northeast-2.amazonaws.com/user/profile/default_profile.png";
+            if (!user.getPictureName().equals(pictureName))
+                amazonS3Service.deleteFile(user.getPictureName());
         }
         else {
             // 기본 이미지가 아닌 유저의 사진으로 변경 (프로필 사진 이름: 닉네임+카카오ID (Ex. NickA18345)

@@ -25,7 +25,7 @@ import org.springframework.web.multipart.MultipartFile;
  *          - 2022-10-22 박찬호
  */
 
-@Api(tags = "유저")
+@Api(tags = "회원")
 @Slf4j
 @RequiredArgsConstructor
 @RequestMapping("/user")
@@ -44,13 +44,13 @@ public class UserControllerImpl implements UserController {
     }
 
     @GetMapping("/info")
-    @Operation(summary = "회원 정보 조회(마이페이지)", description = "회원의 닉네임, 소개 메시지 정보 (추후 프로필 등 추가 예정)")
+    @Operation(summary = "회원 정보 조회(마이페이지)", description = "회원의 닉네임, 소개 메시지 정보")
     public ResponseEntity<UserResponseDto.MyPage> getUserInfo(@RequestParam("nickname") String nickname) {
         return ResponseEntity.ok().body(userService.getUserInfo(nickname));
     }
 
     @GetMapping("/profile")
-    @Operation(summary = "프로필 조회", description = "회원의 닉네임, 소개 메시지 정보 (추후 프로필 등 추가 예정)")
+    @Operation(summary = "프로필 조회", description = "회원의 닉네임, 소개 메시지 정보")
     public ResponseEntity<FriendResponseDto.FriendProfile> getUserProfile(
                             @ApiParam(value = "회원 닉네임", required = true) @RequestParam("user") String userNickname,
                             @ApiParam(value = "대상 닉네임", required = true) @RequestParam("friend") String friendNickname) {

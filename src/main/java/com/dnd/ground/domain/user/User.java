@@ -112,13 +112,10 @@ public class User {
         return this.isPublicRecord;
     }
 
-    public void updateProfile(String nickname, String intro) {
+    //프로필 수정
+    public void updateProfile(String nickname, String intro, String pictureName, String picturePath) {
         this.nickname = nickname;
         this.intro = intro;
-    }
-
-    //프로필 사진 변경
-    public void updatePicture(String pictureName, String picturePath) {
         this.pictureName = pictureName;
         this.picturePath = picturePath;
     }
