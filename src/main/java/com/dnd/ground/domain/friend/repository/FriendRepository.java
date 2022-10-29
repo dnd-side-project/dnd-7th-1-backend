@@ -28,7 +28,7 @@ public interface FriendRepository extends JpaRepository<Friend, Long> {
 
     //친구 요청 리스트 조회
     @Query("select f.user from User u inner join Friend f on f.friend=:user and f.status='Wait' where f.friend=u")
-    List<User> findReceiveRequest(@Param("user") User user);
+    Slice<User> findReceiveRequest(@Param("user") User user, PageRequest pageRequest);
 
     Slice<Friend> findFriendsByUserOrFriendAndStatus(@Param("user") User user, @Param("friend") User friend, @Param("status")FriendStatus status, PageRequest pageRequest);
 

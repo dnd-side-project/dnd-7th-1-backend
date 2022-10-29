@@ -25,5 +25,5 @@ public interface FriendService {
     Boolean deleteFriend(String userNickname, String friendNickname);
     FriendStatus getFriendStatus(User user, User friend);
 
-    List<FriendResponseDto.FInfo> getReceiveRequest(String nickname);
+    FriendResponseDto.ReceiveRequest getReceiveRequest(String nickname, Integer offset);
 }

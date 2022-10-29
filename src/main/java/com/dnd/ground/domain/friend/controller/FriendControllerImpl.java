@@ -38,9 +38,9 @@ public class FriendControllerImpl implements FriendController {
     }
 
     @GetMapping("/receive")
-    @Operation(summary = "친구 요청 목록 조회", description = "요청 대기 상태의 친구 목록 조회")
-    public ResponseEntity<List<FriendResponseDto.FInfo>> getReceiveRequest(@RequestParam("nickname") String nickname) {
-        return ResponseEntity.ok(friendService.getReceiveRequest(nickname));
+    @Operation(summary = "친구 요청 목록 조회", description = "요청 대기 상태의 친구 목록 조회\n서버에서 3명씩 결과를 내려주고, 결과값의 isLast=false이면 경우 뒤에 친구가 더 있다는 뜻이므로, offset+1로 요청하면 됨.")
+    public ResponseEntity<FriendResponseDto.ReceiveRequest> getReceiveRequest(@RequestParam("nickname") String nickname, @RequestParam("offset") Integer offset) {
+        return ResponseEntity.ok(friendService.getReceiveRequest(nickname, offset));
     }
 
     @PostMapping("/request")

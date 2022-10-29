@@ -10,6 +10,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -95,6 +96,19 @@ public class FriendResponseDto {
 
         @ApiModelProperty(value = "변경된 상태(결과: Accept, Reject)", example = "Accept")
         private FriendStatus status;
+    }
+
+    @Data
+    @NoArgsConstructor
+    static public class ReceiveRequest {
+        @ApiModelProperty(value="친구 정보 목록", example="['nickname':'NickA','picturePath':'http:\\/\\/k.kakaocdn.net\\/dn\\/uQVeo\\/btrLgESJyjg\\/Pff3k36lRWkQ98ebAlexv1\\/img_640x640.jpg']")
+        List<FInfo> friendsInfo = new ArrayList<>();
+
+        @ApiModelProperty(value="친구 수", example="3")
+        private Integer size;
+
+        @ApiModelProperty(value="마지막 페이지 여부", example = "true")
+        private Boolean isLast;
     }
 
 }

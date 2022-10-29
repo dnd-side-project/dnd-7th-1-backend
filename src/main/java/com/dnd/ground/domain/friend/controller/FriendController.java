@@ -20,7 +20,7 @@ import java.util.List;
 public interface FriendController {
     ResponseEntity<FriendResponseDto> getFriends(@RequestParam("nickname") String nickname,
                                                  @RequestParam("offset") Integer offset);
-    ResponseEntity<List<FriendResponseDto.FInfo>> getReceiveRequest(@RequestParam("nickname") String nickname);
+    ResponseEntity<FriendResponseDto.ReceiveRequest> getReceiveRequest(@RequestParam("nickname") String nickname, @RequestParam("offset") Integer offset);
     ResponseEntity<Boolean> requestFriend(@RequestBody FriendRequestDto.Request request);
     ResponseEntity<FriendResponseDto.ResponseResult> responseFriend(@RequestBody FriendRequestDto.Response request);
     ResponseEntity<Boolean> deleteFriend(@RequestBody FriendRequestDto.Request request);
