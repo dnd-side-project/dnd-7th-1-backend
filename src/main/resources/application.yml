@@ -8,7 +8,7 @@ spring:
     password: ${db.password}
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: ${db.ddl}
     properties:
       hibernate:
         format_sql: true
@@ -19,7 +19,7 @@ spring:
       matching-strategy: ant_path_matcher
   sql:
     init:
-      mode: always
+      mode: ${db.sql.init}
 logging:
   level:
     org.hibernate.SQL: debug
