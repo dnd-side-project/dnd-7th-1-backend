@@ -27,9 +27,8 @@ import org.springframework.security.web.authentication.www.BasicAuthenticationFi
  * @description 스프링 시큐리티 config 클래스
  * @author  박세헌
  * @since   2022-08-24
- * @updated 1. 로그인 필터 추가
- *          2. 기존 SignFilter의 지역 변수명 변경 (loginFilter -> signFilter)
- *          - 2022-09-25 박찬호
+ * @updated 1. 토큰 재발급 시 필터 제외하도록 수정
+ *          - 2022-10-29 박찬호
  */
 
 @Configuration
@@ -84,7 +83,7 @@ public class SecurityConfig {
     public WebSecurityCustomizer webSecurityCustomizer() {
         return (web) -> web.ignoring()
                 .antMatchers("/doc", "/swagger*/**", "/favicon*/**", "/v2/api-docs")
-                .antMatchers("/auth/signup", "/auth/check/origin", "/auth/check/nickname", "/auth/kakao/login")
+                .antMatchers("/auth/signup", "/auth/check/origin", "/auth/check/nickname", "/auth/kakao/login", "/auth/refreshToken")
                 .antMatchers("/dummy/**");
     }
 

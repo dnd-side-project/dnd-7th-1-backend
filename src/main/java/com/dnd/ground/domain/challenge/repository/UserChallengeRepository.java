@@ -46,7 +46,7 @@ public interface UserChallengeRepository extends JpaRepository<UserChallenge, Lo
     int findUCCount(@Param("challenge") Challenge challenge);
 
     //Progress 상태의 회원 수 조회
-    @Query("select count(uc) from UserChallenge uc where uc.challenge=:challenge and uc.status='Progress'")
+    @Query("select count(uc) from UserChallenge uc where uc.challenge=:challenge and uc.status='Progress' or uc.status='Master'")
     int findUCWaitCount(Challenge challenge);
 
     //유저와 챌린지를 통해 UserChallenge 조회
@@ -67,7 +67,7 @@ public interface UserChallengeRepository extends JpaRepository<UserChallenge, Lo
 
 
     //회원이 참여하고 있는 챌린지 개수 (챌린지 상태 상관X)
-    @Query("select count(uc) from UserChallenge uc where uc.user=:user and (uc.status<>'Done' or uc.status<>'Reject')")
+    @Query("select count(uc) from UserChallenge uc where uc.user=:user and (uc.status<>'Done' or uc.status<>'Reject' or uc.status<>'MasterDone')")
     int findCountChallenge(@Param("user")User user);
 
     //챌린지 색깔 조회

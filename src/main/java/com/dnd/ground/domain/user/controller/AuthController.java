@@ -19,13 +19,11 @@ import java.util.Map;
  * @description 회원의 인증/인가 및 로그인 관련 컨트롤러
  * @author  박찬호
  * @since   2022-08-23
- * @updated 1.온보딩 메소드 URL 변경(/main -> /auth)
- *          2.닉네임 검사 URL 변경(/validate/~ -> /check/~)
- *          3.회원가입 로직 추가
- *          - 2022.09.12 박찬호
+ * @updated 1.카카오 친구 목록 조회 구현
+ *          - 2022.10.29 박찬호
  */
 
-@Api(tags = "회원 인증/인가 및 로그인")
+@Api(tags = "회원 인증/인가, 로그인 및 OAuth(카카오)")
 @RequiredArgsConstructor
 @RequestMapping("/auth")
 @RestController
@@ -80,9 +78,10 @@ public class AuthController {
     }
 
     @GetMapping("/kakao/friend")
-    @Operation(summary = "카카오 엑세스 토큰으로 카카오 친구 불러오기", description = "검수 전이라 팀 멤버들만 친구로 조회할 수 있음.\n현재 페이징 적용X")
+    @Operation(summary = "카카오 엑세스 토큰으로 카카오 친구 불러오기", description = "검수 전이라 팀 멤버들만 친구로 조회할 수 있음.\n15명씩 페이징하도록 했음. 카카오 친구목록 조회의 경우 최초 offset=0, 이후 서버로부터 받은 offset으로 요청해야 함.")
     public ResponseEntity<?> getKakaoFriends(@RequestHeader("Kakao-Access-Token") String token,
+                                 @RequestParam("nickname") String nickname,
                                  @RequestParam("offset") Integer offset) {
-        return ResponseEntity.ok(kakaoService.getKakaoFriends(token, offset));
+        return ResponseEntity.ok(kakaoService.getKakaoFriends(token, nickname, offset));
     }
 }
