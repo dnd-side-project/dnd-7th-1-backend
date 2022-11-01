@@ -84,7 +84,7 @@ public class ChallengeControllerImpl implements ChallengeController {
     public ResponseEntity<ChallengeMapResponseDto.Detail> getChallengeDetailMap(@RequestParam("uuid") String uuid) {
         return ResponseEntity.ok().body(challengeService.getChallengeDetailMap(uuid));
     }
-    //챌린지삭제
+
     @PostMapping("/delete")
     @Operation(summary = "챌린지 삭제", description = "챌린지 생성자의 닉네임과 챌린지 UUID를 통해 챌린지 삭제")
     public ResponseEntity<Boolean> deleteChallenge(@RequestBody ChallengeRequestDto.CInfo request) {

@@ -82,7 +82,7 @@ public class ChallengeServiceImpl implements ChallengeService {
         String targetNickname = null;
 
         //챌린지 개수에 따른 색상 결정
-        ChallengeColor[] color = {ChallengeColor.Red, ChallengeColor.Pink, ChallengeColor.Yellow};
+        ChallengeColor[] color = {ChallengeColor.Red, ChallengeColor.Pink, ChallengeColor.Yellow, ChallengeColor.Red, ChallengeColor.Pink, ChallengeColor.Yellow, ChallengeColor.Red, ChallengeColor.Pink, ChallengeColor.Yellow, ChallengeColor.Red, ChallengeColor.Pink, ChallengeColor.Yellow};
 
         //주최자의 챌린지 생성 과정
         int challengeCount = userChallengeRepository.findCountChallenge(master); //참여한 챌린지 개수 (챌린지 상태 상관X)
@@ -193,6 +193,9 @@ public class ChallengeServiceImpl implements ChallengeService {
     public void endPeriodChallenge() {
         //진행 중인 챌린지 모두 조회
         List<Challenge> challenges = challengeRepository.findChallengesByStatusEquals(ChallengeStatus.Progress);
+        List<Challenge> waitChallenge = challengeRepository.findChallengesByStatusEquals(ChallengeStatus.Wait);
+
+        challenges.addAll(waitChallenge);
 
         for (Challenge challenge : challenges) {
             //챌린지 완료
@@ -260,7 +263,7 @@ public class ChallengeServiceImpl implements ChallengeService {
                             .started(started)
                             .ended(started.plusDays(7 - started.getDayOfWeek().getValue()))
                             .totalCount(userChallengeRepository.findUCCount(challenge)) //챌린지에 참여하는 전체 인원 수
-                            .readyCount(userChallengeRepository.findUCWaitCount(challenge)) //Progress 상태 회원 수 + 주최자
+                            .readyCount(userChallengeRepository.findUCReadyCount(challenge)) //Progress 상태 회원 수 + 주최자
                             .color(userChallengeRepository.findChallengeColor(user, challenge))
                             .picturePaths(picturePaths)
                             .build()

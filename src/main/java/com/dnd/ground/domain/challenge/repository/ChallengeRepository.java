@@ -29,7 +29,7 @@ public interface ChallengeRepository extends JpaRepository<Challenge, Long> {
     List<Challenge> findProgressChallenge(@Param("user") User user);
 
     //진행대기 중인 챌린지 목록 정보 조회
-    @Query("select c from Challenge c inner join UserChallenge uc on uc.challenge=c where uc.user=:user and c.status='Wait' order by c.started ASC")
+    @Query("select c from Challenge c inner join UserChallenge uc on uc.challenge=c where uc.user=:user and uc.status<>'Reject' and c.status='Wait' order by c.started ASC")
     List<Challenge> findWaitChallenge(@Param("user") User user);
 
     //완료된 챌린지 목록 정보 조회
