@@ -57,7 +57,14 @@ public class FriendServiceImpl implements FriendService {
             if (findFriends.size() <= FRIEND_LARGE_PAGING_NUMBER - 1)
                 isLast = true;
 
-            for (int i = 0; i < findFriends.size() - 1; i++) {
+            int length;
+            if (findFriends.size() < FRIEND_LARGE_PAGING_NUMBER-1) {
+                length = findFriends.size();
+            } else {
+                length = FRIEND_LARGE_PAGING_NUMBER-1;
+            }
+
+            for (int i = 0; i < length; i++) {
                 Friend findFriend = findFriends.get(i);
                 if (findFriend.getUser() == user) {
                     infos.add(FriendResponseDto.FInfo.of()
@@ -100,7 +107,13 @@ public class FriendServiceImpl implements FriendService {
         if (receiveRequest.size() <= FRIEND_SMALL_PAGING_NUMBER - 1)
             isLast = true;
 
-        for (int i = 0; i < receiveRequest.size() - 1; i++) {
+        int length;
+        if (receiveRequest.size() < FRIEND_SMALL_PAGING_NUMBER-1) {
+            length = receiveRequest.size();
+        } else {
+            length = FRIEND_SMALL_PAGING_NUMBER - 1;
+        }
+        for (int i = 0; i < length - 1; i++) {
             User friend = receiveRequest.get(i);
             response.getFriendsInfo().add(
                     FriendResponseDto.FInfo.of()

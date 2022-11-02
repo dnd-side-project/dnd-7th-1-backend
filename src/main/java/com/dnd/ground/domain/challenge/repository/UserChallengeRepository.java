@@ -46,8 +46,8 @@ public interface UserChallengeRepository extends JpaRepository<UserChallenge, Lo
     int findUCCount(@Param("challenge") Challenge challenge);
 
     //Progress 상태의 회원 수 조회
-    @Query("select count(uc) from UserChallenge uc where uc.challenge=:challenge and uc.status='Progress' or uc.status='Master'")
-    int findUCWaitCount(Challenge challenge);
+    @Query("select count(uc) from UserChallenge uc where uc.challenge=:challenge and (uc.status='Progress' or uc.status='Master')")
+    int findUCReadyCount(Challenge challenge);
 
     //유저와 챌린지를 통해 UserChallenge 조회
     Optional<UserChallenge> findByUserAndChallenge(User user, Challenge challenge);
