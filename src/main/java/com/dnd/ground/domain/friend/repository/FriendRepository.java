@@ -1,7 +1,6 @@
 package com.dnd.ground.domain.friend.repository;
 
 import com.dnd.ground.domain.friend.Friend;
-import com.dnd.ground.domain.friend.FriendStatus;
 import com.dnd.ground.domain.user.User;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Slice;
@@ -30,7 +29,8 @@ public interface FriendRepository extends JpaRepository<Friend, Long> {
     @Query("select f.user from User u inner join Friend f on f.friend=:user and f.status='Wait' where f.friend=u")
     Slice<User> findReceiveRequest(@Param("user") User user, PageRequest pageRequest);
 
-    Slice<Friend> findFriendsByUserOrFriendAndStatus(@Param("user") User user, @Param("friend") User friend, @Param("status")FriendStatus status, PageRequest pageRequest);
+    @Query("select f from Friend f where (f.user=:user or f.friend=:friend) and f.status='Accept'")
+    Slice<Friend> findFriendsByUserWithPaging(@Param("user") User user, @Param("friend") User friend, PageRequest pageRequest);
 
     Optional<Friend> findById(Long id);
 
