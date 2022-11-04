@@ -52,7 +52,7 @@ public class FriendServiceImpl implements FriendService {
         PageRequest pageRequest = PageRequest.of(offset, FRIEND_LARGE_PAGING_NUMBER);
 
         try {
-            List<Friend> findFriends = friendRepository.findFriendsByUserOrFriendAndStatus(user, user, FriendStatus.Accept, pageRequest).getContent();
+            List<Friend> findFriends = friendRepository.findFriendsByUserWithPaging(user, user, pageRequest).getContent();
 
             if (findFriends.size() <= FRIEND_LARGE_PAGING_NUMBER - 1)
                 isLast = true;
