@@ -57,7 +57,7 @@ dependencies {
 	implementation "com.fasterxml.uuid:java-uuid-generator:4.0.1"
 
 	//AWS S3
-	implementation 'org.springframework.cloud:spring-cloud-starter-aws:2.0.1.RELEASE'
+	implementation 'org.springframework.cloud:spring-cloud-starter-aws:2.2.6.RELEASE'
 
 	//WebClient (HTTP Request)
 	implementation 'org.springframework.boot:spring-boot-starter-webflux'

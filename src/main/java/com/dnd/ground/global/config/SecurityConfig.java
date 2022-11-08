@@ -2,9 +2,10 @@ package com.dnd.ground.global.config;
 
 import com.dnd.ground.domain.user.repository.UserRepository;
 import com.dnd.ground.domain.user.service.AuthService;
-import com.dnd.ground.domain.user.service.UserService;
+import com.dnd.ground.domain.user.service.KakaoService;
 import com.dnd.ground.global.exception.CustomAuthenticationEntryPoint;
 import com.dnd.ground.global.securityFilter.JWTCheckFilter;
+import com.dnd.ground.global.securityFilter.JWTLoginFilter;
 import com.dnd.ground.global.securityFilter.JWTSignFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -13,6 +14,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -25,8 +27,8 @@ import org.springframework.security.web.authentication.www.BasicAuthenticationFi
  * @description 스프링 시큐리티 config 클래스
  * @author  박세헌
  * @since   2022-08-24
- * @updated 1. authenticationEntryPoint 추가 (예외 처리)
- *          - 2022-09-08 박세헌
+ * @updated 1. 토큰 재발급 시 필터 제외하도록 수정
+ *          - 2022-10-29 박찬호
  */
 
 @Configuration
@@ -37,6 +39,7 @@ public class SecurityConfig {
     private final AuthenticationConfiguration authenticationConfiguration;
     private final AuthService authService;
     private final UserRepository userRepository;
+    private final KakaoService kakaoService;
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
@@ -53,9 +56,11 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
         // 회원가입 or 재로그인 인증 필터
-        JWTSignFilter loginFilter = new JWTSignFilter(authenticationManager(authenticationConfiguration), authService, userRepository);
+        JWTSignFilter signFilter = new JWTSignFilter(authenticationManager(authenticationConfiguration), authService, userRepository);
         // 매 request마다 토큰을 검사 해주는 필터
         JWTCheckFilter checkFilter = new JWTCheckFilter(authenticationManager(authenticationConfiguration), authService, userRepository);
+        // 로그인 필터
+        JWTLoginFilter loginFIlter = new JWTLoginFilter(authenticationManager(authenticationConfiguration), kakaoService, userRepository);
 
         http
                 .csrf().disable()  // csrf x
@@ -63,15 +68,23 @@ public class SecurityConfig {
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)  // 세션 x
                 )
                 .authorizeRequests()
-                .antMatchers("/", "/sign", "/auth/kakao/login").permitAll()  // 누구나 접근 가능
-                .anyRequest().authenticated() // 나머지 요청들은 권한의 종류에 상관 없이 권한이 있어야 접근 가능
+                .anyRequest().authenticated()
                 .and()
-                .addFilterAt(loginFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterAt(checkFilter, BasicAuthenticationFilter.class)
+                .addFilterBefore(signFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(loginFIlter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(checkFilter, BasicAuthenticationFilter.class)
                 .exceptionHandling()
                 .authenticationEntryPoint(new CustomAuthenticationEntryPoint());
-
         return http.build();
+    }
+
+    /* 스프링 시큐리티 룰을 무시하게 하는 Url 규칙(여기 등록하면 규칙 적용하지 않음) */
+    @Bean
+    public WebSecurityCustomizer webSecurityCustomizer() {
+        return (web) -> web.ignoring()
+                .antMatchers("/doc", "/swagger*/**", "/favicon*/**", "/v2/api-docs")
+                .antMatchers("/auth/signup", "/auth/check/origin", "/auth/check/nickname", "/auth/kakao/login", "/auth/refreshToken")
+                .antMatchers("/dummy/**");
     }
 
 }

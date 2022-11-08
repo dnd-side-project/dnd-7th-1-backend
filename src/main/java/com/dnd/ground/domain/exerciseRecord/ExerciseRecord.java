@@ -14,13 +14,15 @@ import java.util.List;
  * @description 운동 기록 엔티티
  * @author  박찬호, 박세헌
  * @since   2022-07-27
- * @updated 2022-08-22 / 비즈니스 로직 수정- 박세헌
+ * @updated 1.Builder 추가
+ *          -2022.10.02 박찬호
  */
 
 @Getter
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(name="exercise_record")
+@Builder
 @Entity
 public class ExerciseRecord {
 

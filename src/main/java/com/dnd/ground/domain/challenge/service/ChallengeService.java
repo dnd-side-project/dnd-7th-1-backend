@@ -10,9 +10,8 @@ import java.util.List;
  * @description 챌린지와 관련된 서비스의 역할을 분리한 인터페이스
  * @author  박찬호, 박세헌
  * @since   2022-08-03
- * @updated 1.챌린지 상세보기(지도) 기능 구현
- *          2.챌린지 관련 Response에 UUID 추가
- *          - 2022.08.26 박찬호
+ * @updated 1. 챌린지 삭제 구현
+ *          2022-10-26 박찬호
  */
 
 public interface ChallengeService {
@@ -33,4 +32,6 @@ public interface ChallengeService {
     ChallengeMapResponseDto.Detail getChallengeDetailMap(String uuid);
 
     List<ChallengeResponseDto.CInfoRes> findChallengeByRecord(ExerciseRecord exerciseRecord);
+
+    Boolean deleteChallenge(ChallengeRequestDto.CInfo request);
 }

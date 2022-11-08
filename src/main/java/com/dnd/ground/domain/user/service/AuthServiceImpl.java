@@ -14,6 +14,7 @@ import com.dnd.ground.global.util.JwtVerifyResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.json.simple.parser.ParseException;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -35,12 +36,8 @@ import java.util.regex.Pattern;
  * @description 회원의 인증/인가 및 회원 정보 관련 서비스 구현체
  * @author  박세헌, 박찬호
  * @since   2022-09-07
- * @updated 1.회원가입 로직 추가
- *          2022-09-12 박찬호
- * @updated 1.기존 유저인지 판별하는 API 추가 - 박찬호
- *          2.프로필 사진 변경하는 기능 구현 - 박찬호
- *          3.닉네임 특수 문자 제외 - 박세헌
- *          2022-09-12
+ * @updated 1.회원 정보 수정 구현 완료
+ *          - 2022-10-22 박찬호
  */
 
 @Slf4j
@@ -66,7 +63,7 @@ public class AuthServiceImpl implements AuthService, UserDetailsService {
                 .longitude(null)
                 .isShowMine(true)
                 .isShowFriend(true)
-                .isPublicRecord(true)
+                .isPublicRecord(user.getIsPublicRecord())
                 .pictureName(user.getPictureName())
                 .picturePath(user.getPicturePath())
                 .build());
@@ -84,10 +81,12 @@ public class AuthServiceImpl implements AuthService, UserDetailsService {
                 .id(kakaoUserInfo.getId())
                 .kakaoRefreshToken(request.getKakaoRefreshToken())
                 .nickname(request.getNickname())
+                .isPublicRecord(request.getIsPublicRecord())
                 .mail(kakaoUserInfo.getEmail())
                 .pictureName(kakaoUserInfo.getPictureName())
                 .picturePath(kakaoUserInfo.getPicturePath())
                 .build();
+
 
         //필터 호출
         ResponseEntity<UserResponseDto.SignUp> response = webClient.post()
@@ -139,7 +138,6 @@ public class AuthServiceImpl implements AuthService, UserDetailsService {
     /*닉네임 Validation*/
     public Boolean validateNickname(String nickname) {
         Pattern rex = Pattern.compile("[^\uAC00-\uD7A3xfe0-9a-zA-Z]");
-        System.out.println("abc"+ nickname);
         return nickname.length() >= 2 && nickname.length() <= 6 // 2~6글자
                 && userRepository.findByNickname(nickname).isEmpty() //중복X
                 && !rex.matcher(nickname).find(); // 특수문자
@@ -147,22 +145,56 @@ public class AuthServiceImpl implements AuthService, UserDetailsService {
 
     /*기존 유저인지 판별*/
     public Boolean isOriginalUser(HttpServletRequest request) {
-        String accessToken = request.getHeader("Access-Token");
+        String accessToken = request.getHeader("Kakao-Access-Token");
 
         KakaoDto.TokenInfo tokenInfo = kakaoService.getTokenInfo(accessToken);
 
         return userRepository.findByKakaoId(tokenInfo.getId()).isPresent();
     }
 
-    /**
-     * 회원의 프로필 사진 변경
-     * 카카오 프로필을 사용하는 경우 호출하지 않음. (DB의 값을 변경하면서 S3 버킷의 파일도 변경하기 위함)
-     * */
-    public void updatePicture(User user, String pictureName, String picturePath) {
-        //버킷에 있는 파일 삭제
-        amazonS3Service.deleteFile(pictureName);
+    /* 리프레시 토큰이 오면 JWTCheckFilter에서 검증 후 성공적으로 filter를 통과 했다면 해당 로직에서 토큰 재발급 */
+    public ResponseEntity<Boolean> issuanceToken(String refreshToken){
 
-        //프로필 사진 변경
-        user.updatePicture(pictureName, picturePath);
+        String token = refreshToken.substring("Bearer ".length());
+        JwtVerifyResult result = JwtUtil.verify(token);
+        // 토큰 재발급, 리프레시 토큰은 저장
+        String accessToken = JwtUtil.makeAccessToken(result.getNickname());
+        refreshToken = JwtUtil.makeRefreshToken(result.getNickname());
+
+        User user = userRepository.findByNickname(result.getNickname()).orElseThrow(
+                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Authorization", "Bearer " + accessToken);
+        headers.add("Refresh-Token", "Bearer " + refreshToken);
+
+        user.updateRefreshToken(refreshToken);
+        userRepository.save(user);
+
+        return ResponseEntity
+                .ok()
+                .headers(headers)
+                .body(true);
     }
+    /* 새로운 닉네임으로 토큰 재발급 */
+    public ResponseEntity<UserResponseDto.UInfo> issuanceTokenByNickname(String nickname){
+        String accessToken = JwtUtil.makeAccessToken(nickname);
+        String refreshToken = JwtUtil.makeRefreshToken(nickname);
+
+        User user = userRepository.findByNickname(nickname).orElseThrow(
+                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Authorization", "Bearer " + accessToken);
+        headers.add("Refresh-Token", "Bearer " + refreshToken);
+
+        user.updateRefreshToken(refreshToken);
+        userRepository.save(user);
+
+        return ResponseEntity
+                .ok()
+                .headers(headers)
+                .body(new UserResponseDto.UInfo(user.getNickname(), user.getPicturePath()));
+    }
+
 }
