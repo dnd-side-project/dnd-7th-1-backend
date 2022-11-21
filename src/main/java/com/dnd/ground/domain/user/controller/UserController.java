@@ -36,8 +36,12 @@ public interface UserController {
     ResponseEntity<Boolean> changeFilterFriend(@RequestParam("nickname") String nickname);
     ResponseEntity<Boolean> changeFilterRecord(@RequestParam("nickname") String nickname);
 
-    ResponseEntity<UserResponseDto.UInfo> editUserProfile(@RequestPart(required = false) MultipartFile multipartFile,
-                                            @RequestPart UserRequestDto.Profile requestDto);
+    public ResponseEntity<UserResponseDto.UInfo> editUserProfile(@RequestPart(value = "picture", required = false) MultipartFile picture,
+                                                                 @RequestParam(value = "originNickname") String originNickname,
+                                                                 @RequestParam(value = "editNickname") String editNickname,
+                                                                 @RequestParam(value = "intro") String intro,
+                                                                 @RequestParam(value = "isBasic") Boolean isBasic
+    );
 
     ResponseEntity<Boolean> getDetailMap(@RequestBody RecordRequestDto.Message requestDto);
 
