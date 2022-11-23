@@ -1,6 +1,7 @@
 package com.dnd.ground.domain.challenge.dto;
 
 import com.dnd.ground.domain.challenge.ChallengeColor;
+import com.dnd.ground.domain.challenge.ChallengeStatus;
 import com.dnd.ground.domain.challenge.ChallengeType;
 import com.dnd.ground.domain.matrix.dto.MatrixDto;
 import com.dnd.ground.domain.user.dto.UserResponseDto;
@@ -16,7 +17,8 @@ import java.util.List;
  * @description 챌린지와 관련한 Response DTO
  * @author  박찬호
  * @since   2022-08-12
- * @updated 1. 프로필 사진 추가 - 2022-10-10 박세헌
+ * @updated 1. 진행 대기 중 챌린지 상세 정보 조회를 위한 DTO 생성
+ *          2022-11-23 박찬호
  */
 
 
@@ -148,10 +150,10 @@ public class ChallengeResponseDto {
         private String picturePath;
     }
 
-    /*챌린지 상세 보기*/
+    /*진행 중 챌린지 상세 보기*/
     @Data
     @Builder
-    static public class Detail {
+    static public class ProgressDetail {
         @ApiModelProperty(value="챌린지 이름", example="챌린지1")
         private String name;
 
@@ -186,4 +188,42 @@ public class ChallengeResponseDto {
         @ApiModelProperty(value="걸음 수", example="15")
         private Integer stepCount;
     }
+
+    //진행 대기 중 챌린지 상세 보기
+    @Data
+    @Builder
+    static public class WaitDetail {
+        @ApiModelProperty(value="챌린지 이름", example="챌린지1")
+        private String name;
+
+        @ApiModelProperty(value="챌린지 종류(영역:Widen || 칸:Accumulate)", example="Widen")
+        private ChallengeType type;
+
+        @ApiModelProperty(value="챌린지 색상(Red, Pink, Yellow)", example="Pink")
+        private ChallengeColor color;
+
+        @ApiModelProperty(value="챌린지 시작 날짜", example="2022-08-17")
+        private LocalDate started;
+
+        @ApiModelProperty(value="챌린지 종료 날짜", example="2022-08-21")
+        private LocalDate ended;
+
+        @ApiModelProperty(value="챌린지에 참가하는 회원 정보 목록", example="[{picturePath: \"http:\\/\\/k.kakaocdn.net\\/dn\\/uQVeo\\/btrLgESJyjg\\/Pff3k36lRWkQ98ebAlexv1\\/img_640x640.jpg\", nickname: \"NickA\", status:\"Wait\"}]")
+        List<UCInfo> infos;
+    }
+
+    //챌린지에 참가하는 멤버들의 정보
+    @Data
+    @AllArgsConstructor
+    public static class UCInfo {
+        @ApiModelProperty(value="주최자의 프로필 사진 URI(카카오 프로필 사용 시 kakao/카카오회원번호)", example="http:\\/\\/k.kakaocdn.net\\/dn\\/uQVeo\\/btrLgESJyjg\\/Pff3k36lRWkQ98ebAlexv1\\/img_640x640.jpg")
+        private String picturePath;
+
+        @ApiModelProperty(value = "닉네임", example = "NickA")
+        private String nickname;
+
+        @ApiModelProperty(value = "챌린지 준비 상태 여부", example = "Wait")
+        private ChallengeStatus status;
+    }
+
 }
