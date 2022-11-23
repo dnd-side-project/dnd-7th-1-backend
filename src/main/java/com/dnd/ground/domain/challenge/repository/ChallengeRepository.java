@@ -68,4 +68,8 @@ public interface ChallengeRepository extends JpaRepository<Challenge, Long> {
     List<Challenge> findChallengesBetweenStartAndEnd(@Param("user") User user,
                                                      @Param("start") LocalDate start,
                                                      @Param("end") LocalDate end);
+
+    //챌린지 이름으로 UUID 조회 - Dummy
+    @Query("select c.uuid from Challenge c where c.name = :name")
+    Optional<String> findUUIDByName(@Param("name") String name);
 }
