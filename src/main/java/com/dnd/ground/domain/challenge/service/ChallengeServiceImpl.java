@@ -34,11 +34,11 @@ import java.time.temporal.TemporalAdjusters;
 import java.util.*;
 
 /**
- * @author 박찬호, 박세헌
+ * @author 박찬호
  * @description 챌린지와 관련된 서비스의 역할을 분리한 구현체
  * @since 2022-08-03
- * @updated 1. 챌린지 삭제 구현
- *          2022-10-26 박찬호
+ * @updated 1. 대기 중 챌린지 상세 정보 조회 API 구현
+ *          2022-11-23 박찬호
  */
 
 @Slf4j
@@ -448,8 +448,46 @@ public class ChallengeServiceImpl implements ChallengeService {
         return response;
     }
 
+    /*진행 대기 중 챌린지 상세 조회*/
+    public ChallengeResponseDto.WaitDetail getDetailWaitChallenge(ChallengeRequestDto.CInfo request) {
+        User user = userRepository.findByNickname(request.getNickname()).orElseThrow(
+                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
+
+        Challenge challenge = challengeRepository.findByUuid(request.getUuid()).orElseThrow(
+                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_CHALLENGE));
+
+        LocalDate started = challenge.getStarted(); //챌린지 시작 날짜
+        LocalDate ended = started.plusDays(7 - started.getDayOfWeek().getValue());
+
+        List<UserChallenge> ucList = userChallengeRepository.findUCByChallenge(challenge);
+        List<ChallengeResponseDto.UCInfo> infos = new ArrayList<>();
+
+        for (UserChallenge uc : ucList) {
+            User userInUC = uc.getUser();
+            ChallengeResponseDto.UCInfo ucInfo = new ChallengeResponseDto.UCInfo(
+                    userInUC.getPictureName(), userInUC.getNickname(), uc.getStatus());
+
+            if (uc.getStatus() == ChallengeStatus.Master) {
+                infos.add(0, ucInfo);
+            } else if (userInUC.getNickname().equals(user.getNickname())) {
+                infos.add(1, ucInfo);
+            } else {
+                infos.add(ucInfo);
+            }
+        }
+
+        return ChallengeResponseDto.WaitDetail.builder()
+                .name(challenge.getName())
+                .type(challenge.getType())
+                .color(userChallengeRepository.findChallengeColor(user, challenge))
+                .started(started)
+                .ended(ended)
+                .infos(infos)
+                .build();
+    }
+
     /*진행 중인 챌린지 상세 조회*/
-    public ChallengeResponseDto.Detail getDetailProgress(ChallengeRequestDto.CInfo request) {
+    public ChallengeResponseDto.ProgressDetail getDetailProgress(ChallengeRequestDto.CInfo request) {
         User user = userRepository.findByNickname(request.getNickname()).orElseThrow(
                 () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
 
@@ -485,7 +523,7 @@ public class ChallengeServiceImpl implements ChallengeService {
         //챌린지 타입에 따른 랭킹 정보(순위, 닉네임, 점수) 계산
         rankings = calculateChallengeRanking(challenge, members, started, ended, challenge.getType());
 
-        return ChallengeResponseDto.Detail.builder()
+        return ChallengeResponseDto.ProgressDetail.builder()
                 .name(challenge.getName())
                 .uuid(challenge.getUuid())
                 .type(challenge.getType())
