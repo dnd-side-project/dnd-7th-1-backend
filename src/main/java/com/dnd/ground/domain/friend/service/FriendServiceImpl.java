@@ -11,6 +11,7 @@ import com.dnd.ground.global.exception.CommonErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,10 +22,9 @@ import java.util.Optional;
 /**
  * @author 박찬호
  * @description 친구와 관련된 서비스 구현체
- * @updated 1.친구 목록 조회 페이징 적용
- * 2.친구 요청 목록 조회 기능 구현
- * - 2022.10.29 박찬호
  * @since 2022-08-01
+ * @updated 1.페이징 수정
+ *          - 2022.11.27 박찬호
  */
 
 @Slf4j
@@ -35,8 +35,8 @@ public class FriendServiceImpl implements FriendService {
     private final FriendRepository friendRepository;
     private final UserRepository userRepository;
 
-    private final Integer FRIEND_LARGE_PAGING_NUMBER = 16; //15개씩 페이징하기 위해 1개 더 가져옴(마지막 여부 판단)
-    private final Integer FRIEND_SMALL_PAGING_NUMBER = 4; //3개씩 페이징 하기 위해 1개 더 가져옴.
+    private final Integer FRIEND_LARGE_PAGING_NUMBER = 15; //15개씩 페이징하기 위해 1개 더 가져옴(마지막 여부 판단)
+    private final Integer FRIEND_SMALL_PAGING_NUMBER = 3; //3개씩 페이징 하기 위해 1개 더 가져옴.
 
     //친구 목록과 추가 정보를 함께 반환
     @Transactional
@@ -47,25 +47,17 @@ public class FriendServiceImpl implements FriendService {
                 () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
 
         List<FriendResponseDto.FInfo> infos = new ArrayList<>();
-        boolean isLast = false;
+        boolean isLast;
 
         PageRequest pageRequest = PageRequest.of(offset, FRIEND_LARGE_PAGING_NUMBER);
 
         try {
-            List<Friend> findFriends = friendRepository.findFriendsByUserWithPaging(user, user, pageRequest).getContent();
+            Slice<Friend> findFriendSlice = friendRepository.findFriendsByUserWithPaging(user, user, pageRequest);
+            isLast = findFriendSlice.isLast();
 
-            if (findFriends.size() <= FRIEND_LARGE_PAGING_NUMBER - 1)
-                isLast = true;
+            List<Friend> findFriends = findFriendSlice.getContent();
 
-            int length;
-            if (findFriends.size() < FRIEND_LARGE_PAGING_NUMBER-1) {
-                length = findFriends.size();
-            } else {
-                length = FRIEND_LARGE_PAGING_NUMBER-1;
-            }
-
-            for (int i = 0; i < length; i++) {
-                Friend findFriend = findFriends.get(i);
+            for (Friend findFriend : findFriends) {
                 if (findFriend.getUser() == user) {
                     infos.add(FriendResponseDto.FInfo.of()
                             .nickname(findFriend.getFriend().getNickname())
@@ -99,22 +91,15 @@ public class FriendServiceImpl implements FriendService {
                 () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
 
         FriendResponseDto.ReceiveRequest response = new FriendResponseDto.ReceiveRequest();
-        boolean isLast = false;
+        boolean isLast;
 
         PageRequest pageRequest = PageRequest.of(offset, FRIEND_SMALL_PAGING_NUMBER);
-        List<User> receiveRequest = friendRepository.findReceiveRequest(user, pageRequest).getContent();
+        Slice<User> receiveRequestSlice = friendRepository.findReceiveRequest(user, pageRequest);
+        isLast = receiveRequestSlice.isLast();
 
-        if (receiveRequest.size() <= FRIEND_SMALL_PAGING_NUMBER - 1)
-            isLast = true;
+        List<User> receiveRequest = receiveRequestSlice.getContent();
 
-        int length;
-        if (receiveRequest.size() < FRIEND_SMALL_PAGING_NUMBER-1) {
-            length = receiveRequest.size();
-        } else {
-            length = FRIEND_SMALL_PAGING_NUMBER - 1;
-        }
-        for (int i = 0; i < length - 1; i++) {
-            User friend = receiveRequest.get(i);
+        for (User friend : receiveRequest) {
             response.getFriendsInfo().add(
                     FriendResponseDto.FInfo.of()
                             .nickname(friend.getNickname())
