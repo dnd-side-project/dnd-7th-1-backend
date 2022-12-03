@@ -8,7 +8,7 @@ package com.dnd.ground.global.exception;
  *          - 2022.12.03 박찬호
  */
 public class CommonException extends BaseExceptionAbs {
-    CommonException(ExceptionCodeSet exceptionCode) {
+    public CommonException(ExceptionCodeSet exceptionCode) {
         super(exceptionCode);
     }
 }

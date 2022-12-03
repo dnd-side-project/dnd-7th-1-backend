@@ -11,8 +11,8 @@ import com.dnd.ground.domain.user.dto.RankResponseDto;
 import com.dnd.ground.domain.user.dto.UserRequestDto;
 import com.dnd.ground.domain.user.dto.UserResponseDto;
 import com.dnd.ground.domain.user.repository.UserRepository;
-import com.dnd.ground.global.exception.CNotFoundException;
-import com.dnd.ground.global.exception.CommonErrorCode;
+import com.dnd.ground.global.exception.ExceptionCodeSet;
+import com.dnd.ground.global.exception.UserException;
 import lombok.*;
 
 import org.springframework.stereotype.Service;
@@ -49,7 +49,7 @@ public class MatrixServiceImpl implements MatrixService {
     // 랭킹 조회(역대 누적 칸의 수 기준)
     public RankResponseDto.Matrix matrixRanking(String nickname) {
         User user = userRepository.findByNickname(nickname).orElseThrow(
-                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
+                () -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
 
         List<User> userAndFriends = friendService.getFriends(user);  // 친구들 조회
         userAndFriends.add(user);  // 유저 추가
@@ -74,7 +74,7 @@ public class MatrixServiceImpl implements MatrixService {
         LocalDateTime end = requestDto.getEnd();
 
         User user = userRepository.findByNickname(nickname).orElseThrow(
-                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
+                () -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
 
         List<User> friends = friendService.getFriends(user);  // 친구들 조회
 

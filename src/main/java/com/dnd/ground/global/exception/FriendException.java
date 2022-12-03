@@ -8,7 +8,7 @@ package com.dnd.ground.global.exception;
  *          - 2022.12.03 박찬호
  */
 public class FriendException extends BaseExceptionAbs {
-    FriendException(ExceptionCodeSet exceptionCode) {
+    public FriendException(ExceptionCodeSet exceptionCode) {
         super(exceptionCode);
     }
 }

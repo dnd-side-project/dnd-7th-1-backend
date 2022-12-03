@@ -14,6 +14,11 @@ import lombok.RequiredArgsConstructor;
 @Getter
 public class ChallengeException extends BaseExceptionAbs {
 
+    public ChallengeException(ExceptionCodeSet exceptionCode) {
+        super(exceptionCode);
+        this.nickname = null;
+    }
+
     public ChallengeException(ExceptionCodeSet exceptionCode, String nickname) {
         super(exceptionCode);
         this.nickname = nickname;

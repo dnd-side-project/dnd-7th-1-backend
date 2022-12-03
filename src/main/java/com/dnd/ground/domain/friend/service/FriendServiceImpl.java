@@ -6,8 +6,9 @@ import com.dnd.ground.domain.friend.dto.FriendResponseDto;
 import com.dnd.ground.domain.friend.repository.FriendRepository;
 import com.dnd.ground.domain.user.User;
 import com.dnd.ground.domain.user.repository.UserRepository;
-import com.dnd.ground.global.exception.CNotFoundException;
-import com.dnd.ground.global.exception.CommonErrorCode;
+import com.dnd.ground.global.exception.ExceptionCodeSet;
+import com.dnd.ground.global.exception.FriendException;
+import com.dnd.ground.global.exception.UserException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
@@ -44,7 +45,7 @@ public class FriendServiceImpl implements FriendService {
 
         //유저 및 친구 조회
         User user = userRepository.findByNickname(nickname).orElseThrow(
-                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
+                () -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
 
         List<FriendResponseDto.FInfo> infos = new ArrayList<>();
         boolean isLast;
@@ -88,7 +89,7 @@ public class FriendServiceImpl implements FriendService {
     //요청받은 친구 목록 조회
     public FriendResponseDto.ReceiveRequest getReceiveRequest(String nickname, Integer offset) {
         User user = userRepository.findByNickname(nickname).orElseThrow(
-                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
+                () -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
 
         FriendResponseDto.ReceiveRequest response = new FriendResponseDto.ReceiveRequest();
         boolean isLast;
@@ -142,11 +143,11 @@ public class FriendServiceImpl implements FriendService {
     @Transactional
     public Boolean requestFriend(String userNickname, String friendNickname) {
         User user = userRepository.findByNickname(userNickname).orElseThrow(
-                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER)
+                () -> new UserException(ExceptionCodeSet.USER_NOT_FOUND)
         );
 
         User friend = userRepository.findByNickname(friendNickname).orElseThrow(
-                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER)
+                () -> new FriendException(ExceptionCodeSet.FRIEND_NOT_FOUND)
         );
 
         if (friendRepository.findFriendInProgress(user, friend).isPresent() || userNickname.equals(friendNickname)) {
@@ -163,15 +164,15 @@ public class FriendServiceImpl implements FriendService {
     @Transactional
     public FriendResponseDto.ResponseResult responseFriend(String userNickname, String friendNickname, FriendStatus status) {
         User user = userRepository.findByNickname(userNickname).orElseThrow(
-                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER)
+                () -> new UserException(ExceptionCodeSet.USER_NOT_FOUND)
         );
 
         User friend = userRepository.findByNickname(friendNickname).orElseThrow(
-                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER)
+                () -> new FriendException(ExceptionCodeSet.FRIEND_NOT_FOUND)
         );
 
         Friend friendRelation = friendRepository.findRequestFriend(user, friend).orElseThrow(
-                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_FRIEND_REQUEST)
+                () -> new FriendException(ExceptionCodeSet.FRIEND_NOT_FOUND_REQ)
         );
 
         friendRelation.updateStatus(status);
@@ -182,11 +183,11 @@ public class FriendServiceImpl implements FriendService {
     @Transactional
     public Boolean deleteFriend(String userNickname, String friendNickname) {
         User user = userRepository.findByNickname(userNickname).orElseThrow(
-                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER)
+                () -> new UserException(ExceptionCodeSet.USER_NOT_FOUND)
         );
 
         User friend = userRepository.findByNickname(friendNickname).orElseThrow(
-                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER)
+                () -> new FriendException(ExceptionCodeSet.FRIEND_NOT_FOUND)
         );
 
         Optional<Friend> friendRelation = friendRepository.findFriendRelation(user, friend);

@@ -3,8 +3,8 @@ package com.dnd.ground.global.securityFilter;
 import com.dnd.ground.domain.user.dto.JwtUserDto;
 import com.dnd.ground.domain.user.repository.UserRepository;
 import com.dnd.ground.domain.user.service.AuthService;
-import com.dnd.ground.global.exception.CNotFoundException;
-import com.dnd.ground.global.exception.CommonErrorCode;
+import com.dnd.ground.global.exception.ExceptionCodeSet;
+import com.dnd.ground.global.exception.UserException;
 import com.dnd.ground.global.util.JwtUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -15,7 +15,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.transaction.annotation.Transactional;
 
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
@@ -61,7 +60,7 @@ public class JWTSignFilter extends UsernamePasswordAuthenticationFilter {
         try {
             userDto = objectMapper.readValue(request.getInputStream(), JwtUserDto.class);
         } catch (IOException e) {
-            request.setAttribute("exception", CommonErrorCode.INTERNAL_SERVER_ERROR.getMessage());
+            request.setAttribute("exception", ExceptionCodeSet.INTERNAL_SERVER_ERROR.getMessage());
         }
 
         // 신규 회원이면 저장
@@ -99,7 +98,7 @@ public class JWTSignFilter extends UsernamePasswordAuthenticationFilter {
         response.setContentType("application/json; charset=utf-8");
 
         com.dnd.ground.domain.user.User user = userRepository.findByNickname(principal.getUsername())
-                .orElseThrow(() -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));;
+                .orElseThrow(() -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));;
         user.updateRefreshToken(refreshToken);
         userRepository.save(user);
 

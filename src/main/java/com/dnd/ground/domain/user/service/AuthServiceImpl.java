@@ -6,8 +6,8 @@ import com.dnd.ground.domain.user.dto.KakaoDto;
 import com.dnd.ground.domain.user.dto.UserRequestDto;
 import com.dnd.ground.domain.user.dto.UserResponseDto;
 import com.dnd.ground.domain.user.repository.UserRepository;
-import com.dnd.ground.global.exception.CNotFoundException;
-import com.dnd.ground.global.exception.CommonErrorCode;
+import com.dnd.ground.global.exception.ExceptionCodeSet;
+import com.dnd.ground.global.exception.UserException;
 import com.dnd.ground.global.util.AmazonS3Service;
 import com.dnd.ground.global.util.JwtUtil;
 import com.dnd.ground.global.util.JwtVerifyResult;
@@ -36,8 +36,8 @@ import java.util.regex.Pattern;
  * @description 회원의 인증/인가 및 회원 정보 관련 서비스 구현체
  * @author  박세헌, 박찬호
  * @since   2022-09-07
- * @updated 1.회원 정보 수정 구현 완료
- *          - 2022-10-22 박찬호
+ * @updated 1.예외 처리 리팩토링
+ *          - 2022-12-03 박찬호
  */
 
 @Slf4j
@@ -46,7 +46,6 @@ import java.util.regex.Pattern;
 public class AuthServiceImpl implements AuthService, UserDetailsService {
 
     private final UserRepository userRepository;
-    private final AmazonS3Service amazonS3Service;
     private final KakaoService kakaoService;
 
     /*회원 저장*/
@@ -122,7 +121,7 @@ public class AuthServiceImpl implements AuthService, UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String nickname) {
         User user = userRepository.findByNickname(nickname).orElseThrow(
-                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER)
+                () -> new UserException(ExceptionCodeSet.USER_NOT_FOUND)
         );
 
         BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
@@ -162,7 +161,7 @@ public class AuthServiceImpl implements AuthService, UserDetailsService {
         refreshToken = JwtUtil.makeRefreshToken(result.getNickname());
 
         User user = userRepository.findByNickname(result.getNickname()).orElseThrow(
-                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
+                () -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
 
         HttpHeaders headers = new HttpHeaders();
         headers.add("Authorization", "Bearer " + accessToken);
@@ -182,7 +181,7 @@ public class AuthServiceImpl implements AuthService, UserDetailsService {
         String refreshToken = JwtUtil.makeRefreshToken(nickname);
 
         User user = userRepository.findByNickname(nickname).orElseThrow(
-                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
+                () -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
 
         HttpHeaders headers = new HttpHeaders();
         headers.add("Authorization", "Bearer " + accessToken);

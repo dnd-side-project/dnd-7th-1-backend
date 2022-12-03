@@ -17,6 +17,7 @@ import org.springframework.http.HttpStatus;
 public enum ExceptionCodeSet {
     //회원
     USER_NOT_FOUND(HttpStatus.BAD_REQUEST, "1000", "회원이 존재하지 않습니다."),
+    DUPLICATE_NICKNAME(HttpStatus.BAD_REQUEST, "1001", "중복된 닉네임입니다."),
 
     //인증,인가
     USER_NOT_SIGNUP(HttpStatus.UNAUTHORIZED, "2000", "카카오 로그인만 진행하고, 회원가입은 하지 않은 유저입니다."),
@@ -24,7 +25,6 @@ public enum ExceptionCodeSet {
     ACCESS_TOKEN_EXPIRED(HttpStatus.FORBIDDEN, "2002", "액세스 토큰이 만료 되었습니다."),
     REFRESH_TOKEN_EXPIRED(HttpStatus.FORBIDDEN, "2003", "리프레시 토큰이 만료 되었습니다."),
     WRONG_TOKEN(HttpStatus.FORBIDDEN, "2004","잘못된 토큰 입니다."),
-    DUPLICATE_NICKNAME(HttpStatus.BAD_REQUEST, "2005", "중복된 닉네임입니다."),
 
     //친구
     FRIEND_NOT_FOUND_REQ(HttpStatus.BAD_REQUEST, "3000", "친구 요청 기록이 없습니다."),
@@ -37,7 +37,7 @@ public enum ExceptionCodeSet {
     CHALLENGE_NOT_FOUND(HttpStatus.BAD_REQUEST, "4000", "챌린지가 존재하지 않습니다."),
 
     //회원-챌린지
-    USER_CHALLENGE_NOT_FOUND(HttpStatus.BAD_REQUEST, "4500", "요청한 챌린지에 해당 유저의 기록이 없습니다."),
+    USER_CHALLENGE_NOT_FOUND(HttpStatus.BAD_REQUEST, "4500", "챌린지에 참가하는 회원이 아닙니다."),
     MASTER_STATUS_NOT_CHANGE(HttpStatus.BAD_REQUEST, "4501", "주최자의 상태를 변경할 수 없습니다."),
     CHALLENGE_EXCEED(HttpStatus.BAD_REQUEST, "4502", "3개 이상의 챌린지에 동시에 참여 할 수 없습니다."),
 

@@ -8,7 +8,7 @@ package com.dnd.ground.global.exception;
  *          - 2022.12.03 박찬호
  */
 public class ExerciseRecordException extends BaseExceptionAbs {
-    ExerciseRecordException(ExceptionCodeSet exceptionCode) {
+    public ExerciseRecordException(ExceptionCodeSet exceptionCode) {
         super(exceptionCode);
     }
 }
