@@ -4,8 +4,8 @@ import com.auth0.jwt.exceptions.TokenExpiredException;
 import com.dnd.ground.domain.user.User;
 import com.dnd.ground.domain.user.repository.UserRepository;
 import com.dnd.ground.domain.user.service.AuthService;
-import com.dnd.ground.global.exception.CNotFoundException;
-import com.dnd.ground.global.exception.CommonErrorCode;
+import com.dnd.ground.global.exception.ExceptionCodeSet;
+import com.dnd.ground.global.exception.UserException;
 import com.dnd.ground.global.util.JwtUtil;
 import com.dnd.ground.global.util.JwtVerifyResult;
 import lombok.extern.slf4j.Slf4j;
@@ -64,18 +64,18 @@ public class JWTCheckFilter extends BasicAuthenticationFilter {
                 token = refreshToken.substring("Bearer ".length());
                 result = JwtUtil.verify(token);
             } catch (Exception e) {
-                request.setAttribute("exception", CommonErrorCode.WRONG_TOKEN.getMessage());
+                request.setAttribute("exception", ExceptionCodeSet.WRONG_TOKEN.getMessage());
                 throw new AuthenticationException("잘못된 토큰 입니다.");
             }
             // 리프레시 토큰 만료
             if (!result.isSuccess()) {
-                request.setAttribute("exception", CommonErrorCode.REFRESH_TOKEN_EXPIRED.getMessage());
+                request.setAttribute("exception", ExceptionCodeSet.REFRESH_TOKEN_EXPIRED.getMessage());
                 throw new TokenExpiredException("리프레시 토큰이 만료되었습니다.");
             }
             // 리프레시 토큰 유효(토큰 재발급)
             else {
                 User user = userRepository.findByNickname(result.getNickname()).orElseThrow(
-                        () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
+                        () -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
                 // 유저의 리프레시 토큰과 넘어온 리프레시 토큰이 같으면
                 if (Objects.equals(user.getRefreshToken(), token)) {
                     // 필터 통과
@@ -87,7 +87,7 @@ public class JWTCheckFilter extends BasicAuthenticationFilter {
                     chain.doFilter(request, response);
                 }
                 else {
-                    request.setAttribute("exception", CommonErrorCode.WRONG_TOKEN.getMessage());
+                    request.setAttribute("exception", ExceptionCodeSet.WRONG_TOKEN.getMessage());
                     throw new AuthenticationException("잘못된 토큰 입니다.");
                 }
             }
@@ -99,11 +99,11 @@ public class JWTCheckFilter extends BasicAuthenticationFilter {
                 token = accessToken.substring("Bearer ".length());
                 result = JwtUtil.verify(token);
             } catch (Exception e) {
-                request.setAttribute("exception", CommonErrorCode.WRONG_TOKEN.getMessage());
+                request.setAttribute("exception", ExceptionCodeSet.WRONG_TOKEN.getMessage());
                 throw new AuthenticationException("잘못된  토큰 입니다.");
             }
             if (!result.isSuccess()) {
-                request.setAttribute("exception", CommonErrorCode.ACCESS_TOKEN_EXPIRED.getMessage());
+                request.setAttribute("exception", ExceptionCodeSet.ACCESS_TOKEN_EXPIRED.getMessage());
                 throw new TokenExpiredException("액세스 토큰이 만료되었습니다.");
             }
             // 필터 통과

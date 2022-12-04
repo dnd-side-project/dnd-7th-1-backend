@@ -1,5 +1,6 @@
 package com.dnd.ground.global.dummy;
 
+import com.dnd.ground.domain.challenge.Challenge;
 import com.dnd.ground.domain.challenge.UserChallenge;
 import com.dnd.ground.domain.challenge.repository.ChallengeRepository;
 import com.dnd.ground.domain.challenge.repository.UserChallengeRepository;
@@ -28,8 +29,10 @@ import java.util.List;
  * @description 더미 데이터 생성을 위한 서비스
  * @author  박찬호
  * @since   2022-10-04
- * @updated 1. 회원, 운동 기록, 영역과 관련된 로직 생성
- *          - 2022.10.04 박찬호
+ * @updated 1.챌린지 uuid 조회
+ *          2.챌린지 상태 변경
+ *          3.UC 상태 변경
+ *          - 2022.11.23 박찬호
  */
 
 @RequiredArgsConstructor
@@ -252,5 +255,37 @@ public class DummyService {
 
         return ResponseEntity.ok()
                 .body(true);
+    }
+
+    /*챌린지 상태 변경*/
+    @Transactional
+    public ResponseEntity<?> changeChallengeStatus(DummyRequestDto.DummyChallengeStatus request) {
+        Challenge challenge = challengeRepository.findByUuid(request.getUuid()).orElseThrow(
+                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_CHALLENGE)
+        );
+
+        challenge.updateStatus(request.getStatus());
+
+        return ResponseEntity.ok(true);
+    }
+
+    /*챌린지에 참여하는 회원의 상태 변경*/
+    @Transactional
+    public ResponseEntity<?> changeUCStatus(DummyRequestDto.DummyUCStatus request) {
+        User user = userRepository.findByNickname(request.getNickname()).orElseThrow(
+                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER)
+        );
+
+        Challenge challenge = challengeRepository.findByUuid(request.getUuid()).orElseThrow(
+                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_CHALLENGE)
+        );
+
+        UserChallenge userChallenge = userChallengeRepository.findByUserAndChallenge(user, challenge).orElseThrow(
+                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER_CHALLENGE)
+        );
+
+        userChallenge.changeStatus(request.getStatus());
+
+        return ResponseEntity.ok(true);
     }
 }

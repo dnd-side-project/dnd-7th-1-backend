@@ -1,5 +1,6 @@
 package com.dnd.ground.global.dummy;
 
+import com.dnd.ground.domain.challenge.ChallengeStatus;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 
@@ -10,8 +11,10 @@ import java.util.ArrayList;
  * @description 더미 데이터 생성을 위한 Request DTO
  * @author  박찬호
  * @since   2022-10-04
- * @updated 1. 회원, 운동 기록, 영역과 관련된 로직 생성
- *          - 2022.10.04 박찬호
+ * @updated 1.챌린지 uuid 조회
+ *          2.챌린지 상태 변경
+ *          3.UC 상태 변경
+ *          - 2022.11.23 박찬호
  */
 public class DummyRequestDto {
 
@@ -65,5 +68,27 @@ public class DummyRequestDto {
         @ApiModelProperty(name = "기록될 영역 정보 | 포맷: [ {위도:경도}, {위도:경도} ]",
                 example = "[[37.123123, 127.123123], [37.234234, 127.234234]]", dataType = "list", required = true)
         private ArrayList<ArrayList<Double>> matrices;
+    }
+
+    /*챌린지 상태를 변경하기 위한 DTO*/
+    @Data
+    public static class DummyChallengeStatus {
+        @ApiModelProperty(name = "챌린지 UUID", example = "11ed6b2bf98211da9cae0b652cf586a6")
+        private String uuid;
+        @ApiModelProperty(name = "바꾸고자 하는 챌린지 상태", example = "Wait")
+        private ChallengeStatus status;
+    }
+
+    /*챌린지에 참여하는 회원의 상태를 변경하기 위한 DTO*/
+    @Data
+    public static class DummyUCStatus {
+        @ApiModelProperty(name = "닉네임", example = "NickA", required = true)
+        private String nickname;
+
+        @ApiModelProperty(name = "챌린지 UUID", example = "11ed6b2bf98211da9cae0b652cf586a6")
+        private String uuid;
+
+        @ApiModelProperty(name = "바꾸고자 하는 챌린지 상태", example = "Wait")
+        private ChallengeStatus status;
     }
 }

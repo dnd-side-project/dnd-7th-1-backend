@@ -3,9 +3,11 @@ package com.dnd.ground.domain.user.controller;
 import com.dnd.ground.domain.exerciseRecord.dto.RecordRequestDto;
 import com.dnd.ground.domain.exerciseRecord.dto.RecordResponseDto;
 import com.dnd.ground.domain.friend.dto.FriendResponseDto;
+import com.dnd.ground.domain.user.User;
 import com.dnd.ground.domain.user.dto.HomeResponseDto;
 import com.dnd.ground.domain.user.dto.UserRequestDto;
 import com.dnd.ground.domain.user.dto.UserResponseDto;
+import com.dnd.ground.domain.user.repository.UserRepository;
 import com.dnd.ground.domain.user.service.UserService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiParam;
@@ -33,6 +35,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class UserControllerImpl implements UserController {
 
     private final UserService userService;
+    private final UserRepository userRepository;
 
     @GetMapping("/home")
     @Operation(summary = "홈 화면 조회",
@@ -100,9 +103,12 @@ public class UserControllerImpl implements UserController {
     @PostMapping(value = "/info/profile/edit", consumes =  {MediaType.MULTIPART_FORM_DATA_VALUE})
     @Operation(summary = "유저 프로필 수정", description = "닉네임, 자기소개, 프로필 사진 수정")
     public ResponseEntity<UserResponseDto.UInfo> editUserProfile(@RequestPart(value = "picture", required = false) MultipartFile picture,
-                                                   @RequestPart(value = "requestDto") UserRequestDto.Profile requestDto){
-
-        return userService.editUserProfile(picture, requestDto);
+                                                                 @RequestParam(value = "originNickname") String originNickname,
+                                                                 @RequestParam(value = "editNickname") String editNickname,
+                                                                 @RequestParam(value = "intro") String intro,
+                                                                 @RequestParam(value = "isBasic") Boolean isBasic
+    ){
+        return userService.editUserProfile(picture, new UserRequestDto.Profile(originNickname, editNickname, intro, isBasic));
     }
 
     @PostMapping("/info/activity/record/edit")
@@ -120,6 +126,7 @@ public class UserControllerImpl implements UserController {
     @GetMapping("/info/profile")
     @Operation(summary = "내 프로필 조회(마이페이지)", description = "내 프로필 조회\n변경된 닉네임 중복 시 DUPLICATE_NICKNAME 예외 전달")
     public ResponseEntity<UserResponseDto.Profile> getMyProfile(@RequestParam String nickname){
+        User user = userRepository.findByNickname(nickname).orElseThrow();
         return ResponseEntity.ok(userService.getUserProfile(nickname));
     }
 }
