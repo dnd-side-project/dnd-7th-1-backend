@@ -1,5 +1,6 @@
 package com.dnd.ground.global.dummy;
 
+import com.dnd.ground.domain.challenge.repository.ChallengeRepository;
 import io.swagger.annotations.Api;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
@@ -8,11 +9,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 /**
- * @description 더미 데이터 생성을 위한 컨트롤러
+ * @description 더미 데이터 생성을 위한 컨트롤러 + 개발 과정에서 필요한 API
  * @author  박찬호
  * @since   2022-10-04
- * @updated 1. 회원, 운동 기록, 영역과 관련된 로직 생성
- *          - 2022.10.04 박찬호
+ * @updated 1.챌린지 uuid 조회
+ *          2.챌린지 상태 변경
+ *          3.UC 상태 변경
+ *          - 2022.11.23 박찬호
  */
 
 @Api(tags = "더미 데이터")
@@ -23,6 +26,7 @@ import org.springframework.web.bind.annotation.*;
 public class DummyController {
 
     private final DummyService dummyService;
+    private final ChallengeRepository challengeRepository;
 
     @GetMapping("/user")
     @Operation(summary = "회원 조회", description = "회원 정보를 반환함.")
@@ -70,5 +74,24 @@ public class DummyController {
     @Operation(summary = "운동 기록 삭제", description = "운동 기록에 포함된 영역도 함께 삭제해버림.")
     public ResponseEntity<?> deleteDummyRecord(@RequestParam("recordId") Long recordId) {
         return dummyService.deleteDummyRecord(recordId);
+    }
+
+    @GetMapping("/challenge/uuid")
+    @Operation(summary = "챌린지 이름으로 UUID 조회", description = "챌린지 이름으로 UUID 조회하기")
+    public ResponseEntity<String> getUuidByName(@RequestParam("name")String name) {
+        return ResponseEntity.ok(challengeRepository.findUUIDByName(name).orElse("존재하지 않는 챌린지입니다."));
+    }
+
+    @PostMapping("/challenge/status")
+    @Operation(summary = "챌린지 상태 변경하기", description = "변경하고자 하는 챌린지 상태와 UUID를 넣어주시면 됩니다.\n챌린지 상태가 올바르게 입력되지 않으면 400입니다.\n챌린지 상태는 다음과 같습니다.\nWait: 대기\nProgress: 진행 중\nDone: 종료")
+    public ResponseEntity<?> changeChallengeStatus(@RequestBody DummyRequestDto.DummyChallengeStatus request) {
+        return dummyService.changeChallengeStatus(request);
+    }
+
+    @PostMapping("/challenge/user/status")
+    @Operation(summary = "챌린지에 참여하는 회원 상태 변경하기", description = "변경하고자 하는 챌린지의 UUID, 상태와 회원 닉네임을 넣어주시면 됩니다.\n변경하는 상태가 올바르지 않으면 400입니다.\n회원-챌린지 상태는 다음과 같습니다." +
+            "\nWait: 수락 대기\nProgress: 진행 중\nDone: 종료\nMaster:주최자(챌린지 생성한 사람)\nMasterDone: 챌린지 종료 후, 주최자의 상태\nReject: 거절")
+    public ResponseEntity<?> changeUCStatus(@RequestBody DummyRequestDto.DummyUCStatus request) {
+        return dummyService.changeUCStatus(request);
     }
 }

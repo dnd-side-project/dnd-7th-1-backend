@@ -17,8 +17,9 @@ import com.dnd.ground.domain.user.dto.RankResponseDto;
 import com.dnd.ground.domain.user.dto.UserRequestDto;
 import com.dnd.ground.domain.user.dto.UserResponseDto;
 import com.dnd.ground.domain.user.repository.UserRepository;
-import com.dnd.ground.global.exception.CNotFoundException;
-import com.dnd.ground.global.exception.CommonErrorCode;
+import com.dnd.ground.global.exception.ExceptionCodeSet;
+import com.dnd.ground.global.exception.FriendException;
+import com.dnd.ground.global.exception.UserException;
 import lombok.*;
 
 import org.springframework.http.HttpStatus;
@@ -53,7 +54,7 @@ public class ExerciseRecordServiceImpl implements ExerciseRecordService {
     // 운동기록 id, 일주일 누적 영역 반환
     public HomeResponseDto recordStart(String nickname){
         User user = userRepository.findByNickname(nickname).orElseThrow(
-                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
+                () -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
 
         /*회원의 matrix 와 정보 (userMatrix)*/
         UserResponseDto.UserMatrix userMatrix = new UserResponseDto.UserMatrix(user);
@@ -94,7 +95,7 @@ public class ExerciseRecordServiceImpl implements ExerciseRecordService {
 
         for (String friendNickname : friendHashMap.keySet()) {
             User friend = userRepository.findByNickname(friendNickname).orElseThrow(
-                    () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
+                    () -> new FriendException(ExceptionCodeSet.FRIEND_NOT_FOUND));
 
             friendMatrices.add(new UserResponseDto.FriendMatrix(friendNickname, friend.getLatitude(), friend.getLongitude(),
                     friendHashMap.get(friendNickname), friend.getPicturePath()));
@@ -137,7 +138,7 @@ public class ExerciseRecordServiceImpl implements ExerciseRecordService {
     public ResponseEntity<Boolean> recordEnd(EndRequestDto endRequestDto) {
         // 유저 찾아서 운동 기록 생성
         User user = userRepository.findByNickname(endRequestDto.getNickname()).orElseThrow(
-                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
+                () -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
         ExerciseRecord exerciseRecord = new ExerciseRecord(user);
 
         // 정보 update(ended, 거리, 걸음수, 운동시간, 상세 기록, 시작 시간, 끝 시간)
@@ -166,7 +167,7 @@ public class ExerciseRecordServiceImpl implements ExerciseRecordService {
         LocalDateTime end = requestDto.getEnd();
 
         User user = userRepository.findByNickname(nickname).orElseThrow(
-                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
+                () -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
 
         List<User> userAndFriends = friendService.getFriends(user);  // 친구들 조회
         userAndFriends.add(0, user);  // 유저 추가

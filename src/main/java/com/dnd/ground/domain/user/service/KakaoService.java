@@ -4,8 +4,8 @@ import com.dnd.ground.domain.friend.service.FriendService;
 import com.dnd.ground.domain.user.User;
 import com.dnd.ground.domain.user.dto.KakaoDto;
 import com.dnd.ground.domain.user.repository.UserRepository;
-import com.dnd.ground.global.exception.CNotFoundException;
-import com.dnd.ground.global.exception.CommonErrorCode;
+import com.dnd.ground.global.exception.ExceptionCodeSet;
+import com.dnd.ground.global.exception.UserException;
 import lombok.RequiredArgsConstructor;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -115,7 +115,7 @@ public class KakaoService {
         WebClient webClient = WebClient.create();
 
         User user = userRepository.findByNickname(nickname).orElseThrow(
-                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER)
+                () -> new UserException(ExceptionCodeSet.USER_NOT_FOUND)
         );
 
         final int PAGING_NUMBER = 15;

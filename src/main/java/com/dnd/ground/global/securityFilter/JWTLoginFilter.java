@@ -4,7 +4,7 @@ import com.dnd.ground.domain.user.User;
 import com.dnd.ground.domain.user.dto.KakaoDto;
 import com.dnd.ground.domain.user.repository.UserRepository;
 import com.dnd.ground.domain.user.service.KakaoService;
-import com.dnd.ground.global.exception.CommonErrorCode;
+import com.dnd.ground.global.exception.ExceptionCodeSet;
 import com.dnd.ground.global.util.JwtUtil;
 import org.json.JSONObject;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -53,7 +53,7 @@ public class JWTLoginFilter extends UsernamePasswordAuthenticationFilter {
         try {
             tokenInfo = kakaoService.getTokenInfo(kakaoAccessToken);
         } catch (WebClientResponseException e) { //카카오에서 -401 받는 예외 처리(잘못된 토큰)
-            request.setAttribute("exception", CommonErrorCode.WRONG_TOKEN.getMessage());
+            request.setAttribute("exception", ExceptionCodeSet.WRONG_TOKEN.getMessage());
         }
 
         Optional<User> findUser = userRepository.findByKakaoId(tokenInfo.getId());
@@ -71,7 +71,7 @@ public class JWTLoginFilter extends UsernamePasswordAuthenticationFilter {
             return getAuthenticationManager().authenticate(token);
         }
         else {
-            request.setAttribute("exception", CommonErrorCode.NOT_SIGNUP_USER);
+            request.setAttribute("exception", ExceptionCodeSet.USER_NOT_SIGNUP);
             return null;
         }
     }
