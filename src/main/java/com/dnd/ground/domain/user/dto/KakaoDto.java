@@ -6,14 +6,15 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
  * @description 카카오 API를 사용할 때 필요한 DTO
  * @author  박찬호
  * @since   2022-08-23
- * @updated 1.친구 목록 조회 관련 DTO 생성
- *          - 2022.10.29 박찬호
+ * @updated 1.친구 목록 조회 관련 DTO 수정
+ *          - 2022.01.12 박찬호
  */
 
 @Data
@@ -91,7 +92,7 @@ public class KakaoDto {
         private Boolean isLast;
 
         @ApiModelProperty(value="친구 정보 리스트", example="[{'nickname':'NickA', 'kakaoName':'박찬호','status':'accept','picturePath':'http:\\/\\/k.kakaocdn.net\\/dn\\/uQVeo\\/btrLgESJyjg\\/Pff3k36lRWkQ98ebAlexv1\\/img_640x640.jpg'}]")
-        private List<FriendsInfo> friendsInfo;
+        private List<FriendsInfo> friendsInfo = new ArrayList<>();
 
         @Data
         @Builder

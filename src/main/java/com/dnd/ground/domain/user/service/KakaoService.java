@@ -4,9 +4,11 @@ import com.dnd.ground.domain.friend.service.FriendService;
 import com.dnd.ground.domain.user.User;
 import com.dnd.ground.domain.user.dto.KakaoDto;
 import com.dnd.ground.domain.user.repository.UserRepository;
+import com.dnd.ground.global.exception.AuthException;
 import com.dnd.ground.global.exception.ExceptionCodeSet;
 import com.dnd.ground.global.exception.UserException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
@@ -17,20 +19,22 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientException;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import javax.annotation.PostConstruct;
 import java.util.*;
 
 /**
+ * @author 박찬호
  * @description 카카오를 비롯한 회원 정보와 관련한 서비스
- * @author  박찬호
- * @since   2022-08-23
- * @updated 1. 카카오 친구 목록 조회 API 구현
- *          - 2022.10.29 박찬호
+ * @updated 1. 카카오 친구 목록 조회 API 문제 해결 및 예외 처리 추가
+ * - 2023.01.12 박찬호
+ * @since 2022-08-23
  */
 
 @RequiredArgsConstructor
+@Slf4j
 @Service
 public class KakaoService {
     WebClient webClient;
@@ -49,8 +53,10 @@ public class KakaoService {
         webClient = WebClient.create();
     }
 
-    /**deprecated
-    /*카카오 토큰 발급*/
+    /**
+     * deprecated
+     * /*카카오 토큰 발급
+     */
     public Map<String, String> kakaoLogin(String code) throws NullPointerException {
         //토큰을 받기 위한 HTTP Body 생성
         MultiValueMap<String, String> getTokenBody = new LinkedMultiValueMap<>();
@@ -75,11 +81,11 @@ public class KakaoService {
         return tokens;
     }
 
-     /*카카오 엑세스 토큰 정보 확인*/
+    /*카카오 엑세스 토큰 정보 확인*/
     public KakaoDto.TokenInfo getTokenInfo(String token) {
         return webClient.get()
                 .uri("https://kapi.kakao.com/v1/user/access_token_info")
-                .header("Authorization","Bearer " + token)
+                .header("Authorization", "Bearer " + token)
                 .retrieve()
                 .bodyToMono(KakaoDto.TokenInfo.class)
                 .block();
@@ -105,7 +111,7 @@ public class KakaoService {
         return KakaoDto.UserInfo.builder()
                 .id(kakaoId)
                 .email((String) jsonObject.get("email"))
-                .pictureName("kakao/"+kakaoId)
+                .pictureName("kakao/" + kakaoId)
                 .picturePath((String) pictureObject.get("profile_image_url"))
                 .build();
     }
@@ -124,24 +130,24 @@ public class KakaoService {
         int nextOffset = 0;
         boolean isLast = false;
 
-        //카카오 친구 목록 조회
-        KakaoDto.FriendsInfoFromKakao responseFromKakao = webClient.get()
-                .uri(UriComponentsBuilder.newInstance()
-                        .scheme("https")
-                        .host("kapi.kakao.com")
-                        .path("/v1/api/talk/friends")
-                        .queryParam("offset", offset)
-                        .queryParam("limit", 100)
-                        .toUriString())
-                .header("Authorization", "Bearer " + token)
-                .retrieve()
-                .bodyToMono(KakaoDto.FriendsInfoFromKakao.class)
-                .block();
-
         try {
+            //카카오 친구 목록 조회
+            KakaoDto.FriendsInfoFromKakao responseFromKakao = webClient.get()
+                    .uri(UriComponentsBuilder.newInstance()
+                            .scheme("https")
+                            .host("kapi.kakao.com")
+                            .path("/v1/api/talk/friends")
+                            .queryParam("offset", offset)
+                            .queryParam("limit", 100)
+                            .toUriString())
+                    .header("Authorization", "Bearer " + token)
+                    .retrieve()
+                    .bodyToMono(KakaoDto.FriendsInfoFromKakao.class)
+                    .block();
+
             List<KakaoDto.FriendsInfoFromKakao.KakaoFriend> elements = Objects.requireNonNull(responseFromKakao).getElements();
 
-            for (int i=0; i<elements.size(); i++) {
+            for (int i = 0; i < elements.size(); i++) {
                 KakaoDto.FriendsInfoFromKakao.KakaoFriend kakaoFriend = elements.get(i);
                 Optional<User> kakaoUserInNemoduOpt = userRepository.findByKakaoId(kakaoFriend.getId());
 
@@ -164,18 +170,19 @@ public class KakaoService {
                     break;
                 }
             }
-        }
-        catch (NullPointerException e) { //카카오 친구목록 조회가 안되는 경우
+        } catch (NullPointerException e) { //카카오 친구목록 조회가 안되는 경우
             response.setNextOffset(0);
             response.setSize(0);
             response.setIsLast(true);
             return response;
+        } catch (WebClientException e) { //카카오로부터 401을 받은 경우
+            throw new AuthException(ExceptionCodeSet.OAUTH_TOKEN_INVALID);
         }
 
         //페이징 개수만큼 친구 목록이 안차면 다음은 없다.
-        if (response.getFriendsInfo().size() < PAGING_NUMBER){
+        if (response.getFriendsInfo().size() < PAGING_NUMBER) {
             isLast = true;
-            nextOffset=0;
+            nextOffset = 0;
         }
 
         response.setNextOffset(nextOffset);
