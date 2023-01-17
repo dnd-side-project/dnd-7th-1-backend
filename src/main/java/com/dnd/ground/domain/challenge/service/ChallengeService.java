@@ -11,14 +11,14 @@ import java.util.List;
  * @description 챌린지와 관련된 서비스의 역할을 분리한 인터페이스
  * @author  박찬호, 박세헌
  * @since   2022-08-03
- * @updated 1. 대기 중 챌린지 상세 정보 조회 API 구현
- *          2022-11-23 박찬호
+ * @updated 1.챌린지 상태 변경 API Response 변경
+ *          2022-01-17 박찬호
  */
 
 public interface ChallengeService {
 
     ChallengeCreateResponseDto createChallenge(ChallengeCreateRequestDto challengeCreateRequestDto);
-    ChallengeStatus changeUserChallengeStatus(ChallengeRequestDto.CInfo requestDto, ChallengeStatus status);
+    ChallengeResponseDto.Status changeUserChallengeStatus(ChallengeRequestDto.CInfo requestDto, ChallengeStatus status);
 
     void startPeriodChallenge();
     void endPeriodChallenge();
