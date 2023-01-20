@@ -4,7 +4,7 @@ import com.dnd.ground.domain.friend.FriendStatus;
 import com.dnd.ground.domain.friend.service.FriendService;
 import com.dnd.ground.domain.user.User;
 import com.dnd.ground.domain.user.dto.KakaoDto;
-import com.dnd.ground.domain.user.dto.KakaoLoginResponseDto;
+import com.dnd.ground.domain.user.dto.SocialResponseDto;
 import com.dnd.ground.domain.user.repository.UserRepository;
 import com.dnd.ground.global.exception.AuthException;
 import com.dnd.ground.global.exception.ExceptionCodeSet;
@@ -29,9 +29,8 @@ import java.util.*;
  * @author 박찬호
  * @description 카카오를 비롯한 회원 정보와 관련한 서비스
  * @since 2022-08-23
- * @updated 1. 카카오 친구 목록 조회 API 변경
- *          2. 카카오 Redirect URI 로그인 로직 변경
- * - 2023.01.17 박찬호
+ * @updated 1. 카카오 엑세스 토큰을 통한 회원정보 반환 API 생성
+ *           - 2023.01.20 박찬호
  */
 
 @RequiredArgsConstructor
@@ -57,7 +56,7 @@ public class KakaoService {
     /**
      * 카카오 토큰 발급
      */
-    public KakaoLoginResponseDto kakaoLogin(String code) throws NullPointerException {
+    public SocialResponseDto.KakaoRedirectDto kakaoRedirect(String code) throws NullPointerException {
         //토큰을 받기 위한 HTTP Body 생성
         MultiValueMap<String, String> getTokenBody = new LinkedMultiValueMap<>();
         getTokenBody.add("grant_type", "authorization_code");
@@ -74,7 +73,7 @@ public class KakaoService {
                 .bodyToMono(KakaoDto.Token.class)
                 .block();
 
-        KakaoLoginResponseDto response = new KakaoLoginResponseDto(token.getAccess_token(), token.getRefresh_token());
+        SocialResponseDto.KakaoRedirectDto response = new SocialResponseDto.KakaoRedirectDto(token.getAccess_token(), token.getRefresh_token());
 
         //이메일 받아오기
         try {
@@ -85,6 +84,29 @@ public class KakaoService {
         }
 
         return response;
+    }
+
+    public SocialResponseDto kakaoLogin(String token) throws ParseException {
+        KakaoDto.UserInfo userInfo = getUserInfo(token);
+        Optional<User> userOpt = userRepository.findByKakaoId(userInfo.getKakaoId());
+
+        boolean isSigned;
+        String email = userInfo.getEmail();
+        String picturePath;
+        String pictureName;
+
+        if (userOpt.isPresent()) {
+            User user = userOpt.get();
+            pictureName = user.getPictureName();
+            picturePath= user.getPicturePath();
+            isSigned = true;
+        } else {
+            picturePath = userInfo.getPicturePath();
+            pictureName = userInfo.getPictureName();
+            isSigned = false;
+        }
+
+        return new SocialResponseDto(email, picturePath, pictureName, isSigned);
     }
 
     /*카카오 엑세스 토큰 정보 확인*/
