@@ -147,8 +147,6 @@ public class KakaoService {
 
     /*카카오 친구 목록 조회*/
     public KakaoDto.kakaoFriendResponse getKakaoFriends(String token, Integer offset) throws ParseException {
-        WebClient webClient = WebClient.create();
-
         final int PAGING_NUMBER = 15;
 
         //회원 조회
@@ -252,5 +250,27 @@ public class KakaoService {
                 .retrieve()
                 .bodyToMono(KakaoDto.FriendsInfoFromKakao.class)
                 .block();
+    }
+
+    public Map<String, String> reissueKakaoToken(String token) {
+        MultiValueMap<String, String> reissueTokenBody = new LinkedMultiValueMap<>();
+        reissueTokenBody.add("grant_type", "refresh_token");
+        reissueTokenBody.add("client_id", REST_API_KEY);
+        reissueTokenBody.add("redirect_uri", REDIRECT_URI);
+        reissueTokenBody.add("refresh_token", token);
+
+        KakaoDto.ReissueToken result = webClient.post()
+                .uri("https://kauth.kakao.com/oauth/token")
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .body(BodyInserters.fromFormData(reissueTokenBody))
+                .retrieve()
+                .bodyToMono(KakaoDto.ReissueToken.class)
+                .block();
+
+        HashMap<String, String> response = new HashMap<>();
+        response.put("Kakao-Access-Token", result.getAccess_token());
+        response.put("Kakao-Refresh-Token", result.getRefresh_token());
+
+        return response;
     }
 }
