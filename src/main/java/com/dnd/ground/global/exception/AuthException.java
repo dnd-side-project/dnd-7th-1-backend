@@ -8,7 +8,7 @@ package com.dnd.ground.global.exception;
  *          - 2022.12.02 박찬호
  */
 public class AuthException extends BaseExceptionAbs {
-    AuthException(ExceptionCodeSet exceptionCode) {
+    public AuthException(ExceptionCodeSet exceptionCode) {
         super(exceptionCode);
     }
 }
