@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
  * @author  박찬호
  * @since   2022-08-24
  * @updated 1.AUTH 관련 예외 코드 추가
+ *          2.예외 코드 번호로 예외 코드를 반환하는 static method 이름 변경
  *          -2023.01.20 박찬호
  */
 
@@ -74,7 +75,7 @@ public enum ExceptionCodeSet {
     private final String code;
     private final String message;
 
-    public static ExceptionCodeSet findCodeByCode(String code) {
+    public static ExceptionCodeSet findExceptionByCode(String code) {
         for (ExceptionCodeSet exceptionCode : ExceptionCodeSet.values()) {
             if (exceptionCode.getCode().equals(code)) return exceptionCode;
         }
