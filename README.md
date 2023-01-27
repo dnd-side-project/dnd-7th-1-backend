@@ -5,7 +5,7 @@
 - <a href="https://www.youtube.com/watch?v=gFkrgJt2ttQ">📺 시연 영상</a>  
 
 <details>
-    <summary><b>발표자료</b></summary>
+    <summary><b>프로젝트 설명</b></summary>
 <div markdown="1">
 
 ![image](https://user-images.githubusercontent.com/77626299/214999568-443dee1f-1ee5-44b4-9197-7faf89205946.png)  
@@ -21,13 +21,13 @@
 ![11](https://user-images.githubusercontent.com/77626299/214999639-29f5133f-1d77-4623-99cf-820ed9ab1281.png)
 ![12](https://user-images.githubusercontent.com/77626299/214999647-d7297159-55ae-4a0d-824e-a49dc016da4c.png)
 ![13](https://user-images.githubusercontent.com/77626299/214999669-333973af-5620-4637-bac5-dc322efe8f4c.png)
-
     </div>
 </details>
 
 ### 기능 리스트
 - HTTPS 지원
 - 소셜 로그인(카카오, 애플)
+- JWT 기반의 토큰을 활용한 인증
 - 개인 운동 기록 생성 및 조회
 - 친구 신청 및 응답
 - 챌린지 생성 및 초대
