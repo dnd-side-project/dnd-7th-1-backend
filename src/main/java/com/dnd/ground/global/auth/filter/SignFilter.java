@@ -1,10 +1,11 @@
-package com.dnd.ground.global.securityFilter;
+package com.dnd.ground.global.auth.filter;
 
-import com.dnd.ground.domain.user.UserClaim;
-import com.dnd.ground.domain.user.dto.UserSignDto;
-import com.dnd.ground.domain.user.service.AuthService;
+import com.dnd.ground.global.auth.UserClaim;
+import com.dnd.ground.global.auth.dto.UserSignDto;
+import com.dnd.ground.global.auth.service.AuthService;
 import com.dnd.ground.global.exception.AuthException;
 import com.dnd.ground.global.exception.ExceptionCodeSet;
+import com.dnd.ground.global.exception.FilterException;
 import com.dnd.ground.global.util.JwtUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.http.HttpHeaders;
@@ -14,9 +15,12 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import javax.servlet.FilterChain;
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -33,17 +37,19 @@ import java.io.IOException;
 public class SignFilter extends UsernamePasswordAuthenticationFilter {
 
     public SignFilter(AuthenticationManager authenticationManager,
-                      AuthService authService) {
+                      AuthService authService,
+                      AuthenticationEntryPoint authenticationEntryPoint) {
         super(authenticationManager);
         this.authService = authService;
+        this.authenticationEntryPoint = authenticationEntryPoint;
         setFilterProcessesUrl("/sign");
     }
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final AuthService authService;
+    private final AuthenticationEntryPoint authenticationEntryPoint;
     private UserClaim claim;
     private static final String BEARER = "Bearer ";
-    private static final String EXCEPTION = "exception";
 
     @Override
     public Authentication attemptAuthentication(HttpServletRequest request,
@@ -59,10 +65,9 @@ public class SignFilter extends UsernamePasswordAuthenticationFilter {
                     claim.getEmail(), claim.getNickname() + createdMilli
             );
         } catch (IOException e) {
-            request.setAttribute(EXCEPTION, ExceptionCodeSet.INTERNAL_SERVER_ERROR);
+            throw new FilterException(ExceptionCodeSet.INTERNAL_SERVER_ERROR);
         } catch (AuthException e) {
-            request.setAttribute(EXCEPTION, e.getExceptionCode());
-            throw new AuthException(e.getExceptionCode());
+            throw new FilterException(e.getExceptionCode());
         }
 
         return getAuthenticationManager().authenticate(authenticationToken);
@@ -74,8 +79,8 @@ public class SignFilter extends UsernamePasswordAuthenticationFilter {
             HttpServletResponse response,
             FilterChain chain,
             Authentication authResult) throws IOException {
-        String accessToken = JwtUtil.createAccessToken(claim.getEmail(), claim.getNickname(), claim.getCreated());
-        String refreshToken = JwtUtil.createRefreshToken(claim.getEmail());
+        String accessToken = JwtUtil.createAccessToken(claim.getEmail(), claim.getCreated());
+        String refreshToken = JwtUtil.createRefreshToken(claim.getEmail(), claim.getCreated());
 
         response.setHeader(HttpHeaders.AUTHORIZATION, BEARER + accessToken);
         response.setHeader("Refresh-Token", BEARER + refreshToken);
@@ -84,5 +89,12 @@ public class SignFilter extends UsernamePasswordAuthenticationFilter {
         JSONObject json = new JSONObject();
         json.put("nickname", claim.getNickname());
         response.getWriter().write(String.valueOf(json));
+    }
+
+    @Override
+    protected void unsuccessfulAuthentication(HttpServletRequest request, HttpServletResponse response,
+                                              AuthenticationException failed) throws IOException, ServletException {
+        SecurityContextHolder.clearContext();
+        authenticationEntryPoint.commence(request, response, failed);
     }
 }
