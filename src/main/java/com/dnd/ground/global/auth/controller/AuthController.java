@@ -1,12 +1,16 @@
-package com.dnd.ground.domain.user.controller;
+package com.dnd.ground.global.auth.controller;
 
 import com.dnd.ground.domain.user.LoginType;
+import com.dnd.ground.global.auth.UserClaim;
 import com.dnd.ground.domain.user.dto.*;
-import com.dnd.ground.domain.user.service.AppleService;
-import com.dnd.ground.domain.user.service.AuthService;
-import com.dnd.ground.domain.user.service.KakaoService;
+import com.dnd.ground.global.auth.dto.SocialResponseDto;
+import com.dnd.ground.global.auth.service.AppleService;
+import com.dnd.ground.global.auth.service.AuthService;
+import com.dnd.ground.global.auth.service.KakaoService;
+import com.dnd.ground.global.auth.dto.UserSignDto;
 import com.dnd.ground.global.exception.AuthException;
 import com.dnd.ground.global.exception.ExceptionCodeSet;
+import com.dnd.ground.global.auth.dto.JWTReissueResponseDto;
 import io.swagger.annotations.Api;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
@@ -17,15 +21,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
-import java.net.UnknownHostException;
 
 /**
  * @author 박찬호
  * @description 회원의 인증/인가 및 로그인 관련 컨트롤러
  * @since 2022-08-23
- * @updated 1.애플, 카카오 소셜 로그인에 대한 정보 반환 API 생성
- *          2.카카오 Redirect URI 변경
- *          - 2023.01.20 박찬호
+ * @updated 1. 미사용 API 삭제(온보딩, 회원가입V1)
+ *          - 2023.01.23 박찬호
  */
 
 @Slf4j
@@ -39,22 +41,10 @@ public class AuthController {
     private final AuthService authService;
     private final AppleService appleService;
 
-    /*
-     * 클라가 앱에 처음 진입했을때 액세스 토큰이 있다면 토큰과 함께 해당 uri로 호출
-     * (JWTCheckFilter를 거친 후 닉네임 반환)
-     * 토큰이 없다면 카카오 로그인 페이지로 가야함
-     */
-    @GetMapping("/")
-    @Operation(summary = "자동 로그인", description = "앱에 처음 진입했을 때, 리프레시 토큰이 있으면 엑세스토큰과 함께 URI를 호출")
-    public ResponseEntity<?> onBoarding(HttpServletRequest request) {
-        return authService.getNicknameByToken(request);
-    }
-
-    @PostMapping("/signup")
-    @Operation(summary = "회원 가입", description = "Request: 헤더에 Kakao-Access-Token:카카오 엑세스토큰, 바디에 닉네임, KakaoRefreshToken\nResponse: 헤더에 자체 엑세스, 리프레시 토큰 + 바디에 닉네임")
-    public ResponseEntity<UserResponseDto.SignUp> signUp(@RequestHeader(value = "Kakao-Access-Token") String kakaoAccessToken,
-                                                         @RequestBody UserRequestDto.SignUp request) throws ParseException, UnknownHostException {
-        return authService.signUp(kakaoAccessToken, request);
+    @PostMapping("/signup-example")
+    @Operation(summary = "회원 가입 V2", description = "모델 참고용으로, 실제 URL은 \"/sign\"임.")
+    public UserClaim signUp2(@RequestBody UserSignDto request) {
+        return authService.signUp(request);
     }
 
     @GetMapping("/check/nickname")
@@ -63,9 +53,9 @@ public class AuthController {
         return ResponseEntity.ok(authService.validateNickname(nickname));
     }
 
-    @GetMapping("/refreshToken")
-    @Operation(summary = "네모두 토큰 재발급", description = "리프레시 토큰이 유효 하다면 토큰을 재발급")
-    public ResponseEntity<Boolean> issuanceToken(@RequestHeader("Refresh-Token") String refreshToken) {
+    @GetMapping("/reissue-example")
+    @Operation(summary = "네모두 토큰 재발급", description = "실제 엔드포인트=:8080/reissue\n모델만 참고하세요!(똑같이 동작하진 않음.)\n리프레시 토큰이 유효 하다면 토큰을 재발급")
+    public ResponseEntity<JWTReissueResponseDto> issuanceToken(@RequestHeader("Refresh-Token") String refreshToken) {
         return authService.issuanceToken(refreshToken);
     }
 
@@ -83,7 +73,7 @@ public class AuthController {
 
     @GetMapping("/social/login")
     @Operation(summary = "소셜 로그인 이후 회원 정보를 받는 API", description = "헤더의 Authorization 에 각 로그인 타입에 맞는 토큰을 넣는다.\n카카오:카카오의 Access token\n애플:idToken\ntype:APPLE or KAKAO")
-    public ResponseEntity<SocialResponseDto> kakaoLogin(@RequestHeader("Authorization") String token, @RequestParam("type") LoginType type) throws ParseException {
+    public ResponseEntity<SocialResponseDto> socialLogin(@RequestHeader("Authorization") String token, @RequestParam("type") LoginType type) throws ParseException {
         if (type.equals(LoginType.KAKAO)) return ResponseEntity.ok(kakaoService.kakaoLogin(token));
         else if (type.equals(LoginType.APPLE)) return ResponseEntity.ok(appleService.appleLogin(token));
         else throw new AuthException(ExceptionCodeSet.LOGIN_TYPE_INVALID);
