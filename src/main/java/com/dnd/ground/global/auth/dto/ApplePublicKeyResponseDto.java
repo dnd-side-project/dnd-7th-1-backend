@@ -1,4 +1,4 @@
-package com.dnd.ground.domain.user.dto;
+package com.dnd.ground.global.auth.dto;
 
 import lombok.Getter;
 import lombok.Setter;

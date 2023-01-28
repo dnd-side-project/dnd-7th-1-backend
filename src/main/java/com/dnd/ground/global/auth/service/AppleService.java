@@ -1,10 +1,10 @@
-package com.dnd.ground.domain.user.service;
+package com.dnd.ground.global.auth.service;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.dnd.ground.domain.user.User;
-import com.dnd.ground.domain.user.dto.ApplePublicKeyResponseDto;
-import com.dnd.ground.domain.user.dto.SocialResponseDto;
+import com.dnd.ground.global.auth.dto.ApplePublicKeyResponseDto;
+import com.dnd.ground.global.auth.dto.SocialResponseDto;
 import com.dnd.ground.domain.user.repository.UserRepository;
 import com.dnd.ground.global.exception.AuthException;
 import com.dnd.ground.global.exception.ExceptionCodeSet;
@@ -30,16 +30,16 @@ import static com.dnd.ground.global.exception.ExceptionCodeSet.*;
 @Service
 public class AppleService {
     @Value("${apple.ISS}")
-    private final String ISS;
+    private String ISS;
 
     @Value("${apple.AUD}")
-    private final String AUD;
+    private String AUD;
 
     @Value("${picture.path}")
-    private final String DEFAULT_PATH;
+    private String DEFAULT_PATH;
 
     @Value("${picture.name}")
-    private final String DEFAULT_NAME;
+    private String DEFAULT_NAME;
 
     private final UserRepository userRepository;
 

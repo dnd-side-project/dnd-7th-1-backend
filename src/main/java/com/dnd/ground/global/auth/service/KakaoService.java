@@ -1,10 +1,10 @@
-package com.dnd.ground.domain.user.service;
+package com.dnd.ground.global.auth.service;
 
 import com.dnd.ground.domain.friend.FriendStatus;
 import com.dnd.ground.domain.friend.service.FriendService;
 import com.dnd.ground.domain.user.User;
 import com.dnd.ground.domain.user.dto.KakaoDto;
-import com.dnd.ground.domain.user.dto.SocialResponseDto;
+import com.dnd.ground.global.auth.dto.SocialResponseDto;
 import com.dnd.ground.domain.user.repository.UserRepository;
 import com.dnd.ground.global.exception.AuthException;
 import com.dnd.ground.global.exception.ExceptionCodeSet;
