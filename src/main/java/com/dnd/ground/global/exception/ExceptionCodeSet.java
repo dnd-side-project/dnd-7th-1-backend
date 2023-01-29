@@ -8,9 +8,8 @@ import org.springframework.http.HttpStatus;
  * @description 에러 코드 구현체
  * @author  박찬호
  * @since   2022-08-24
- * @updated 1.AUTH 관련 예외 코드 추가
- *          2.예외 코드 번호로 예외 코드를 반환하는 static method 이름 변경
- *          -2023.01.20 박찬호
+ * @updated 1.인증 관련 예외 Http Status 401로 수정(403->401)
+ *          -2023.01.29 박찬호
  */
 
 @RequiredArgsConstructor
@@ -22,12 +21,12 @@ public enum ExceptionCodeSet {
 
     //인증,인가
     USER_NOT_SIGNUP(HttpStatus.UNAUTHORIZED, "2000", "카카오 로그인만 진행하고, 회원가입은 하지 않은 유저입니다."),
-    ACCESS_DENIED(HttpStatus.FORBIDDEN, "2001", "권한이 없습니다."),
-    ACCESS_TOKEN_EXPIRED(HttpStatus.FORBIDDEN, "2002", "액세스 토큰이 만료 되었습니다."),
-    REFRESH_TOKEN_EXPIRED(HttpStatus.FORBIDDEN, "2003", "리프레시 토큰이 만료 되었습니다."),
-    WRONG_TOKEN(HttpStatus.FORBIDDEN, "2004","잘못된 토큰 입니다."),
+    ACCESS_DENIED(HttpStatus.UNAUTHORIZED, "2001", "권한이 없습니다."),
+    ACCESS_TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED, "2002", "액세스 토큰이 만료 되었습니다."),
+    REFRESH_TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED, "2003", "리프레시 토큰이 만료 되었습니다."),
+    WRONG_TOKEN(HttpStatus.UNAUTHORIZED, "2004","잘못된 토큰 입니다."),
     ID_TOKEN_INVALID(HttpStatus.BAD_REQUEST, "2005", "애플: 유효하지 않은 ID 토큰입니다."),
-    ID_TOKEN_EXPIRED(HttpStatus.FORBIDDEN, "2006", "애플: ID 토큰이 만료되었습니다."),
+    ID_TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED, "2006", "애플: ID 토큰이 만료되었습니다."),
     OAUTH_TOKEN_INVALID(HttpStatus.BAD_REQUEST, "2007", "OAUTH 토큰이 유효하지 않습니다."),
     EMAIL_NOT_VERIFY(HttpStatus.BAD_REQUEST,"2008", "이메일이 검증되지 않았습니다."),
     LOGIN_TYPE_INVALID(HttpStatus.BAD_REQUEST, "2009", "잘못된 로그인 타입입니다."),
