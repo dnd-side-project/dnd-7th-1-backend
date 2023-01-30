@@ -1,12 +1,13 @@
 package com.dnd.ground.global.config;
 
 import com.dnd.ground.domain.user.repository.UserRepository;
-import com.dnd.ground.domain.user.service.AuthService;
-import com.dnd.ground.domain.user.service.KakaoService;
-import com.dnd.ground.global.exception.CustomAuthenticationEntryPoint;
-import com.dnd.ground.global.securityFilter.JWTCheckFilter;
-import com.dnd.ground.global.securityFilter.JWTLoginFilter;
-import com.dnd.ground.global.securityFilter.JWTSignFilter;
+import com.dnd.ground.global.auth.filter.JWTFilter;
+import com.dnd.ground.global.auth.filter.JWTReissueFilter;
+import com.dnd.ground.global.auth.filter.SignFilter;
+import com.dnd.ground.global.auth.service.AppleService;
+import com.dnd.ground.global.auth.service.AuthService;
+import com.dnd.ground.global.auth.service.KakaoService;
+import com.dnd.ground.global.auth.filter.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -18,6 +19,7 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
@@ -25,10 +27,10 @@ import org.springframework.security.web.authentication.www.BasicAuthenticationFi
 
 /**
  * @description 스프링 시큐리티 config 클래스
- * @author  박세헌
+ * @author  박찬호
  * @since   2022-08-24
- * @updated 1. 토큰 재발급 시 필터 제외하도록 수정
- *          - 2022-10-29 박찬호
+ * @updated 1. 필터 리팩토링에 따른 설정 변경
+ *          - 2023-01-30 박찬호
  */
 
 @Configuration
@@ -38,8 +40,10 @@ public class SecurityConfig {
 
     private final AuthenticationConfiguration authenticationConfiguration;
     private final AuthService authService;
-    private final UserRepository userRepository;
     private final KakaoService kakaoService;
+    private final AppleService appleService;
+    private final UserRepository userRepository;
+    private final AuthenticationEntryPoint authenticationEntryPoint;
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
@@ -54,27 +58,25 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-
-        // 회원가입 or 재로그인 인증 필터
-        JWTSignFilter signFilter = new JWTSignFilter(authenticationManager(authenticationConfiguration), authService, userRepository);
-        // 매 request마다 토큰을 검사 해주는 필터
-        JWTCheckFilter checkFilter = new JWTCheckFilter(authenticationManager(authenticationConfiguration), authService, userRepository);
-        // 로그인 필터
-        JWTLoginFilter loginFIlter = new JWTLoginFilter(authenticationManager(authenticationConfiguration), kakaoService, userRepository);
+        SignFilter signFilter = new SignFilter(authenticationManager(authenticationConfiguration), authService, authenticationEntryPoint);
+        JWTFilter checkFilter = new JWTFilter(authenticationManager(authenticationConfiguration), authService, authenticationEntryPoint);
+        JWTReissueFilter reissueFilter = new JWTReissueFilter(authenticationManager(authenticationConfiguration), kakaoService, authService, authenticationEntryPoint);
+        LoginFilter loginFilter = new LoginFilter(authenticationManager(authenticationConfiguration), userRepository, kakaoService, appleService, authenticationEntryPoint);
 
         http
-                .csrf().disable()  // csrf x
+                .csrf().disable()
                 .sessionManagement(session ->
-                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)  // 세션 x
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .authorizeRequests()
                 .anyRequest().authenticated()
                 .and()
-                .addFilterBefore(signFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterBefore(loginFIlter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(checkFilter, BasicAuthenticationFilter.class)
+                .addFilterBefore(reissueFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(signFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(loginFilter, UsernamePasswordAuthenticationFilter.class)
                 .exceptionHandling()
-                .authenticationEntryPoint(new CustomAuthenticationEntryPoint());
+                .authenticationEntryPoint(authenticationEntryPoint);
         return http.build();
     }
 
@@ -83,8 +85,7 @@ public class SecurityConfig {
     public WebSecurityCustomizer webSecurityCustomizer() {
         return (web) -> web.ignoring()
                 .antMatchers("/doc", "/swagger*/**", "/favicon*/**", "/v2/api-docs")
-                .antMatchers("/auth/signup", "/auth/check/origin", "/auth/check/nickname", "/auth/kakao/login", "/auth/refreshToken")
-                .antMatchers("/dummy/**");
+                .antMatchers("/login", "/sign");
     }
 
 }
