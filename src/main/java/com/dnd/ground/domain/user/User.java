@@ -16,8 +16,8 @@ import java.util.List;
  * @description 회원 엔티티
  * @author  박찬호, 박세헌
  * @since   2022.07.28
- * @updated 1. 카카오 리프레시 토큰 추가
- *  *          - 2022-09-12 박찬호
+ * @updated 1. 도메인 변경
+ *           - 2023-01-20 박찬호
  */
 
 @Getter
@@ -32,17 +32,14 @@ public class User {
     @Column(name = "user_id")
     private Long id;
 
-    @Column(name = "kakao_id")
-    private Long kakaoId;
-
     @Column(name = "nickname", nullable = false, unique = true)
     private String nickname;
 
     @Email
-    @Column(unique = true)
-    private String mail;
+    @Column(name="email", unique = true, nullable = false)
+    private String email;
 
-    @Column
+    @Column(name="intro")
     private String intro;
 
     @Column(name = "user_latitude")
@@ -73,11 +70,9 @@ public class User {
     @Column(name="picture_path", nullable = false)
     private String picturePath;
 
-    @Column(name="refresh_token")
-    private String refreshToken;
-
-    @Column(name = "kakao_refresh_token")
-    private String kakaoRefreshToken;
+    @Enumerated(EnumType.STRING)
+    @Column(name="login_type", nullable = false)
+    private LoginType loginType;
 
     @OneToMany(mappedBy = "friend")
     private List<Friend> friends = new ArrayList<>();
@@ -120,7 +115,4 @@ public class User {
         this.picturePath = picturePath;
     }
 
-    public void updateRefreshToken(String refreshToken){
-        this.refreshToken = refreshToken;
-    }
 }

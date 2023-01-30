@@ -60,9 +60,9 @@ public class SignFilter extends UsernamePasswordAuthenticationFilter {
             UserSignDto userSignDto = objectMapper.readValue(request.getInputStream(), UserSignDto.class);
             this.claim = authService.signUp(userSignDto);
 
-            long createdMilli = UserClaim.changeCreatedFormat(claim.getCreated());
+            long createdMilli = UserClaim.changeCreatedToLong(claim.getCreated());
             authenticationToken = new UsernamePasswordAuthenticationToken(
-                    claim.getEmail(), claim.getNickname() + createdMilli
+                    claim.getEmail(), claim.getNickname() + "-" + createdMilli
             );
         } catch (IOException e) {
             throw new FilterException(ExceptionCodeSet.INTERNAL_SERVER_ERROR);

@@ -12,7 +12,6 @@ import com.dnd.ground.domain.exerciseRecord.dto.RecordRequestDto;
 import com.dnd.ground.domain.exerciseRecord.dto.RecordResponseDto;
 import com.dnd.ground.domain.friend.FriendStatus;
 import com.dnd.ground.domain.friend.dto.FriendResponseDto;
-import com.dnd.ground.domain.friend.repository.FriendRepository;
 import com.dnd.ground.domain.friend.service.FriendService;
 import com.dnd.ground.domain.matrix.dto.MatrixDto;
 import com.dnd.ground.domain.matrix.matrixRepository.MatrixRepository;
@@ -20,11 +19,14 @@ import com.dnd.ground.domain.matrix.matrixService.MatrixService;
 import com.dnd.ground.domain.user.User;
 import com.dnd.ground.domain.user.dto.*;
 import com.dnd.ground.domain.user.repository.UserRepository;
+import com.dnd.ground.global.auth.UserClaim;
+import com.dnd.ground.global.auth.service.AuthService;
 import com.dnd.ground.global.exception.*;
 import com.dnd.ground.global.util.AmazonS3Service;
 import lombok.*;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -61,11 +63,16 @@ public class UserServiceImpl implements UserService{
     private final UserChallengeRepository userChallengeRepository;
     private final ExerciseRecordRepository exerciseRecordRepository;
     private final FriendService friendService;
-    private final FriendRepository friendRepository;
     private final MatrixRepository matrixRepository;
     private final MatrixService matrixService;
     private final AmazonS3Service amazonS3Service;
     private final AuthService authService;
+
+    @Value("${picture.path}")
+    private String DEFAULT_PATH;
+
+    @Value("${picture.name}")
+    private String DEFAULT_NAME;
 
     public HomeResponseDto showHome(String nickname){
         User user = userRepository.findByNickname(nickname).orElseThrow(
@@ -397,23 +404,21 @@ public class UserServiceImpl implements UserService{
 
         // 기본 이미지로 변경
         if (requestDto.getIsBasic()){
-            pictureName = "user/profile/default_profile.png";
-            picturePath = "https://dnd-ground-bucket.s3.ap-northeast-2.amazonaws.com/user/profile/default_profile.png";
-            if (!user.getPictureName().equals(pictureName))
-                amazonS3Service.deleteFile(user.getPictureName());
-        }
-        else {
+            pictureName = DEFAULT_NAME;
+            picturePath = DEFAULT_PATH;
+            if (!user.getPictureName().equals(pictureName)) amazonS3Service.deleteFile(user.getPictureName());
+        } else {
             // 기본 이미지가 아닌 유저의 사진으로 변경 (프로필 사진 이름: 닉네임+카카오ID (Ex. NickA18345)
             if (!file.isEmpty()){
                 amazonS3Service.deleteFile(user.getPictureName());
-                Map<String, String> fileInfo = amazonS3Service.uploadToS3(file, "user/profile", editNick+user.getKakaoId().toString());
+                Map<String, String> fileInfo = amazonS3Service.uploadToS3(file, "user/profile", user.getEmail()+UserClaim.changeCreatedToLong(user.getCreated()));
                 pictureName = fileInfo.get("fileName");
                 picturePath = fileInfo.get("filePath");
             }
         }
         user.updateProfile(editNick, intro, pictureName, picturePath);
 
-        return authService.issuanceTokenByNickname(user.getNickname());
+        return ResponseEntity.ok(new UserResponseDto.UInfo(editNick, picturePath));
     }
 
     public UserResponseDto.dayEventList getDayEventList(UserRequestDto.dayEventList requestDto){
@@ -445,7 +450,7 @@ public class UserServiceImpl implements UserService{
         return UserResponseDto.Profile.builder()
                 .nickname(user.getNickname())
                 .intro(user.getIntro())
-                .mail(user.getMail())
+                .mail(user.getEmail())
                 .picturePath(user.getPicturePath())
                 .build();
     }
