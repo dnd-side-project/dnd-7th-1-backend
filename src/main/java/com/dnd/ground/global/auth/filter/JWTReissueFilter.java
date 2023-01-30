@@ -70,9 +70,9 @@ public class JWTReissueFilter extends UsernamePasswordAuthenticationFilter {
             if (JwtUtil.refreshVerify(refreshToken)) {
                 claim = authService.getUserClaim(refreshToken);
 
-                long createdMilli = UserClaim.changeCreatedFormat(claim.getCreated());
+                long createdMilli = UserClaim.changeCreatedToLong(claim.getCreated());
                 UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
-                        claim.getEmail(), claim.getNickname() + createdMilli
+                        claim.getEmail(), claim.getNickname() + "-" + createdMilli
                 );
                 return getAuthenticationManager().authenticate(authenticationToken);
             } else throw new FilterException(ExceptionCodeSet.REFRESH_TOKEN_INVALID);
