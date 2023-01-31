@@ -13,8 +13,8 @@ import java.util.List;
  * @description 예외 응답 메시지 포맷 클래스
  * @author  박찬호
  * @since   2022-08-24
- * @updated 1. 상황에 따른 nickname 필드 추가
- *          - 2022.08.25 박찬호
+ * @updated 1. 빠른 디버깅을 위한 trace 변수 추가
+ *          - 2023.01.20 박찬호
  */
 
 @Getter
@@ -24,6 +24,7 @@ public class ErrorResponse {
 
     private final String code;
     private final String message;
+    private final List<String> trace;
 
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
     private final String nickname;

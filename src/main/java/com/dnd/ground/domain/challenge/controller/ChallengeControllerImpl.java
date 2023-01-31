@@ -18,8 +18,8 @@ import java.util.List;
  * @description 챌린지와 관련된 컨트롤러 구현체
  * @author  박찬호
  * @since   2022-08-01
- * @updated 1. 대기 중 챌린지 상세 정보 조회 API 구현
- *          2022-11-23 박찬호
+ * @updated 1.챌린지 상태 변경 API Response 변경
+ *          2022-01-17 박찬호
  */
 
 @Api(tags = "챌린지")
@@ -39,13 +39,13 @@ public class ChallengeControllerImpl implements ChallengeController {
 
     @PostMapping("/accept")
     @Operation(summary = "챌린지 수락", description = "유저의 챌린지 수락")
-    public ResponseEntity<ChallengeStatus> acceptChallenge(@RequestBody ChallengeRequestDto.CInfo requestDto) {
+    public ResponseEntity<ChallengeResponseDto.Status> acceptChallenge(@RequestBody ChallengeRequestDto.CInfo requestDto) {
         return ResponseEntity.ok().body(challengeService.changeUserChallengeStatus(requestDto, ChallengeStatus.Progress));
     }
 
     @PostMapping("/reject")
     @Operation(summary = "챌린지 거절", description = "유저의 챌린지 거절")
-    public ResponseEntity<ChallengeStatus> rejectChallenge(@RequestBody ChallengeRequestDto.CInfo requestDto) {
+    public ResponseEntity<ChallengeResponseDto.Status> rejectChallenge(@RequestBody ChallengeRequestDto.CInfo requestDto) {
         return ResponseEntity.ok().body(challengeService.changeUserChallengeStatus(requestDto, ChallengeStatus.Reject));
     }
 

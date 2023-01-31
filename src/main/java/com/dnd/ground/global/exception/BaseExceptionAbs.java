@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
  *          - 2022.12.01 박찬호
  */
 @AllArgsConstructor
-public class BaseExceptionAbs extends RuntimeException implements BaseException {
+public abstract class BaseExceptionAbs extends RuntimeException implements BaseException {
 
     private static final int STACK_TRACE_LINE_LIMIT = 3;
     private ExceptionCodeSet exceptionCode;

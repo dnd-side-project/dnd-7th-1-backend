@@ -36,12 +36,6 @@ public class UserResponseDto {
         @ApiModelProperty(value="프로필 사진 URI(카카오 프로필 사용 시 kakao/카카오회원번호)", example="http:\\/\\/k.kakaocdn.net\\/dn\\/uQVeo\\/btrLgESJyjg\\/Pff3k36lRWkQ98ebAlexv1\\/img_640x640.jpg")
         private String picturePath;
     }
-
-    /*회원가입 Response*/
-    @Data
-    public static class SignUp {
-        private String nickname;
-    }
     
     /*마이페이지 관련 DTO*/
     @Data @Builder
