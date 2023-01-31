@@ -1,21 +1,24 @@
 package com.dnd.ground.domain.friend.dto;
 
 import com.dnd.ground.domain.challenge.dto.ChallengeResponseDto;
+import com.dnd.ground.domain.friend.FriendStatus;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.annotations.ApiModelProperty;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
  * @description 친구와 관련한 정보 조회용 Response DTO
  * @author  박찬호
  * @since   2022-08-02
- * @updated 1. Profile 클래스 이동(UserResponseDto -> FriendResponseDto) 및 이름 변경(Profile -> FriendProfile)
- *          - 2022.08.26 박찬호
+ * @updated 1.페이징 적용에 따른 isLast 필드 추가
+ *          - 2022.10.29 박찬호
  */
 
 @Data @Builder
@@ -27,18 +30,25 @@ public class FriendResponseDto {
     @ApiModelProperty(value="친구 수", example="3")
     private Integer size;
 
+    @ApiModelProperty(value="마지막 페이지 여부", example = "true")
+    private Boolean isLast;
+
     
     //친구와 관련한 정보 모음
     @Data @NoArgsConstructor
     static public class FInfo {
 
         @Builder(builderMethodName = "of")
-        public FInfo(String nickname) {
+        public FInfo(String nickname, String picturePath) {
             this.nickname = nickname;
+            this.picturePath = picturePath;
         }
         
         @ApiModelProperty(value="닉네임", example="NickA")
         private String nickname;
+
+        @ApiModelProperty(value="프로필 사진 URI(카카오 프로필 사용 시 kakao/카카오회원번호)", example="http:\\/\\/k.kakaocdn.net\\/dn\\/uQVeo\\/btrLgESJyjg\\/Pff3k36lRWkQ98ebAlexv1\\/img_640x640.jpg")
+        private String picturePath;
     }
 
     /*회원 프로필 관련 DTO*/
@@ -55,8 +65,8 @@ public class FriendResponseDto {
         @ApiModelProperty(value = "친구의 소개 메시지", example = "친구의 소개 메시지 예시입니다.")
         private String intro;
 
-        @ApiModelProperty(value = "회원과 친구 관계인지 나타내는 Boolean", example = "true")
-        private Boolean isFriend;
+        @ApiModelProperty(value = "회원과 친구 관계에 대한 정보\nAccept: 친구\nRequesting: 친구 요청중\nResponseWait: 수락 대기중\nNoFriend: 친구 아님", example = "RequestWait")
+        private FriendStatus isFriend;
 
         @ApiModelProperty(value = "이번 주 영역 개수", example = "9")
         private Long areas;
@@ -70,6 +80,35 @@ public class FriendResponseDto {
         @ApiModelProperty(value = "회원과 함께 하는 챌린지 리스트"
                 , example = "[{\"name\": \"챌린지1\", \"started\": \"2022-08-16\", \"ended\": \"2022-08-21\", \"rank\": 1, \"color\": \"Red\"}]")
         List<ChallengeResponseDto.Progress> challenges;
+
+        @ApiModelProperty(value="프로필 사진 URI(카카오 프로필 사용 시 kakao/카카오회원번호)", example="http:\\/\\/k.kakaocdn.net\\/dn\\/uQVeo\\/btrLgESJyjg\\/Pff3k36lRWkQ98ebAlexv1\\/img_640x640.jpg")
+        private String picturePath;
+    }
+
+    /*친구 요청 수락, 거절 등에 대한 결과*/
+    @Data @AllArgsConstructor
+    static public class ResponseResult {
+        @ApiModelProperty(value = "회원 닉네임(요청하는 사람)", example = "NickA")
+        private String userNickname;
+
+        @ApiModelProperty(value = "친구 닉네임(요청받는 사람)", example = "NickB")
+        private String friendNickname;
+
+        @ApiModelProperty(value = "변경된 상태(결과: Accept, Reject)", example = "Accept")
+        private FriendStatus status;
+    }
+
+    @Data
+    @NoArgsConstructor
+    static public class ReceiveRequest {
+        @ApiModelProperty(value="친구 정보 목록", example="['nickname':'NickA','picturePath':'http:\\/\\/k.kakaocdn.net\\/dn\\/uQVeo\\/btrLgESJyjg\\/Pff3k36lRWkQ98ebAlexv1\\/img_640x640.jpg']")
+        List<FInfo> friendsInfo = new ArrayList<>();
+
+        @ApiModelProperty(value="친구 수", example="3")
+        private Integer size;
+
+        @ApiModelProperty(value="마지막 페이지 여부", example = "true")
+        private Boolean isLast;
     }
 
 }

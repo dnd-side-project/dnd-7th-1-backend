@@ -13,10 +13,7 @@ import com.dnd.ground.domain.user.User;
 import com.dnd.ground.domain.user.dto.RankResponseDto;
 import com.dnd.ground.domain.user.dto.UserResponseDto;
 import com.dnd.ground.domain.user.repository.UserRepository;
-import com.dnd.ground.global.exception.CExceedChallengeException;
-import com.dnd.ground.global.exception.CNotFoundException;
-import com.dnd.ground.global.exception.CNotValidationException;
-import com.dnd.ground.global.exception.CommonErrorCode;
+import com.dnd.ground.global.exception.*;
 import com.dnd.ground.global.util.UuidUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,12 +31,11 @@ import java.time.temporal.TemporalAdjusters;
 import java.util.*;
 
 /**
+ * @author 박찬호
  * @description 챌린지와 관련된 서비스의 역할을 분리한 구현체
- * @author  박찬호, 박세헌
- * @since   2022-08-03
- * @updated 1.챌린지 상세보기(지도) 기능 구현
- *          2.챌린지 관련 Response에 UUID 추가
- *          - 2022.08.26 박찬호
+ * @since 2022-08-03
+ * @updated 1.챌린지 상태 변경 API Response 변경
+ *          2022-01-17 박찬호
  */
 
 @Slf4j
@@ -59,7 +55,7 @@ public class ChallengeServiceImpl implements ChallengeService {
     public ChallengeCreateResponseDto createChallenge(ChallengeCreateRequestDto requestDto) {
 
         User master = userRepository.findByNickname(requestDto.getNickname()).orElseThrow(
-                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
+                () -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
 
         Challenge challenge = Challenge.create()
                 .uuid(UuidUtil.createUUID())
@@ -72,73 +68,84 @@ public class ChallengeServiceImpl implements ChallengeService {
         //챌린지 저장
         challengeRepository.save(challenge);
 
-
         List<UserResponseDto.UInfo> users = new ArrayList<>();
 
-        requestDto.getFriends().add(master.getNickname());
+        /**
+         * 고정크기인 배열을 사용하는 만큼, 챌린지 최대 개수와 색상에 대한 정보가 딱 맞아야함.
+         * 예를 들어, 최대 챌린지가 5개까지 가능한 경우 배열에 5개의 색상이 미리 정의되어 있어야함.
+         * 그렇지 않으면 ArrayIndexOutOfBoundException 발생.
+         * -> try-catch문으로 예외처리.
+         */
+        String targetNickname = null;
 
         //챌린지 개수에 따른 색상 결정
-        ChallengeColor[] color = {ChallengeColor.Red, ChallengeColor.Pink, ChallengeColor.Yellow};
+        ChallengeColor[] color = {ChallengeColor.Red, ChallengeColor.Pink, ChallengeColor.Yellow, ChallengeColor.Red, ChallengeColor.Pink, ChallengeColor.Yellow, ChallengeColor.Red, ChallengeColor.Pink, ChallengeColor.Yellow, ChallengeColor.Red, ChallengeColor.Pink, ChallengeColor.Yellow};
 
         //주최자의 챌린지 생성 과정
         int challengeCount = userChallengeRepository.findCountChallenge(master); //참여한 챌린지 개수 (챌린지 상태 상관X)
 
-        //챌린지가 3개 이상이면 챌린지 생성 거부
-        if (challengeCount >= 3) {
-            throw new CExceedChallengeException(CommonErrorCode.EXCEED_CHALLENGE, requestDto.getNickname());
-        }
+//        //챌린지가 4개 이상이면 챌린지 생성 거부
+//        if (challengeCount > 3) {
+//            throw new CExceedChallengeException(CommonErrorCode.EXCEED_CHALLENGE, requestDto.getNickname());
+//        }
 
-        UserChallenge masterChallenge = userChallengeRepository.save(new UserChallenge(challenge, master, color[challengeCount]));
-        masterChallenge.changeStatus(ChallengeStatus.Master);
-        
-        //챌린지 멤버의 챌린지 생성 과정
-        for (String nickname : requestDto.getFriends()) {
-            User member = userRepository.findByNickname(nickname).orElseThrow(
-                    () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
+        try {
+            UserChallenge masterChallenge = userChallengeRepository.save(new UserChallenge(challenge, master, color[challengeCount]));
+            masterChallenge.changeStatus(ChallengeStatus.Master);
 
-            challengeCount = userChallengeRepository.findCountChallenge(member);
+            //챌린지 멤버의 챌린지 생성 과정
+            for (String nickname : requestDto.getFriends()) {
+                User member = userRepository.findByNickname(nickname).orElseThrow(
+                        () -> new ChallengeException(ExceptionCodeSet.USER_CHALLENGE_NOT_FOUND));
 
-            //챌린지가 3개 이상이면 챌린지 생성 거부
-            if (challengeCount >= 3) {
-                throw new CExceedChallengeException(CommonErrorCode.EXCEED_CHALLENGE, nickname);
+                challengeCount = userChallengeRepository.findCountChallenge(member);
+                targetNickname = nickname; //예외 발생시 코드로 알려주기 위함.
+
+//            //챌린지가 3개 이상이면 챌린지 생성 거부
+//            if (challengeCount > 3) {
+//                throw new CExceedChallengeException(CommonErrorCode.EXCEED_CHALLENGE, nickname);
+//            }
+
+                userChallengeRepository.save(new UserChallenge(challenge, member, color[challengeCount]));
+
+                //Response에 추가할 멤버 목록
+                users.add(new UserResponseDto.UInfo(nickname, member.getPicturePath()));
             }
 
-            userChallengeRepository.save(new UserChallenge(challenge, member, color[challengeCount]));
-
-            //Response에 추가할 멤버 목록
-            users.add(new UserResponseDto.UInfo(nickname));
+            return ChallengeCreateResponseDto.builder()
+                    .users(users)
+                    .message(challenge.getMessage())
+                    .started(challenge.getStarted())
+                    .ended(challenge.getStarted().plusDays(7 - challenge.getStarted().getDayOfWeek().getValue()))
+                    .build();
+        } catch (IndexOutOfBoundsException e) {
+            throw new ChallengeException(ExceptionCodeSet.CHALLENGE_EXCEED, targetNickname);
         }
 
-        return ChallengeCreateResponseDto.builder()
-                .users(users)
-                .message(challenge.getMessage())
-                .started(challenge.getStarted())
-                .ended(challenge.getStarted().plusDays(7-challenge.getStarted().getDayOfWeek().getValue()))
-                .build();
     }
 
     /*유저-챌린지 상태 변경*/
     @Transactional
-    public ChallengeStatus changeUserChallengeStatus(ChallengeRequestDto.CInfo requestDto, ChallengeStatus status) {
+    public ChallengeResponseDto.Status changeUserChallengeStatus(ChallengeRequestDto.CInfo requestDto, ChallengeStatus status) {
         //정보 조회
         Challenge challenge = challengeRepository.findByUuid(requestDto.getUuid()).orElseThrow(
-                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_CHALLENGE));
+                () -> new ChallengeException(ExceptionCodeSet.CHALLENGE_NOT_FOUND));
 
         User user = userRepository.findByNickname(requestDto.getNickname()).orElseThrow(
-                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
+                () -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
 
         UserChallenge userChallenge = userChallengeRepository.findByUserAndChallenge(user, challenge).orElseThrow(
-                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER_CHALLENGE));
+                () -> new ChallengeException(ExceptionCodeSet.USER_CHALLENGE_NOT_FOUND, user.getNickname()));
 
         //주최자의 상태 변경X
         if (userChallenge.getStatus() == ChallengeStatus.Master) {
-            throw new CExceedChallengeException(CommonErrorCode.NOT_CHANGE_MASTER_STATUS, user.getNickname());
+            throw new ChallengeException(ExceptionCodeSet.MASTER_STATUS_NOT_CHANGE, user.getNickname());
         }
 
         //상태 변경
         userChallenge.changeStatus(status);
 
-        return status;
+        return new ChallengeResponseDto.Status(status);
     }
 
     /*챌린지 상태 변경(매일 00:00 실행)*/
@@ -155,16 +162,20 @@ public class ChallengeServiceImpl implements ChallengeService {
             //Wait, Reject 상태의 유저 삭제
             countUser += userChallengeRepository.deleteUCByChallenge(challenge);
 
-            List<UserChallenge> userChallenge = userChallengeRepository.findUCByChallenge(challenge);
+            List<UserChallenge> userChallenges = userChallengeRepository.findUCByChallenge(challenge);
 
             //주최자만 남은 경우 챌린지와 주최자 삭제
-            if (userChallenge.size() == 1) {
-                userChallengeRepository.delete(userChallenge.get(0));
+            if (userChallenges.size() == 1) {
+                userChallengeRepository.delete(userChallenges.get(0));
                 challengeRepository.delete(challenge);
                 countDelete++;
             }
             //챌린지 진행 상태로 변경
             else {
+                for (UserChallenge userChallenge : userChallenges) {
+                    if (userChallenge.getStatus() != ChallengeStatus.Master)
+                        userChallenge.changeStatus(ChallengeStatus.Progress);
+                }
                 challenge.updateStatus(ChallengeStatus.Progress);
             }
         }
@@ -179,23 +190,33 @@ public class ChallengeServiceImpl implements ChallengeService {
     public void endPeriodChallenge() {
         //진행 중인 챌린지 모두 조회
         List<Challenge> challenges = challengeRepository.findChallengesByStatusEquals(ChallengeStatus.Progress);
+        List<Challenge> waitChallenge = challengeRepository.findChallengesByStatusEquals(ChallengeStatus.Wait);
+
+        challenges.addAll(waitChallenge);
 
         for (Challenge challenge : challenges) {
             //챌린지 완료
+
             challenge.updateStatus(ChallengeStatus.Done);
 
             //각 유저들도 완료 상태 변경
-            List<UserChallenge> userChallenge = userChallengeRepository.findUCByChallenge(challenge);
-            userChallenge.forEach(uc -> uc.changeStatus(ChallengeStatus.Done));
+            List<UserChallenge> userChallenges = userChallengeRepository.findUCByChallenge(challenge);
+
+            for (UserChallenge userChallenge : userChallenges) {
+                if (userChallenge.getStatus() == ChallengeStatus.Master)
+                    userChallenge.changeStatus(ChallengeStatus.MasterDone);
+                else
+                    userChallenge.changeStatus(ChallengeStatus.Done);
+            }
         }
 
         log.info("**챌린지 종료 메소드 실행** 현재 시간:{} | 종료된 챌린지 개수:{}", LocalDateTime.now(), challenges.size());
     }
-    
+
     /*초대 받은 챌린지 조회*/
     public List<ChallengeResponseDto.Invite> findInviteChallenge(String nickname) {
         User user = userRepository.findByNickname(nickname).orElseThrow(
-                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
+                () -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
 
         List<Challenge> challenges = challengeRepository.findChallengeInWait(user);
         List<ChallengeResponseDto.Invite> response = new ArrayList<>();
@@ -209,6 +230,7 @@ public class ChallengeServiceImpl implements ChallengeService {
                             .InviterNickname(userChallengeRepository.findMasterInChallenge(challenge).getNickname())
                             .message(challenge.getMessage())
                             .created(challenge.getCreated().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")))
+                            .picturePath(userChallengeRepository.findMasterInChallenge(challenge).getPicturePath())
                             .build()
             );
         }
@@ -219,24 +241,28 @@ public class ChallengeServiceImpl implements ChallengeService {
     /*진행 대기 중인 챌린지 리스트 조회*/
     public List<ChallengeResponseDto.Wait> findWaitChallenge(String nickname) {
         User user = userRepository.findByNickname(nickname).orElseThrow(
-                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
+                () -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
 
         List<Challenge> waitChallenge = challengeRepository.findWaitChallenge(user);
         List<ChallengeResponseDto.Wait> response = new ArrayList<>();
 
         for (Challenge challenge : waitChallenge) {
-
             LocalDate started = challenge.getStarted();
+            List<String> picturePaths = new ArrayList<>();  // 유저의 프로필 사진
+
+            userChallengeRepository.findChallengeUsers(challenge)
+                    .forEach(u -> picturePaths.add(u.getPicturePath()));
 
             response.add(
                     ChallengeResponseDto.Wait.builder()
                             .name(challenge.getName())
                             .uuid(challenge.getUuid())
                             .started(started)
-                            .ended(started.plusDays(7-started.getDayOfWeek().getValue()))
+                            .ended(started.plusDays(7 - started.getDayOfWeek().getValue()))
                             .totalCount(userChallengeRepository.findUCCount(challenge)) //챌린지에 참여하는 전체 인원 수
-                            .readyCount(userChallengeRepository.findUCWaitCount(challenge) + 1) //Progress 상태 회원 수 + 주최자
+                            .readyCount(userChallengeRepository.findUCReadyCount(challenge)) //Progress 상태 회원 수 + 주최자
                             .color(userChallengeRepository.findChallengeColor(user, challenge))
+                            .picturePaths(picturePaths)
                             .build()
             );
         }
@@ -247,7 +273,7 @@ public class ChallengeServiceImpl implements ChallengeService {
     /*진행 중인 챌린지 리스트 조회*/
     public List<ChallengeResponseDto.Progress> findProgressChallenge(String nickname) {
         User user = userRepository.findByNickname(nickname).orElseThrow(
-                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
+                () -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
 
         List<Challenge> progressChallenge = challengeRepository.findProgressChallenge(user);
         List<ChallengeResponseDto.Progress> response = new ArrayList<>();
@@ -255,6 +281,7 @@ public class ChallengeServiceImpl implements ChallengeService {
         for (Challenge challenge : progressChallenge) {
             Integer rank = -1; //랭킹
             LocalDate started = challenge.getStarted(); //챌린지 시작 날짜
+            List<String> picturePaths = new ArrayList<>(); // 유저들의 프로필 사진
 
             //해당 회원의 랭킹 추출
             if (challenge.getType() == ChallengeType.Widen) {
@@ -263,11 +290,10 @@ public class ChallengeServiceImpl implements ChallengeService {
                 for (UserResponseDto.Ranking ranking : rankList.getAreaRankings()) {
                     if (ranking.getNickname().equals(nickname)) {
                         rank = ranking.getRank();
-                        break;
                     }
+                    picturePaths.add(ranking.getPicturePath());
                 }
-            }
-            else if (challenge.getType() == ChallengeType.Accumulate) {
+            } else if (challenge.getType() == ChallengeType.Accumulate) {
                 //챌린지를 함께 진행하는 회원 목록
                 List<User> member = userChallengeRepository.findChallengeUsers(challenge);
                 //기록 조회
@@ -275,15 +301,15 @@ public class ChallengeServiceImpl implements ChallengeService {
                 //랭킹 계산
                 for (UserResponseDto.Ranking ranking : matrixService.calculateMatrixRank(matrixCount, member)) {
                     if (ranking.getNickname().equals(nickname)) {
-                        rank=ranking.getRank();
-                        break;
+                        rank = ranking.getRank();
                     }
+                    picturePaths.add(ranking.getPicturePath());
                 }
             }
 
             //랭킹이 -1인 경우 예외 처리
-            if (rank==-1) {
-                throw new CNotValidationException(CommonErrorCode.INTERNAL_SERVER_ERROR);
+            if (rank == -1) {
+                throw new ExerciseRecordException(ExceptionCodeSet.RANKING_CAL_FAIL);
             }
 
             response.add(
@@ -291,9 +317,10 @@ public class ChallengeServiceImpl implements ChallengeService {
                             .name(challenge.getName())
                             .uuid(challenge.getUuid())
                             .started(started)
-                            .ended(started.plusDays(7-started.getDayOfWeek().getValue()))
+                            .ended(started.plusDays(7 - started.getDayOfWeek().getValue()))
                             .rank(rank)
                             .color(userChallengeRepository.findChallengeColor(user, challenge))
+                            .picturePaths(picturePaths)
                             .build()
             );
         }
@@ -304,10 +331,10 @@ public class ChallengeServiceImpl implements ChallengeService {
     /*친구와 함께 진행 중인 챌린지 리스트 조회*/
     public List<ChallengeResponseDto.Progress> findProgressChallenge(String userNickname, String friendNickname) {
         User user = userRepository.findByNickname(userNickname).orElseThrow(
-                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
+                () -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
 
         User friend = userRepository.findByNickname(friendNickname).orElseThrow(
-                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
+                () -> new FriendException(ExceptionCodeSet.FRIEND_NOT_FOUND));
 
         List<Challenge> progressChallenge = challengeRepository.findChallengesWithFriend(user, friend);
         List<ChallengeResponseDto.Progress> response = new ArrayList<>();
@@ -326,8 +353,7 @@ public class ChallengeServiceImpl implements ChallengeService {
                         break;
                     }
                 }
-            }
-            else if (challenge.getType() == ChallengeType.Accumulate) {
+            } else if (challenge.getType() == ChallengeType.Accumulate) {
                 //챌린지를 함께 진행하는 회원 목록
                 List<User> member = userChallengeRepository.findChallengeUsers(challenge);
                 //기록 조회
@@ -335,15 +361,15 @@ public class ChallengeServiceImpl implements ChallengeService {
                 //랭킹 계산
                 for (UserResponseDto.Ranking ranking : matrixService.calculateMatrixRank(matrixCount, member)) {
                     if (ranking.getNickname().equals(friendNickname)) {
-                        rank=ranking.getRank();
+                        rank = ranking.getRank();
                         break;
                     }
                 }
             }
 
             //랭킹이 -1인 경우 예외 처리
-            if (rank==-1) {
-                throw new CNotValidationException(CommonErrorCode.INTERNAL_SERVER_ERROR);
+            if (rank == -1) {
+                throw new ExerciseRecordException(ExceptionCodeSet.RANKING_CAL_FAIL);
             }
 
             response.add(
@@ -351,7 +377,7 @@ public class ChallengeServiceImpl implements ChallengeService {
                             .name(challenge.getName())
                             .uuid(challenge.getUuid())
                             .started(started)
-                            .ended(started.plusDays(7-started.getDayOfWeek().getValue()))
+                            .ended(started.plusDays(7 - started.getDayOfWeek().getValue()))
                             .rank(rank)
                             .color(userChallengeRepository.findChallengeColor(user, challenge))
                             .build()
@@ -364,29 +390,43 @@ public class ChallengeServiceImpl implements ChallengeService {
     /*진행 완료된 챌린지 리스트 조회*/
     public List<ChallengeResponseDto.Done> findDoneChallenge(String nickname) {
         User user = userRepository.findByNickname(nickname).orElseThrow(
-                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
+                () -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
 
         List<Challenge> doneChallenge = challengeRepository.findDoneChallenge(user);
         List<ChallengeResponseDto.Done> response = new ArrayList<>();
+        List<String> picturePaths = new ArrayList<>(); // 유저들의 프로필 사진
 
         for (Challenge challenge : doneChallenge) {
 
             Integer rank = -1; //랭킹
             LocalDate started = challenge.getStarted(); //챌린지 시작 날짜
-
             //해당 회원의 랭킹 추출
-            RankResponseDto.Area rankList = matrixService.challengeRank(challenge, started.atStartOfDay(), LocalDateTime.now());
+            if (challenge.getType() == ChallengeType.Widen) {
+                RankResponseDto.Area rankList = matrixService.challengeRank(challenge, started.atStartOfDay(), LocalDateTime.now());
 
-            for (UserResponseDto.Ranking ranking : rankList.getAreaRankings()) {
-                if (ranking.getNickname().equals(nickname)) {
-                    rank = ranking.getRank();
-                    break;
+                for (UserResponseDto.Ranking ranking : rankList.getAreaRankings()) {
+                    if (ranking.getNickname().equals(nickname)) {
+                        rank = ranking.getRank();
+                    }
+                    picturePaths.add(ranking.getPicturePath());
+                }
+            } else if (challenge.getType() == ChallengeType.Accumulate) {
+                //챌린지를 함께 진행하는 회원 목록
+                List<User> member = userChallengeRepository.findChallengeUsers(challenge);
+                //기록 조회
+                List<Tuple> matrixCount = exerciseRecordRepository.findMatrixCount(member, started.atStartOfDay(), LocalDateTime.now());
+                //랭킹 계산
+                for (UserResponseDto.Ranking ranking : matrixService.calculateMatrixRank(matrixCount, member)) {
+                    if (ranking.getNickname().equals(nickname)) {
+                        rank = ranking.getRank();
+                    }
+                    picturePaths.add(ranking.getPicturePath());
                 }
             }
 
             //랭킹이 -1인 경우 예외 처리
-            if (rank==-1) {
-                throw new CNotValidationException(CommonErrorCode.INTERNAL_SERVER_ERROR);
+            if (rank == -1) {
+                throw new ExerciseRecordException(ExceptionCodeSet.RANKING_CAL_FAIL);
             }
 
             response.add(
@@ -394,9 +434,10 @@ public class ChallengeServiceImpl implements ChallengeService {
                             .name(challenge.getName())
                             .uuid(challenge.getUuid())
                             .started(started)
-                            .ended(started.plusDays(7-started.getDayOfWeek().getValue()))
+                            .ended(started.plusDays(7 - started.getDayOfWeek().getValue()))
                             .rank(rank)
                             .color(userChallengeRepository.findChallengeColor(user, challenge))
+                            .picturePaths(picturePaths)
                             .build()
             );
         }
@@ -404,13 +445,51 @@ public class ChallengeServiceImpl implements ChallengeService {
         return response;
     }
 
-    /*진행 중인 챌린지 상세 조회*/
-    public ChallengeResponseDto.Detail getDetailProgress(ChallengeRequestDto.CInfo request) {
+    /*진행 대기 중 챌린지 상세 조회*/
+    public ChallengeResponseDto.WaitDetail getDetailWaitChallenge(ChallengeRequestDto.CInfo request) {
         User user = userRepository.findByNickname(request.getNickname()).orElseThrow(
-                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
+                () -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
 
         Challenge challenge = challengeRepository.findByUuid(request.getUuid()).orElseThrow(
-                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_CHALLENGE));
+                () -> new ChallengeException(ExceptionCodeSet.CHALLENGE_NOT_FOUND));
+
+        LocalDate started = challenge.getStarted(); //챌린지 시작 날짜
+        LocalDate ended = started.plusDays(7 - started.getDayOfWeek().getValue());
+
+        List<UserChallenge> ucList = userChallengeRepository.findUCByChallenge(challenge);
+        List<ChallengeResponseDto.UCInfo> infos = new ArrayList<>();
+
+        for (UserChallenge uc : ucList) {
+            User userInUC = uc.getUser();
+            ChallengeResponseDto.UCInfo ucInfo = new ChallengeResponseDto.UCInfo(
+                    userInUC.getPictureName(), userInUC.getNickname(), uc.getStatus());
+
+            if (uc.getStatus() == ChallengeStatus.Master) {
+                infos.add(0, ucInfo);
+            } else if (userInUC.getNickname().equals(user.getNickname())) {
+                infos.add(1, ucInfo);
+            } else {
+                infos.add(ucInfo);
+            }
+        }
+
+        return ChallengeResponseDto.WaitDetail.builder()
+                .name(challenge.getName())
+                .type(challenge.getType())
+                .color(userChallengeRepository.findChallengeColor(user, challenge))
+                .started(started)
+                .ended(ended)
+                .infos(infos)
+                .build();
+    }
+
+    /*진행 중인 챌린지 상세 조회*/
+    public ChallengeResponseDto.ProgressDetail getDetailProgress(ChallengeRequestDto.CInfo request) {
+        User user = userRepository.findByNickname(request.getNickname()).orElseThrow(
+                () -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
+
+        Challenge challenge = challengeRepository.findByUuid(request.getUuid()).orElseThrow(
+                () -> new ChallengeException(ExceptionCodeSet.CHALLENGE_NOT_FOUND));
 
         //필요한 변수 선언
         List<User> members = userChallengeRepository.findChallengeUsers(challenge); //본인 포함 챌린지에 참여하는 인원들
@@ -420,7 +499,7 @@ public class ChallengeServiceImpl implements ChallengeService {
         List<ExerciseRecord> records; //영역 기록
 
         LocalDate started = challenge.getStarted(); //챌린지 시작 날짜
-        LocalDate ended = started.plusDays(7-started.getDayOfWeek().getValue()); //챌린지 끝나는 날(해당 주 일요일)
+        LocalDate ended = started.plusDays(7 - started.getDayOfWeek().getValue()); //챌린지 끝나는 날(해당 주 일요일)
 
         Integer distance = 0; //거리
         Integer exerciseTime = 0; //운동시간
@@ -441,13 +520,13 @@ public class ChallengeServiceImpl implements ChallengeService {
         //챌린지 타입에 따른 랭킹 정보(순위, 닉네임, 점수) 계산
         rankings = calculateChallengeRanking(challenge, members, started, ended, challenge.getType());
 
-        return ChallengeResponseDto.Detail.builder()
+        return ChallengeResponseDto.ProgressDetail.builder()
                 .name(challenge.getName())
                 .uuid(challenge.getUuid())
                 .type(challenge.getType())
                 .started(started)
-                .ended(started.plusDays(7-started.getDayOfWeek().getValue()))
-                .color(userChallengeRepository.findChallengeColor(user,challenge))
+                .ended(started.plusDays(7 - started.getDayOfWeek().getValue()))
+                .color(userChallengeRepository.findChallengeColor(user, challenge))
                 .matrices(matrices)
                 .rankings(rankings)
                 .distance(distance)
@@ -457,10 +536,10 @@ public class ChallengeServiceImpl implements ChallengeService {
     }
 
     /*해당 운동기록이 참여하고 있는 챌린지*/
-    public List<ChallengeResponseDto.CInfoRes> findChallengeByRecord(ExerciseRecord exerciseRecord){
+    public List<ChallengeResponseDto.CInfoRes> findChallengeByRecord(ExerciseRecord exerciseRecord) {
 
         User user = userRepository.findByExerciseRecord(exerciseRecord).orElseThrow(
-                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
+                () -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
 
         // LocalDate 형태로 변환
         LocalDateTime startedTime = exerciseRecord.getStarted();
@@ -475,7 +554,7 @@ public class ChallengeServiceImpl implements ChallengeService {
                 .name(c.getName())
                 .uuid(c.getUuid())
                 .started(c.getStarted())
-                .ended(c.getStarted().plusDays(7-c.getStarted().getDayOfWeek().getValue()))
+                .ended(c.getStarted().plusDays(7 - c.getStarted().getDayOfWeek().getValue()))
                 .color(userChallengeRepository.findChallengeColor(user, c))
                 .build()));
 
@@ -485,18 +564,18 @@ public class ChallengeServiceImpl implements ChallengeService {
     /*챌린지 상세보기: 지도*/
     public ChallengeMapResponseDto.Detail getChallengeDetailMap(String uuid) {
         Challenge challenge = challengeRepository.findByUuid(uuid).orElseThrow(
-                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_CHALLENGE));
+                () -> new ChallengeException(ExceptionCodeSet.CHALLENGE_NOT_FOUND));
 
         //챌린지 참여 인원 조회
         List<User> members = userChallengeRepository.findChallengeUsers(challenge);
-        
+
         //필요한 변수 선언
         List<ChallengeMapResponseDto.UserMapInfo> matrixList = new ArrayList<>();
         List<UserResponseDto.Ranking> rankings = new ArrayList<>();
         List<ExerciseRecord> records;
 
         LocalDate started = challenge.getStarted(); //챌린지 시작 날짜
-        LocalDate ended = started.plusDays(7-started.getDayOfWeek().getValue()); //챌린지 끝나는 날(해당 주 일요일)
+        LocalDate ended = started.plusDays(7 - started.getDayOfWeek().getValue()); //챌린지 끝나는 날(해당 주 일요일)
 
         //챌린지 타입에 따른 결과 저장
         if (challenge.getType().equals(ChallengeType.Widen)) {
@@ -508,17 +587,16 @@ public class ChallengeServiceImpl implements ChallengeService {
                 //개인 영역 기록 저장
                 List<MatrixDto> matrixSetByRecord = matrixRepository.findMatrixSetByRecords(records);
                 matrixList.add(
-                        new ChallengeMapResponseDto.UserMapInfo(color, member.getLatitude(), member.getLongitude(), matrixSetByRecord)
+                        new ChallengeMapResponseDto.UserMapInfo(color, member.getLatitude(), member.getLongitude(), matrixSetByRecord, member.getPicturePath())
                 );
 
                 //랭킹 리스트에 추가
                 rankings.add(new UserResponseDto.Ranking(1, member.getNickname(),
-                        (long) matrixRepository.findMatrixSetByRecords(records).size()));
+                        (long) matrixRepository.findMatrixSetByRecords(records).size(), member.getPicturePath()));
             }
             //랭킹 정렬
             rankings = matrixService.calculateAreaRank(rankings);
-        }
-        else if (challenge.getType().equals(ChallengeType.Accumulate)) {
+        } else if (challenge.getType().equals(ChallengeType.Accumulate)) {
             for (User user : members) {
                 //matrixList 값 채우기
                 ChallengeColor color = userChallengeRepository.findChallengeColor(user, challenge);
@@ -528,7 +606,7 @@ public class ChallengeServiceImpl implements ChallengeService {
                 List<MatrixDto> matrixSetByRecord = matrixRepository.findMatrixSetByRecords(records);
 
                 matrixList.add(
-                        new ChallengeMapResponseDto.UserMapInfo(color, user.getLatitude(), user.getLongitude(), matrixSetByRecord)
+                        new ChallengeMapResponseDto.UserMapInfo(color, user.getLatitude(), user.getLongitude(), matrixSetByRecord, user.getPicturePath())
                 );
             }
             //랭킹 계산
@@ -541,8 +619,8 @@ public class ChallengeServiceImpl implements ChallengeService {
     }
 
     /*챌린지 종류에 따른 랭킹 계산 메소드*/
-    public List<UserResponseDto.Ranking> calculateChallengeRanking(
-            Challenge challenge, List<User> members, LocalDate started, LocalDate ended, ChallengeType type) {
+    public List<UserResponseDto.Ranking> calculateChallengeRanking(Challenge challenge, List<User> members,
+                                                                   LocalDate started, LocalDate ended, ChallengeType type) {
 
         List<ExerciseRecord> records = new ArrayList<>();
         List<UserResponseDto.Ranking> rankings = new ArrayList<>();
@@ -554,12 +632,11 @@ public class ChallengeServiceImpl implements ChallengeService {
 
                 //랭킹 리스트에 추가
                 rankings.add(new UserResponseDto.Ranking(1, member.getNickname(),
-                        (long) matrixRepository.findMatrixSetByRecords(records).size()));
+                        (long) matrixRepository.findMatrixSetByRecords(records).size(), member.getPicturePath()));
             }
             //랭킹 정렬
             rankings = matrixService.calculateAreaRank(rankings);
-        }
-        else if (challenge.getType().equals(ChallengeType.Accumulate)) {
+        } else if (challenge.getType().equals(ChallengeType.Accumulate)) {
             //모든 회원의 칸 수 기록을 Tuple[닉네임, 이번주 누적 칸수] 내림차순으로 정리
             List<Tuple> matrixCount = exerciseRecordRepository.findMatrixCount(members, started.atStartOfDay(), ended.atTime(LocalTime.MAX));
             //랭킹 계산
@@ -567,5 +644,27 @@ public class ChallengeServiceImpl implements ChallengeService {
         }
 
         return rankings;
+    }
+
+    /*챌린지 삭제*/
+    public Boolean deleteChallenge(ChallengeRequestDto.CInfo request) {
+        User user = userRepository.findByNickname(request.getNickname()).orElseThrow(
+                () -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
+
+        Challenge challenge = challengeRepository.findByUuid(request.getUuid()).orElseThrow(
+                () -> new ChallengeException(ExceptionCodeSet.CHALLENGE_NOT_FOUND, user.getNickname()));
+
+        UserChallenge userChallenge = userChallengeRepository.findByUserAndChallenge(user, challenge).orElseThrow(
+                () -> new ChallengeException(ExceptionCodeSet.USER_CHALLENGE_NOT_FOUND, user.getNickname()));
+
+        //주최자만 삭제 가능.
+        if (userChallenge.getStatus() != ChallengeStatus.Master) {
+            return false;
+        } else {
+            List<UserChallenge> userChallenges = userChallengeRepository.findUCByChallenge(challenge);
+            userChallengeRepository.deleteAll(userChallenges);
+            challengeRepository.delete(challenge);
+            return true;
+        }
     }
 }

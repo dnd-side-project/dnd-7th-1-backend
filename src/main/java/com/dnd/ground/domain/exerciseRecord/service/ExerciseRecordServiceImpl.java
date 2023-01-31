@@ -17,8 +17,9 @@ import com.dnd.ground.domain.user.dto.RankResponseDto;
 import com.dnd.ground.domain.user.dto.UserRequestDto;
 import com.dnd.ground.domain.user.dto.UserResponseDto;
 import com.dnd.ground.domain.user.repository.UserRepository;
-import com.dnd.ground.global.exception.CNotFoundException;
-import com.dnd.ground.global.exception.CommonErrorCode;
+import com.dnd.ground.global.exception.ExceptionCodeSet;
+import com.dnd.ground.global.exception.FriendException;
+import com.dnd.ground.global.exception.UserException;
 import lombok.*;
 
 import org.springframework.http.HttpStatus;
@@ -34,7 +35,7 @@ import java.util.*;
  * @description 운동 기록 서비스 클래스
  * @author  박세헌
  * @since   2022-08-01
- * @updated 2022-08-29 / 걸음수 랭킹 부분 오류 해결 - 박세헌
+ * @updated 2022-08-29 / 미사용 메소드 삭제 - 박찬호
  */
 
 @Service
@@ -49,16 +50,11 @@ public class ExerciseRecordServiceImpl implements ExerciseRecordService {
     private final ChallengeRepository challengeRepository;
     private final UserChallengeRepository userChallengeRepository;
 
-    @Transactional
-    public void delete(Long exerciseRecordId) {
-        exerciseRecordRepository.deleteById(exerciseRecordId);
-    }
-
     // 기록 시작
     // 운동기록 id, 일주일 누적 영역 반환
     public HomeResponseDto recordStart(String nickname){
         User user = userRepository.findByNickname(nickname).orElseThrow(
-                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
+                () -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
 
         /*회원의 matrix 와 정보 (userMatrix)*/
         UserResponseDto.UserMatrix userMatrix = new UserResponseDto.UserMatrix(user);
@@ -99,10 +95,10 @@ public class ExerciseRecordServiceImpl implements ExerciseRecordService {
 
         for (String friendNickname : friendHashMap.keySet()) {
             User friend = userRepository.findByNickname(friendNickname).orElseThrow(
-                    () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
+                    () -> new FriendException(ExceptionCodeSet.FRIEND_NOT_FOUND));
 
             friendMatrices.add(new UserResponseDto.FriendMatrix(friendNickname, friend.getLatitude(), friend.getLongitude(),
-                    friendHashMap.get(friendNickname)));
+                    friendHashMap.get(friendNickname), friend.getPicturePath()));
         }
 
         /*챌린지를 하는 사람들의 matrix 와 정보 (challengeMatrices)*/
@@ -121,7 +117,8 @@ public class ExerciseRecordServiceImpl implements ExerciseRecordService {
             challengeMatrices.add(
                     new UserResponseDto.ChallengeMatrix(
                             friend.getNickname(), challengeNumber, challengeColor,
-                            friend.getLatitude(), friend.getLongitude(), challengeMatrixSetDto)
+                            friend.getLatitude(), friend.getLongitude(), challengeMatrixSetDto,
+                            friend.getPicturePath())
             );
         }
 
@@ -141,7 +138,7 @@ public class ExerciseRecordServiceImpl implements ExerciseRecordService {
     public ResponseEntity<Boolean> recordEnd(EndRequestDto endRequestDto) {
         // 유저 찾아서 운동 기록 생성
         User user = userRepository.findByNickname(endRequestDto.getNickname()).orElseThrow(
-                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
+                () -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
         ExerciseRecord exerciseRecord = new ExerciseRecord(user);
 
         // 정보 update(ended, 거리, 걸음수, 운동시간, 상세 기록, 시작 시간, 끝 시간)
@@ -170,19 +167,19 @@ public class ExerciseRecordServiceImpl implements ExerciseRecordService {
         LocalDateTime end = requestDto.getEnd();
 
         User user = userRepository.findByNickname(nickname).orElseThrow(
-                () -> new CNotFoundException(CommonErrorCode.NOT_FOUND_USER));
+                () -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
 
         List<User> userAndFriends = friendService.getFriends(user);  // 친구들 조회
         userAndFriends.add(0, user);  // 유저 추가
         List<UserResponseDto.Ranking> stepRankings = new ArrayList<>(); // [랭킹, 닉네임, 걸음 수]
 
-        // [Tuple(닉네임, 걸음 수)] 걸음 수 기준 내림차순 정렬
+        // [Tuple(닉네임, 걸음 수, 프로필 path)] 걸음 수 기준 내림차순 정렬
         List<Tuple> stepCount = exerciseRecordRepository.findStepCount(userAndFriends, start, end);
 
         if (stepCount.isEmpty()){
             for (User users : userAndFriends) {
                 stepRankings.add(new UserResponseDto.Ranking(1, (String) users.getNickname(),
-                        0L));
+                        0L, users.getPicturePath()));
             }
             return new RankResponseDto.Step(stepRankings);
         }
@@ -194,15 +191,8 @@ public class ExerciseRecordServiceImpl implements ExerciseRecordService {
         for (Tuple info : stepCount) {
             // 전 유저와 걸음 수가 같다면 랭크 유지
             if (Objects.equals(info.get(1), matrixNumber)) {
-
-                // 유저 찾았으면 저장해둠
-                if (Objects.equals(info.get(0), user.getNickname())) {
-                    stepRankings.add(0, new UserResponseDto.Ranking(rank, (String) info.get(0),
-                            (Long) info.get(1)));
-                }
-
                 stepRankings.add(new UserResponseDto.Ranking(rank, (String) info.get(0),
-                        (Long) info.get(1)));
+                        (Long) info.get(1), (String) info.get(2)));
                 count += 1;
                 continue;
             }
@@ -210,14 +200,8 @@ public class ExerciseRecordServiceImpl implements ExerciseRecordService {
             // 전 유저보다 걸음수가 작다면 앞에 있는 사람수 만큼이 자신 랭킹
             count += 1;
             rank = count;
-
-            // 유저 찾았으면 저장해둠
-            if (Objects.equals(info.get(0), user.getNickname())) {
-                stepRankings.add(0, new UserResponseDto.Ranking(rank, (String) info.get(0),
-                        (Long) info.get(1)));
-            }
             stepRankings.add(new UserResponseDto.Ranking(rank, (String) info.get(0),
-                    (Long) info.get(1)));
+                    (Long) info.get(1), (String) info.get(2)));
             matrixNumber = (Long) info.get(1);  // 걸음 수 update!
         }
         return new RankResponseDto.Step(stepRankings);

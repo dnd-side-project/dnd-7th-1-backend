@@ -19,7 +19,7 @@ import java.util.List;
 @Data
 @Builder
 public class ChallengeCreateResponseDto {
-    @ApiModelProperty(value = "회원 목록", example = "\"users\": [{\"nickname\": \"NickB\"}]")
+    @ApiModelProperty(value = "회원 목록", example = "\\'users\\': [{\\'nickname\\': \\'NickB\\',\\'picturePath\\': https://dnd-ground-bucket.s3.ap-northeast-2.amazonaws.com/user/profile/default_profile.png}]")
     private List<UserResponseDto.UInfo> users;
 
     @ApiModelProperty(value = "챌린지 메시지", example = "너~ 가보자고~")

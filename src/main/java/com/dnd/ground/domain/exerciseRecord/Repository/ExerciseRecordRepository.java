@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import javax.persistence.Tuple;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -15,15 +16,15 @@ import java.util.Optional;
  * @description 운동 기록 리포지토리 클래스
  * @author  박세헌
  * @since   2022-08-01
- * @updated 2022-08-23 / 1. 걸음수 합, 거리 합 함수 반환값 Optional로 변경
- *                       - 박세헌
+ * @updated 2022-09-29 / 회원의 운동 기록 리스트 조회
+ *                       - 박찬호
  *
  */
 
 public interface ExerciseRecordRepository extends JpaRepository<ExerciseRecord, Long>, ExerciseRecordQueryRepository {
 
     // 유저와 친구들의 닉네임과 (start-end)사이 운동기록의 칸 수 조회
-    @Query("select u.nickname, count(u) from User u " +
+    @Query("select u.nickname, count(u), u.picturePath from User u " +
             "join u.exerciseRecords e " +
             "join e.matrices m " +
             "where u in :userAndFriends and e.started between :start and :end " +
@@ -32,7 +33,7 @@ public interface ExerciseRecordRepository extends JpaRepository<ExerciseRecord, 
     List<Tuple> findMatrixCount(List<User> userAndFriends, LocalDateTime start, LocalDateTime end);
 
     // 유저와 친구들의 닉네임과 (start-end)사이 운동기록의 걸음 수 조회
-    @Query("select u.nickname, sum(e.stepCount) from User u " +
+    @Query("select u.nickname, sum(e.stepCount), u.picturePath from User u " +
             "join u.exerciseRecords e " +
             "where u in :userAndFriends and e.started between :start and :end " +
             "group by u " +
@@ -52,4 +53,13 @@ public interface ExerciseRecordRepository extends JpaRepository<ExerciseRecord, 
     @Query("select sum(e.distance) from User u join u.exerciseRecords e " +
             "where e in :exerciseRecords and u = :user")
     Optional<Integer> findUserDistance(User user, List<ExerciseRecord> exerciseRecords);
+
+    // 운동 기록 날짜 조회 (중복 제거)
+    @Query("select distinct function('date_format', e.started, '%Y-%m-%d') " +
+            "from ExerciseRecord e where e.user = :user and e.started between :start and :end")
+    List<String> findDayEventList(User user, LocalDateTime start, LocalDateTime end);
+
+    //회원의 운동 기록 리스트 조회
+    @Query("select e from ExerciseRecord e where e.user=:user")
+    List<ExerciseRecord> findRecordsByUser(@Param("user") User user);
 }

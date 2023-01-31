@@ -16,8 +16,8 @@ import java.util.Optional;
  * @description 회원-챌린지 간 조인엔티티와 관련한 레포지토리
  * @author  박찬호
  * @since   2022-08-03
- * @updated 1. 챌린지 색깔 조회 쿼리 추가
- *          - 2022.08.16 박찬호
+ * @updated 1. 챌린지-회원 관계 테이블에 데이터가 있는 회원 조회 쿼리 추가
+ *          - 2022.10.01 박찬호
  */
 
 public interface UserChallengeRepository extends JpaRepository<UserChallenge, Long> {
@@ -25,7 +25,7 @@ public interface UserChallengeRepository extends JpaRepository<UserChallenge, Lo
 
     //User로 챌린지 목록 조회
     @Query("select c from Challenge c inner join UserChallenge uc on uc.user=:user")
-    List<Challenge> findChallenge(@Param("user") User user);
+    List<Challenge> findChallenges(@Param("user") User user);
 
     //User를 통해 진행 중인 챌린지가 있는 회원 조회
     @Query("select u from User u inner join UserChallenge uc on uc.user=:user where " +
@@ -46,8 +46,8 @@ public interface UserChallengeRepository extends JpaRepository<UserChallenge, Lo
     int findUCCount(@Param("challenge") Challenge challenge);
 
     //Progress 상태의 회원 수 조회
-    @Query("select count(uc) from UserChallenge uc where uc.challenge=:challenge and uc.status='Progress'")
-    int findUCWaitCount(Challenge challenge);
+    @Query("select count(uc) from UserChallenge uc where uc.challenge=:challenge and (uc.status='Progress' or uc.status='Master')")
+    int findUCReadyCount(Challenge challenge);
 
     //유저와 챌린지를 통해 UserChallenge 조회
     Optional<UserChallenge> findByUserAndChallenge(User user, Challenge challenge);
@@ -67,11 +67,16 @@ public interface UserChallengeRepository extends JpaRepository<UserChallenge, Lo
 
 
     //회원이 참여하고 있는 챌린지 개수 (챌린지 상태 상관X)
-    @Query("select count(uc) from UserChallenge uc where uc.user=:user and (uc.status<>'Done' or uc.status<>'Reject')")
+    @Query("select count(uc) from UserChallenge uc where uc.user=:user and (uc.status<>'Done' or uc.status<>'Reject' or uc.status<>'MasterDone')")
     int findCountChallenge(@Param("user")User user);
 
     //챌린지 색깔 조회
     @Query("select uc.color from UserChallenge uc where uc.user=:user and uc.challenge=:challenge")
     ChallengeColor findChallengeColor(@Param("user") User user, @Param("challenge") Challenge challenge);
+
+    //챌린지-회원 관계 테이블에 데이터가 있는 회원 조회
+    @Query("select uc from UserChallenge uc where uc.user=:user")
+    List<UserChallenge> findUCs(@Param("user") User user);
+
 
 }

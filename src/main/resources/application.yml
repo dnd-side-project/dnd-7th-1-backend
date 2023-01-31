@@ -1,6 +1,6 @@
 spring:
-  profiles:
-    active: dev
+  config:
+    import: aws.yml
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: ${db.url}
@@ -8,10 +8,11 @@ spring:
     password: ${db.password}
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: ${db.ddl}
     properties:
       hibernate:
-        format_sql: true
+        format_sql: ${hibernate.format_sql}
+        highlight_sql: ${hibernate.highlight_sql}
     defer-datasource-initialization: true
     open-in-view: true
   mvc:
@@ -19,7 +20,7 @@ spring:
       matching-strategy: ant_path_matcher
   sql:
     init:
-      mode: always
+      mode: ${db.sql.init}
 logging:
   level:
     org.hibernate.SQL: debug
@@ -28,3 +29,17 @@ logging:
 kakao:
   REST_KEY: ${kakao.REST_KEY}
   REDIRECT_URI: ${kakao.REDIRECT_URI}
+
+apple:
+  ISS: ${apple.ISS}
+  AUD: ${apple.AUD}
+
+picture:
+  path: ${picture.path}
+  name: ${picture.name}
+
+jwt:
+  secret_key: ${jwt.secret_key}
+  issuer: ${jwt.issuer}
+
+ip: ${ip}
