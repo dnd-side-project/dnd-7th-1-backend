@@ -10,7 +10,6 @@ import com.dnd.ground.global.auth.service.KakaoService;
 import com.dnd.ground.global.auth.dto.UserSignDto;
 import com.dnd.ground.global.exception.AuthException;
 import com.dnd.ground.global.exception.ExceptionCodeSet;
-import com.dnd.ground.global.auth.dto.JWTReissueResponseDto;
 import io.swagger.annotations.Api;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
@@ -19,8 +18,6 @@ import org.json.simple.parser.ParseException;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author 박찬호
@@ -53,12 +50,6 @@ public class AuthController {
         return ResponseEntity.ok(authService.validateNickname(nickname));
     }
 
-    @GetMapping("/reissue-example")
-    @Operation(summary = "네모두 토큰 재발급", description = "실제 엔드포인트=:8080/reissue\n모델만 참고하세요!(똑같이 동작하진 않음.)\n리프레시 토큰이 유효 하다면 토큰을 재발급")
-    public ResponseEntity<JWTReissueResponseDto> issuanceToken(@RequestHeader("Refresh-Token") String refreshToken) {
-        return authService.issuanceToken(refreshToken);
-    }
-
     /**
      * -- OAuth2.0 --
      **/
@@ -73,16 +64,10 @@ public class AuthController {
 
     @GetMapping("/social/login")
     @Operation(summary = "소셜 로그인 이후 회원 정보를 받는 API", description = "헤더의 Authorization 에 각 로그인 타입에 맞는 토큰을 넣는다.\n카카오:카카오의 Access token\n애플:idToken\ntype:APPLE or KAKAO")
-    public ResponseEntity<SocialResponseDto> socialLogin(@RequestHeader("Authorization") String token, @RequestParam("type") LoginType type) throws ParseException {
+    public ResponseEntity<SocialResponseDto> socialLogin(@RequestHeader("Authorization") String token, @RequestParam("type") LoginType type) {
         if (type.equals(LoginType.KAKAO)) return ResponseEntity.ok(kakaoService.kakaoLogin(token));
         else if (type.equals(LoginType.APPLE)) return ResponseEntity.ok(appleService.appleLogin(token));
         else throw new AuthException(ExceptionCodeSet.LOGIN_TYPE_INVALID);
-    }
-
-    @GetMapping("/check/origin")
-    @Operation(summary = "카카오 엑세스 토큰으로 기존 유저인지 판별하기", description = "헤더에 카카오 엑세스토큰(키값:Access-Token)으로 보냄.\n기존 유저:true \n신규 유저:false")
-    public ResponseEntity<Boolean> isOriginalUser(HttpServletRequest request) {
-        return ResponseEntity.ok().body(authService.isOriginalUser(request));
     }
 
     @GetMapping("/kakao/friend")
@@ -93,12 +78,13 @@ public class AuthController {
     }
 
     @PostMapping(value = "/apple/login", consumes = MediaType.APPLICATION_JSON_VALUE, produces=MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+    @Operation(summary = "애플 로그인 Redirect URI", description = "백엔드 테스트용")
     public ResponseEntity<?> appleLoginRedirect(@RequestBody SocialResponseDto.AppleLoginResponseDto request) {
         String code = request.getCode();
         String idToken = request.getId_token();
         String user = request.getUser();
         String state = request.getState();
-        log.info("code:{} | idToken:{} | user:{} | state:{}", code, idToken, user, state); //code, idToken STring임
+        log.info("code:{} | idToken:{} | user:{} | state:{}", code, idToken, user, state);
         return null;
     }
 }

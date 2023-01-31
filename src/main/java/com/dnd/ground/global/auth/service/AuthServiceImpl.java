@@ -6,34 +6,28 @@ import com.auth0.jwt.interfaces.DecodedJWT;
 import com.dnd.ground.domain.friend.service.FriendService;
 import com.dnd.ground.domain.user.User;
 import com.dnd.ground.global.auth.UserClaim;
-import com.dnd.ground.domain.user.dto.*;
 import com.dnd.ground.domain.user.repository.UserRepository;
 import com.dnd.ground.global.auth.dto.UserSignDto;
 import com.dnd.ground.global.exception.*;
-import com.dnd.ground.global.auth.dto.JWTReissueResponseDto;
-import com.dnd.ground.global.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.regex.Pattern;
 
 /**
  * @description 회원의 인증/인가 및 회원 정보 관련 서비스 구현체
- * @author  박세헌, 박찬호
+ * @author  박찬호
  * @since   2022-09-07
- * @updated 1. 미사용 API 삭제(온보딩, 회원가입V1)
- *          - 2022.01-23 박찬호
+ * @updated 1.loadByUsername() 메소드의 password encoder 인스턴스 변수로 이동
+ *          - 2022.01-30 박찬호
  */
 
 @Slf4j
@@ -42,31 +36,32 @@ import java.util.regex.Pattern;
 public class AuthServiceImpl implements AuthService, UserDetailsService {
 
     private final UserRepository userRepository;
-    private final KakaoService kakaoService;
     private final FriendService friendService;
     @Value("${jwt.secret_key}")
     private String SECRET_KEY;
 
-    @Value("${ip}")
-    private String IP;
+    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
-    /*회원 저장*/
-    @Transactional
-    public User save(JwtUserDto user){
-        return userRepository.save(User.builder()
-                .nickname(user.getNickname())
-                .email(user.getMail())
-                .created(LocalDateTime.now())
-                .intro("")
-                .latitude(null)
-                .longitude(null)
-                .isShowMine(true)
-                .isShowFriend(true)
-                .isPublicRecord(user.getIsPublicRecord())
-                .pictureName(user.getPictureName())
-                .picturePath(user.getPicturePath())
-                .build());
-    }
+    /**
+     * 회원저장 V1
+     * @deprecated
+     */
+//    @Transactional
+//    public User save(JwtUserDto user){
+//        return userRepository.save(User.builder()
+//                .nickname(user.getNickname())
+//                .email(user.getMail())
+//                .created(LocalDateTime.now())
+//                .intro("")
+//                .latitude(null)
+//                .longitude(null)
+//                .isShowMine(true)
+//                .isShowFriend(true)
+//                .isPublicRecord(user.getIsPublicRecord())
+//                .pictureName(user.getPictureName())
+//                .picturePath(user.getPicturePath())
+//                .build());
+//    }
 
     /**
      * 회원가입 V1
@@ -138,25 +133,6 @@ public class AuthServiceImpl implements AuthService, UserDetailsService {
         } else throw new AuthException(ExceptionCodeSet.SIGN_DUPLICATED);
     }
 
-    /* 토큰으로 닉네임 찾은 후 반환하는 함수 */
-//    public ResponseEntity<Map<String, String>> getNicknameByToken(HttpServletRequest request){
-//        String accessToken = request.getHeader("Authorization");
-//        String refreshToken = request.getHeader("Refresh-Token");
-//
-//        UserClaim result = null;
-//        if (accessToken != null) {
-//            result = JwtUtil.verify(accessToken.substring("Bearer ".length()));
-//        }
-//        else{
-//            result = JwtUtil.verify(refreshToken.substring("Bearer ".length()));
-//        }
-//
-//        Map<String, String> nick = new HashMap<>();
-//        nick.put("nickname", result.getNickname());
-//
-//        return ResponseEntity.ok(nick);
-//    }
-
     /* AuthenticationManager가 User를 검증하는 함수 */
     @Override
     public UserDetails loadUserByUsername(String email) {
@@ -164,12 +140,11 @@ public class AuthServiceImpl implements AuthService, UserDetailsService {
                 () -> new FilterException(ExceptionCodeSet.USER_NOT_FOUND)
         );
 
-        long createdMilli = UserClaim.changeCreatedFormat(user.getCreated());
+        long createdMilli = UserClaim.changeCreatedToLong(user.getCreated());
 
-        BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
         return org.springframework.security.core.userdetails.User.builder()
                 .username(email)
-                .password(passwordEncoder.encode(user.getNickname()+createdMilli))
+                .password(passwordEncoder.encode(user.getNickname()+"-"+createdMilli))
                 .authorities("BASIC")
                 .build();
     }
@@ -182,53 +157,6 @@ public class AuthServiceImpl implements AuthService, UserDetailsService {
         return nickname.length() >= 2 && nickname.length() <= 6 // 2~6글자
                 && userRepository.findByNickname(nickname).isEmpty() //중복X
                 && !rex.matcher(nickname).find(); // 특수문자
-    }
-
-    /*기존 유저인지 판별*/
-    public Boolean isOriginalUser(HttpServletRequest request) {
-        String accessToken = request.getHeader("Kakao-Access-Token");
-
-        KakaoDto.TokenInfo tokenInfo = kakaoService.getTokenInfo(accessToken);
-
-        return userRepository.findByKakaoId(tokenInfo.getId()).isPresent();
-    }
-
-    /* 리프레시 토큰이 오면 JWTCheckFilter에서 검증 후 성공적으로 filter를 통과 했다면 해당 로직에서 토큰 재발급 */
-    public ResponseEntity<JWTReissueResponseDto> issuanceToken(String refreshToken){
-
-        String token = refreshToken.substring("Bearer ".length());
-        UserClaim result = JwtUtil.verify(token);
-        // 토큰 재발급, 리프레시 토큰은 저장
-        String accessToken = JwtUtil.createAccessToken(result.getNickname());
-        refreshToken = JwtUtil.createRefreshToken(result.getNickname());
-
-        User user = userRepository.findByNickname(result.getNickname()).orElseThrow(
-                () -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.add("Authorization", "Bearer " + accessToken);
-        headers.add("Refresh-Token", "Bearer " + refreshToken);
-
-        return ResponseEntity.ok()
-                .headers(headers)
-                .body(new JWTReissueResponseDto(ExceptionCodeSet.OK.getMessage(), ExceptionCodeSet.OK.getCode(), user.getLoginType()));
-    }
-    /* 새로운 닉네임으로 토큰 재발급 */
-    public ResponseEntity<UserResponseDto.UInfo> issuanceTokenByNickname(String nickname){
-        String accessToken = JwtUtil.createAccessToken(nickname);
-        String refreshToken = JwtUtil.createRefreshToken(nickname);
-
-        User user = userRepository.findByNickname(nickname).orElseThrow(
-                () -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.add("Authorization", "Bearer " + accessToken);
-        headers.add("Refresh-Token", "Bearer " + refreshToken);
-
-        return ResponseEntity
-                .ok()
-                .headers(headers)
-                .body(new UserResponseDto.UInfo(user.getNickname(), user.getPicturePath()));
     }
 
     /*토큰을 통해 UserClaim 반환*/
@@ -245,5 +173,4 @@ public class AuthServiceImpl implements AuthService, UserDetailsService {
             return new UserClaim(email, user.getNickname(), user.getCreated(), user.getLoginType());
         } else throw new AuthException(ExceptionCodeSet.WRONG_TOKEN);
     }
-
 }
