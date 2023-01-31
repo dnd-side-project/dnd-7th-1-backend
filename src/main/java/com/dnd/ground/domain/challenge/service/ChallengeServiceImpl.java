@@ -34,8 +34,8 @@ import java.util.*;
  * @author 박찬호
  * @description 챌린지와 관련된 서비스의 역할을 분리한 구현체
  * @since 2022-08-03
- * @updated 1. 대기 중 챌린지 상세 정보 조회 API 구현
- *          2022-11-23 박찬호
+ * @updated 1.챌린지 상태 변경 API Response 변경
+ *          2022-01-17 박찬호
  */
 
 @Slf4j
@@ -126,7 +126,7 @@ public class ChallengeServiceImpl implements ChallengeService {
 
     /*유저-챌린지 상태 변경*/
     @Transactional
-    public ChallengeStatus changeUserChallengeStatus(ChallengeRequestDto.CInfo requestDto, ChallengeStatus status) {
+    public ChallengeResponseDto.Status changeUserChallengeStatus(ChallengeRequestDto.CInfo requestDto, ChallengeStatus status) {
         //정보 조회
         Challenge challenge = challengeRepository.findByUuid(requestDto.getUuid()).orElseThrow(
                 () -> new ChallengeException(ExceptionCodeSet.CHALLENGE_NOT_FOUND));
@@ -145,7 +145,7 @@ public class ChallengeServiceImpl implements ChallengeService {
         //상태 변경
         userChallenge.changeStatus(status);
 
-        return status;
+        return new ChallengeResponseDto.Status(status);
     }
 
     /*챌린지 상태 변경(매일 00:00 실행)*/
@@ -309,7 +309,7 @@ public class ChallengeServiceImpl implements ChallengeService {
 
             //랭킹이 -1인 경우 예외 처리
             if (rank == -1) {
-                throw new CommonException(ExceptionCodeSet.INTERNAL_SERVER_ERROR);
+                throw new ExerciseRecordException(ExceptionCodeSet.RANKING_CAL_FAIL);
             }
 
             response.add(
@@ -369,7 +369,7 @@ public class ChallengeServiceImpl implements ChallengeService {
 
             //랭킹이 -1인 경우 예외 처리
             if (rank == -1) {
-                throw new CommonException(ExceptionCodeSet.INTERNAL_SERVER_ERROR);
+                throw new ExerciseRecordException(ExceptionCodeSet.RANKING_CAL_FAIL);
             }
 
             response.add(
@@ -426,7 +426,7 @@ public class ChallengeServiceImpl implements ChallengeService {
 
             //랭킹이 -1인 경우 예외 처리
             if (rank == -1) {
-                throw new CommonException(ExceptionCodeSet.INTERNAL_SERVER_ERROR);
+                throw new ExerciseRecordException(ExceptionCodeSet.RANKING_CAL_FAIL);
             }
 
             response.add(

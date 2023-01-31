@@ -4,80 +4,143 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.reactive.function.client.WebClientException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 import java.sql.SQLIntegrityConstraintViolationException;
+import java.text.ParseException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
+ * @author 박찬호
  * @description 전역 예외 처리를 위한 Advice 클래스
- * @author  박찬호
- * @since   2022-08-24
- * @updated 1. CNotValidationException.class 예외 처리 추가
- *          2. CExceedChallengeException.class 예외 처리 추가
- *          3. 로그에 기록할 내용 변경
- *          - 2022.08.25 박찬호
+ * @since 2022-08-24
+ * @updated 1.예외처리 리팩토링에 따른 Response 변경
+ *          2.각 패키지별 예외 처리 및 로깅 방식 변경
+ *          - 2022.12.03 박찬호
+ *
  */
 
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
-    /*--공통 예외 처리--*/
-    //조회되지 않을 때 발생하는 예외 처리(Optional)
-    @ExceptionHandler({CNotFoundException.class})
-    public ResponseEntity<Object> handleNotFoundException(CNotFoundException e) {
-        log.warn("**NotFound 예외 발생** 에러 코드:{} | 내용:{}", e.getErrorCode(), e.getErrorCode().getMessage());
-        return handleExceptionInternal(e.getErrorCode());
+    /**
+     * 역추적을 위한 간소화된 Stack trace 계산
+     */
+    private List<String> getFewTrace(StackTraceElement[] trace) {
+        if (trace == null) {
+            log.error("Stack trace is null");
+            return List.of("No stack trace");
+        } else if (trace.length < 3) {
+            return Arrays.stream(Arrays.copyOfRange(trace, 0, trace.length))
+                    .map(StackTraceElement::toString)
+                    .collect(Collectors.toList());
+        } else {
+            return Arrays.stream(Arrays.copyOfRange(trace, 0, 3))
+                    .map(StackTraceElement::toString)
+                    .collect(Collectors.toList());
+        }
     }
 
-    //유효하지 않은 요청에 대한 예외 처리
-    @ExceptionHandler({CNotValidationException.class})
-    public ResponseEntity<Object> handleNotValidationException(CNotValidationException e) {
-        log.warn("**NotValidation 예외 발생** 에러 코드:{} | 내용:{}", e.getErrorCode(), e.getErrorCode().getMessage());
-        return handleExceptionInternal(e.getErrorCode());
+    @ExceptionHandler(UserException.class)
+    public ResponseEntity<ErrorResponse> handleUserException(UserException e) {
+        log.error("User exception: Code:{}, Message:{}, StackTrace:{}", e.getCode(), e.getMessage(), e.fewStackTrace());
+        return makeResponseFormat(e.getExceptionCode(), e.fewStackTrace());
     }
 
-    //더미 데이터로 인한 시퀀스 관련 무결성 예외 처리
-    @ExceptionHandler({SQLIntegrityConstraintViolationException.class})
-    public ResponseEntity<Object> handleSqlIntegrityException(SQLIntegrityConstraintViolationException e) {
-        log.warn("**SQL 무결성 예외 발생** 내용:{}", e.getMessage());
-        return handleExceptionInternal(CommonErrorCode.SQL_INTEGRITY_ERROR);
+    @ExceptionHandler(AuthException.class)
+    public ResponseEntity<ErrorResponse> handleAuthException(AuthException e) {
+        log.error("Auth exception: Code:{}, Message:{}, StackTrace:{}", e.getCode(), e.getMessage(), e.fewStackTrace());
+        return makeResponseFormat(e.getExceptionCode(), e.fewStackTrace());
     }
 
-    //NPE 예외 처리
-    @ExceptionHandler({NullPointerException.class})
-    public ResponseEntity<Object> handleNullPointerException(NullPointerException e) {
-        log.warn("**NPE 발생** 내용:{}", e.getMessage());
-        return handleExceptionInternal(CommonErrorCode.NULL_POINTER_ERROR);
+    @ExceptionHandler(FriendException.class)
+    public ResponseEntity<ErrorResponse> handleFriendException(FriendException e) {
+        log.error("Friend exception: Code:{}, Message:{}, StackTrace:{}", e.getCode(), e.getMessage(), e.fewStackTrace());
+        return makeResponseFormat(e.getExceptionCode(), e.fewStackTrace());
     }
 
-    //그 외 예외 처리
-    @ExceptionHandler({Exception.class})
-    public ResponseEntity<Object> handleException(Exception e) {
-        log.warn("**예외 발생** 메시지:{} | 클래스:{} | 로그:{}", e.getMessage(), e.getClass(), e.getStackTrace());
-        return handleExceptionInternal(CommonErrorCode.INTERNAL_SERVER_ERROR);
+    @ExceptionHandler(ChallengeException.class)
+    public ResponseEntity<ErrorResponse> handleChallengeException(ChallengeException e) {
+        //4500 초과는 회원-챌린지 간 예외사항
+        if (Integer.parseInt(e.getCode()) > 4500) {
+            log.error("Challenge exceed exception: Code:{}, Message:{}, StackTrace:{}", e.getCode(), e.getMessage(), e.fewStackTrace());
+            return makeUCResponseFormat(e.getExceptionCode(), e.getNickname(), e.fewStackTrace());
+        } else {
+            log.error("Challenge exception: Code:{}, Message:{}, StackTrace:{}", e.getCode(), e.getMessage(), e.fewStackTrace());
+            return makeResponseFormat(e.getExceptionCode(), e.fewStackTrace());
+        }
     }
 
-    //ResponseEntity 생성
-    private ResponseEntity<Object> handleExceptionInternal(ErrorCode errorCode) {
-        return ResponseEntity.status(errorCode.getHttpStatus())
-                                .body(ErrorResponse.builder()
-                                        .code(errorCode.name())
-                                        .message(errorCode.getMessage())
-                                        .build());
+    //Default Exception
+    @ExceptionHandler(SQLIntegrityConstraintViolationException.class)
+    public ResponseEntity<ErrorResponse> handleSqlIntegrityException(SQLIntegrityConstraintViolationException e) {
+        List<String> trace = getFewTrace(e.getStackTrace());
+        log.error("SQLIntegrityConstraintViolationException: Code:{}, StackTrace:{}", ExceptionCodeSet.SQL_INTEGRITY_ERROR.getCode(), trace);
+        return makeResponseFormat(ExceptionCodeSet.SQL_INTEGRITY_ERROR, trace);
     }
-    
-    /*--챌린지 관련 예외 처리--*/
-    //챌린지 개수 초과에 대한 예외 처리
-    @ExceptionHandler({CExceedChallengeException.class})
-    public ResponseEntity<Object> handleExceedChallengeException(CExceedChallengeException e) {
-        log.warn("**챌린지 개수 초과 예외 발생** 에러 코드:{} | 내용:{}", e.getErrorCode(), e.getErrorCode().getMessage());
-        ErrorCode errorCode = e.getErrorCode();
-        return ResponseEntity.status(errorCode.getHttpStatus())
+
+    @ExceptionHandler(NullPointerException.class)
+    public ResponseEntity<ErrorResponse> handleNullPointerException(NullPointerException e) {
+        List<String> trace = getFewTrace(e.getStackTrace());
+        log.error("NullPointException: Code:{}, StackTrace:{}", ExceptionCodeSet.NULL_POINTER_ERROR.getCode(), trace);
+        return makeResponseFormat(ExceptionCodeSet.NULL_POINTER_ERROR, trace);
+    }
+
+    @ExceptionHandler(WebClientException.class)
+    public ResponseEntity<ErrorResponse> handleWebClientException(WebClientException e) {
+        List<String> trace = getFewTrace(e.getStackTrace());
+        log.error("WebClientException: Code:{}, StackTrace:{} | message:{}", ExceptionCodeSet.WEBCLIENT_ERROR.getCode(), trace, e.getMessage());
+        return makeResponseFormat(ExceptionCodeSet.WEBCLIENT_ERROR, trace);
+    }
+
+    @ExceptionHandler(ParseException.class)
+    public ResponseEntity<ErrorResponse> handleParseException(ParseException e) {
+        List<String> trace = getFewTrace(e.getStackTrace());
+        log.error("ParseException: Code:{}, StackTrace:{} | message:{}", ExceptionCodeSet.PARSE_EXCEPTION, trace, e.getMessage());
+        return makeResponseFormat(ExceptionCodeSet.PARSE_EXCEPTION, trace);
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponse> handleException(Exception e) {
+        e.printStackTrace();
+        List<String> trace = getFewTrace(e.getStackTrace());
+        log.error("Unexpected exception: Code:{}, StackTrace:{}", ExceptionCodeSet.INTERNAL_SERVER_ERROR.getCode(), trace);
+        return makeResponseFormat(ExceptionCodeSet.INTERNAL_SERVER_ERROR, trace);
+    }
+
+    /**
+     * 사전에 정의된 커스텀 예외에 대한 Response 생성
+     *
+     * @param exceptionCode
+     */
+    private ResponseEntity<ErrorResponse> makeResponseFormat(ExceptionCodeSet exceptionCode, List<String> trace) {
+        return ResponseEntity.status(exceptionCode.getHttpStatus())
                 .body(ErrorResponse.builder()
-                        .code(errorCode.name())
-                        .message(errorCode.getMessage())
-                        .nickname(e.getNickname())
-                        .build());
+                        .code(exceptionCode.getCode())
+                        .message(exceptionCode.getMessage())
+                        .trace(trace)
+                        .build()
+                );
+    }
+
+    /**
+     * 사전에 정의된 커스텀 예외 중, 회원-챌린지 간 예외에 대한 Response 생성
+     *
+     * @param exceptionCode
+     * @param nickname
+     */
+    public ResponseEntity<ErrorResponse> makeUCResponseFormat(ExceptionCodeSet exceptionCode, String nickname, List<String> trace) {
+        return ResponseEntity.status(exceptionCode.getHttpStatus())
+                .body(ErrorResponse.builder()
+                        .code(exceptionCode.getCode())
+                        .message(exceptionCode.getMessage())
+                        .nickname(nickname)
+                        .trace(trace)
+                        .build()
+                );
     }
 }
