@@ -47,6 +47,13 @@ public class KakaoService {
     /*로컬과 배포 환경의 Redirect URI가 다른 점 확인!*/
     @Value("${kakao.REDIRECT_URI}")
     private String REDIRECT_URI;
+    
+    private final String AUTHORIZATION = "Authorization";
+    private final String BEARER = "Bearer ";
+    private final String GRANT_TYPE = "grant_type";
+    private final String CLIENT_ID = "client_id";
+    private final String REDIRECT_URI_KEY = "redirect_uri";
+    private final String CODE = "code";
 
     @PostConstruct
     public void initWebClient() {
@@ -59,10 +66,10 @@ public class KakaoService {
     public SocialResponseDto.KakaoRedirectDto kakaoRedirect(String code) throws NullPointerException {
         //토큰을 받기 위한 HTTP Body 생성
         MultiValueMap<String, String> getTokenBody = new LinkedMultiValueMap<>();
-        getTokenBody.add("grant_type", "authorization_code");
-        getTokenBody.add("client_id", REST_API_KEY);
-        getTokenBody.add("redirect_uri", REDIRECT_URI);
-        getTokenBody.add("code", code);
+        getTokenBody.add(GRANT_TYPE, "authorization_code");
+        getTokenBody.add(CLIENT_ID, REST_API_KEY);
+        getTokenBody.add(REDIRECT_URI_KEY, REDIRECT_URI);
+        getTokenBody.add(CODE, code);
 
         //카카오 토큰 발급 API 호출
         KakaoDto.Token token = webClient.post()
@@ -76,17 +83,13 @@ public class KakaoService {
         SocialResponseDto.KakaoRedirectDto response = new SocialResponseDto.KakaoRedirectDto(token.getAccess_token(), token.getRefresh_token());
 
         //이메일 받아오기
-        try {
-            KakaoDto.UserInfo userInfo = getUserInfo(token.getAccess_token());
-            response.setEmail(userInfo.getEmail());
-        } catch (ParseException e) {
-            throw new AuthException(ExceptionCodeSet.WEBCLIENT_ERROR);
-        }
+        KakaoDto.UserInfo userInfo = getUserInfo(token.getAccess_token());
+        response.setEmail(userInfo.getEmail());
 
         return response;
     }
 
-    public SocialResponseDto kakaoLogin(String token) throws ParseException {
+    public SocialResponseDto kakaoLogin(String token) {
         KakaoDto.UserInfo userInfo = getUserInfo(token);
         Optional<User> userOpt = userRepository.findByKakaoId(userInfo.getKakaoId());
 
@@ -113,27 +116,35 @@ public class KakaoService {
     public KakaoDto.TokenInfo getTokenInfo(String token) {
         return webClient.get()
                 .uri("https://kapi.kakao.com/v1/user/access_token_info")
-                .header("Authorization", "Bearer " + token)
+                .header(AUTHORIZATION, BEARER + token)
                 .retrieve()
                 .bodyToMono(KakaoDto.TokenInfo.class)
                 .block();
     }
 
     /*사용자 정보 확인*/
-    public KakaoDto.UserInfo getUserInfo(String token) throws ParseException {
-        log.info("유저 확인 토큰:{}", token);
+    public KakaoDto.UserInfo getUserInfo(String token) {
         String userKakaoInfo = webClient.get()
                 .uri("https://kapi.kakao.com/v2/user/me")
-                .header("Authorization", "Bearer " + token)
+                .header(AUTHORIZATION, BEARER + token)
                 .retrieve()
                 .bodyToMono(String.class)
                 .block();
 
         JSONParser jsonParser = new JSONParser();
 
-        JSONObject jsonObject = (JSONObject) jsonParser.parse(userKakaoInfo); //Cast: String -> Json Object
-        long kakaoId = (long) jsonObject.get("id"); // 카카오 회원번호 추출
+        JSONObject jsonObject;
+        try{
+            jsonObject = (JSONObject) jsonParser.parse(userKakaoInfo); //Cast: String -> Json Object
+        } catch (ParseException e) {
+            throw new AuthException(ExceptionCodeSet.INTERNAL_SERVER_ERROR);
+        }
 
+        if (jsonObject == null) {
+            throw new AuthException(ExceptionCodeSet.INTERNAL_SERVER_ERROR);
+        }
+
+        long kakaoId = (long) jsonObject.get("id"); // 카카오 회원번호 추출
         jsonObject = (JSONObject) jsonObject.get("kakao_account"); // 필요한 회원 정보가 있는 Object 분리
         JSONObject pictureObject = (JSONObject) jsonObject.get("profile"); //프로필 사진과 관련한 Object 분리
 
@@ -246,7 +257,7 @@ public class KakaoService {
                         .queryParam("offset", offset)
                         .queryParam("limit", 100)
                         .toUriString())
-                .header("Authorization", "Bearer " + token)
+                .header(AUTHORIZATION, BEARER + token)
                 .retrieve()
                 .bodyToMono(KakaoDto.FriendsInfoFromKakao.class)
                 .block();
@@ -254,9 +265,9 @@ public class KakaoService {
 
     public Map<String, String> reissueKakaoToken(String token) {
         MultiValueMap<String, String> reissueTokenBody = new LinkedMultiValueMap<>();
-        reissueTokenBody.add("grant_type", "refresh_token");
-        reissueTokenBody.add("client_id", REST_API_KEY);
-        reissueTokenBody.add("redirect_uri", REDIRECT_URI);
+        reissueTokenBody.add(GRANT_TYPE, "refresh_token");
+        reissueTokenBody.add(CLIENT_ID, REST_API_KEY);
+        reissueTokenBody.add(REDIRECT_URI_KEY, REDIRECT_URI);
         reissueTokenBody.add("refresh_token", token);
 
         KakaoDto.ReissueToken result = webClient.post()
