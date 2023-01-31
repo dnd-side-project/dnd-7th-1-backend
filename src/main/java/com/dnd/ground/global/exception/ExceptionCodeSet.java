@@ -39,6 +39,8 @@ public enum ExceptionCodeSet {
     ACCESS_TOKEN_INVALID(HttpStatus.BAD_REQUEST, "2016", "엑세스 토큰이 유효하지 않습니다"),
     TOKEN_EMPTY(HttpStatus.BAD_REQUEST, "2017", "토큰이 존재하지 않습니다."),
     REFRESH_TOKEN_INVALID(HttpStatus.BAD_REQUEST, "2018", "리프레시 토큰이 유효하지 않습니다."),
+    CREDENTIAL_FAIL(HttpStatus.UNAUTHORIZED, "2019", "인증에 실패했습니다."),
+
 
     //친구
     FRIEND_NOT_FOUND_REQ(HttpStatus.BAD_REQUEST, "3000", "친구 요청 기록이 없습니다."),
@@ -68,7 +70,8 @@ public enum ExceptionCodeSet {
     SQL_INTEGRITY_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "9003", "쿼리 처리 중 에러가 발생했습니다."),
     INVALID_HTTP_METHOD(HttpStatus.BAD_REQUEST, "9004", "잘못된 HTTP Method입니다."),
     WEBCLIENT_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "9005", "외부 API 통신 중 에러가 발생했습니다."),
-    PARSE_EXCEPTION(HttpStatus.INTERNAL_SERVER_ERROR, "9006", "파싱 중 에러가 발생했습니다.");
+    PARSE_EXCEPTION(HttpStatus.INTERNAL_SERVER_ERROR, "9006", "파싱 중 에러가 발생했습니다."),
+    BAD_REQUEST(HttpStatus.BAD_REQUEST, "9007", "올바르지 않은 요청입니다.");
 
     private final HttpStatus httpStatus;
     private final String code;

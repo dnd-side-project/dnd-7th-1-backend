@@ -3,6 +3,7 @@ package com.dnd.ground.global.exception;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
@@ -16,9 +17,8 @@ import java.io.IOException;
  * @description 인증 과정에서 발생한 AuthenticationException 예외 처리
  * @author  박찬호
  * @since   2023-01-26
- * @updated 기존 HttpServletRequest에 임의 헤더를 통해 예외를 구분하는 방법에서
- *          AuthenticationException을 상속받은 예외를 전달받는 방식으로 변경
- *          - 2023.01.26 박찬호
+ * @updated 1.인증 실패에 대한 예외 추가
+ *          - 2023.01.30 박찬호
  */
 
 @Slf4j
@@ -37,6 +37,10 @@ public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint 
             log.error("InsufficientAuthenticationException! msg:{} ", authException.getMessage());
             response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
             setResponse(response, ExceptionCodeSet.INTERNAL_SERVER_ERROR);
+        } else if (authException.getClass().equals(BadCredentialsException.class)) { //인증 실패
+            log.error("BadCredentialsException! msg:{} ", authException.getMessage());
+            response.setStatus(HttpStatus.UNAUTHORIZED.value());
+            setResponse(response, ExceptionCodeSet.CREDENTIAL_FAIL);
         } else {
             log.error("Authentication exception! | code:{} | msg:{}", exception.getCode(), exception.getMessage());
             response.setStatus(exception.getHttpStatus().value());
