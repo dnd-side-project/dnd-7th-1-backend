@@ -1,5 +1,6 @@
 package com.dnd.ground.global.auth.filter;
 
+import com.dnd.ground.domain.user.repository.UserRepository;
 import com.dnd.ground.global.auth.UserClaim;
 import com.dnd.ground.global.auth.dto.UserSignDto;
 import com.dnd.ground.global.auth.service.AuthService;
@@ -38,15 +39,18 @@ public class SignFilter extends UsernamePasswordAuthenticationFilter {
 
     public SignFilter(AuthenticationManager authenticationManager,
                       AuthService authService,
+                      UserRepository userRepository,
                       AuthenticationEntryPoint authenticationEntryPoint) {
         super(authenticationManager);
         this.authService = authService;
+        this.userRepository = userRepository;
         this.authenticationEntryPoint = authenticationEntryPoint;
         setFilterProcessesUrl("/sign");
     }
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final AuthService authService;
+    private final UserRepository userRepository;
     private final AuthenticationEntryPoint authenticationEntryPoint;
     private UserClaim claim;
     private static final String BEARER = "Bearer ";
@@ -94,6 +98,10 @@ public class SignFilter extends UsernamePasswordAuthenticationFilter {
     @Override
     protected void unsuccessfulAuthentication(HttpServletRequest request, HttpServletResponse response,
                                               AuthenticationException failed) throws IOException, ServletException {
+        if (claim != null && userRepository.findByEmail(claim.getEmail()).isPresent()) {
+            userRepository.deleteByEmail(claim.getEmail());
+        }
+
         SecurityContextHolder.clearContext();
         authenticationEntryPoint.commence(request, response, failed);
     }
