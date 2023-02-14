@@ -5,6 +5,7 @@ import com.dnd.ground.domain.exerciseRecord.dto.RecordResponseDto;
 import com.dnd.ground.domain.matrix.dto.MatrixDto;
 import com.dnd.ground.domain.user.User;
 
+import com.dnd.ground.domain.matrix.dto.Location;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.*;
 
@@ -20,8 +21,8 @@ import java.util.List;
  *              4. 랭킹 정보
  * @author  박세헌, 박찬호
  * @since   2022-08-08
- * @updated 1. 내 프로필 dto 생성
- *  *          - 2022-10-13 박세헌
+ * @updated 1.회원 영역 데이터 조회 시 일부 영역 내 데이터만 조회하도록 수정
+ *          - 2023-02-14 박찬호
  */
 
 @Data
@@ -82,7 +83,10 @@ public class UserResponseDto {
     }
 
     /*회원의 영역 정보 관련 DTO*/
-    @Data
+    @AllArgsConstructor
+    @Getter
+    @Setter
+    @Builder
     static public class UserMatrix {
         @ApiModelProperty(value = "닉네임", example = "NickA")
         private String nickname;
@@ -97,7 +101,7 @@ public class UserResponseDto {
         private Double longitude;
 
         @ApiModelProperty(value = "칸 꼭지점 위도, 경도 리스트", example = "[{\"latitude\": 37.330436, \"longitude\": -122.030216}]")
-        private List<MatrixDto> matrices;
+        private List<Location> matrices;
 
         @ApiModelProperty(value="프로필 사진 URI(카카오 프로필 사용 시 kakao/카카오회원번호)", example="http:\\/\\/k.kakaocdn.net\\/dn\\/uQVeo\\/btrLgESJyjg\\/Pff3k36lRWkQ98ebAlexv1\\/img_640x640.jpg")
         private String picturePath;
@@ -112,30 +116,12 @@ public class UserResponseDto {
         }
 
         //수정자 모음 (프로필 사진 x)
-        public void setProperties(String nickname, long matricesNumber, List<MatrixDto> matrices, Double lat, Double lon) {
+        public void setProperties(String nickname, long matricesNumber, List<Location> matrices, Double lat, Double lon) {
             this.setNickname(nickname);
             this.setMatricesNumber(matricesNumber);
             this.setMatrices(matrices);
             this.setLatitude(lat);
             this.setLongitude(lon);
-        }
-
-        //수정자 모음 (프로필 사진 o)
-        public void setProperties(String nickname, long matricesNumber, List<MatrixDto> matrices, Double lat, Double lon, String picturePath) {
-            this.setNickname(nickname);
-            this.setMatricesNumber(matricesNumber);
-            this.setMatrices(matrices);
-            this.setLatitude(lat);
-            this.setLongitude(lon);
-            this.setPicturePath(picturePath);
-        }
-
-        public void setProperties(String nickname, long matricesNumber, Double lat, Double lon) {
-            this.setNickname(nickname);
-            this.setMatricesNumber(matricesNumber);
-            this.setLatitude(lat);
-            this.setLongitude(lon);
-            this.matrices = new ArrayList<>();
         }
     }
 
