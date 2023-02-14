@@ -3,6 +3,12 @@ package com.dnd.ground.global.dummy;
 import com.dnd.ground.domain.challenge.*;
 import com.dnd.ground.domain.challenge.repository.ChallengeRepository;
 import com.dnd.ground.domain.challenge.repository.UserChallengeRepository;
+import com.dnd.ground.domain.exerciseRecord.ExerciseRecord;
+import com.dnd.ground.domain.exerciseRecord.Repository.ExerciseRecordRepository;
+import com.dnd.ground.domain.friend.Friend;
+import com.dnd.ground.domain.friend.FriendStatus;
+import com.dnd.ground.domain.friend.repository.FriendRepository;
+import com.dnd.ground.domain.matrix.Matrix;
 import com.dnd.ground.domain.user.LoginType;
 import com.dnd.ground.domain.user.User;
 import com.dnd.ground.domain.user.repository.UserRepository;
@@ -15,6 +21,8 @@ import javax.annotation.PostConstruct;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
 
 import static com.dnd.ground.domain.challenge.ChallengeColor.*;
 import static com.dnd.ground.domain.challenge.ChallengeStatus.*;
@@ -26,8 +34,9 @@ import static java.time.DayOfWeek.*;
  * @description Test data 생성
  * @author  박찬호
  * @since   2023-02-07
- * @updated 1. User, Challenge, UserChallenge 데이터 생성
- *          - 2023.02.07 박찬호
+ * @updated 1. 운동기록 관련 데이터 생성 (ExerciseRecord, Matrix)
+ *          2. 친구 관계 일부 생성
+ *          - 2023.02.14 박찬호
  */
 
 @Profile("dev")
@@ -42,6 +51,8 @@ public class InitDataInLocal {
     private final UserRepository userRepository;
     private final ChallengeRepository challengeRepository;
     private final UserChallengeRepository userChallengeRepository;
+    private final ExerciseRecordRepository exerciseRecordRepository;
+    private final FriendRepository friendRepository;
 
     private final int CHALLENGE_COUNT = 9;
     private final int USER_COUNT = 20;
@@ -53,6 +64,12 @@ public class InitDataInLocal {
         createUser();
         createChallenge();
         createUserChallengeRelation();
+        createExerciseRecordAndMatrix();
+        createFriend();
+    }
+
+    private int createRandomNumber(int min, int max) {
+        return (int) ((Math.random() * (max - min)) + min);
     }
 
     /**
@@ -65,7 +82,7 @@ public class InitDataInLocal {
             String alias = String.valueOf((char) (64 + i));
 
             User user = User.builder()
-                    .created(LocalDateTime.now().minusDays(i))
+                    .created(LocalDateTime.now().minusMonths(2).minusDays(i))
                     .email("user_" + alias + "@gmail.com")
                     .intro(alias + "의 intro")
                     .isPublicRecord(i % 2 == 0)
@@ -87,6 +104,7 @@ public class InitDataInLocal {
     /**
      * @description 테스트용 챌린지 생성
      * 타입 - A: Accumulate | W: Widen
+     * 챌린지 미참여 회원 : E, J~T
      * 개수 - 9개
      * 번호    이름       상태           타입  주최자     참가자    생성 날짜                시작 날짜
      * 1      A    이미 완료된 챌린지     A     A      B  C     2주 전                  1주 전
@@ -110,8 +128,7 @@ public class InitDataInLocal {
         ChallengeType type = null;
 
         for (int i = 1; i <= CHALLENGE_COUNT; i++) {
-            StringBuilder sb = new StringBuilder();
-            sb.append(String.valueOf(i).repeat(32));
+            String uuid = String.valueOf(i).repeat(32);
 
             switch (i) {
                 case 1:
@@ -187,7 +204,7 @@ public class InitDataInLocal {
                     .started(started)
                     .status(status)
                     .type(type)
-                    .uuid(sb.toString())
+                    .uuid(uuid)
                     .build();
 
             challengeRepository.save(challenge);
@@ -290,4 +307,182 @@ public class InitDataInLocal {
             }
         }
     }
+
+
+    /**
+     * @description ExerciseRecord 및 Matrix 생성
+     * --Matrix--
+     * 약 5Km 거리의 두 지역에 공통 ExerciseRecord 및 Matrix 생성
+     * 두 지역 모두 영역을 갖고 있는 사람: A, B, E, F, J
+     * A지역만 갖고 있는 사람: D, H, K~O
+     * B지역만 갖고 있는 사람: C, G, I, P~T
+     *
+     * 각 지역 별 12시 방향부터 시계방향으로 9개의 포인트 생성
+     * A지역: 선부역
+     * B지역: 노적봉
+     *
+     * --ExerciseRecord--
+     * 5주 간의 운동 기록을 생성한다.
+     * 이번 주 기록은 모두 월요일에 생성하고, 과거 기록은 다음과 같이 생성한다.
+     * A,B 지역 모두 기록을 갖는 경우: 9개의 포인트 중 0~4는 월요일, 5~8는 금요일에 생성해, 총 2개의 운동 기록을 매 주 갖는다.
+     * 한 지역의 기록만 갖는 경우: 월요일에 모든 기록을 생성한다.
+     *
+     * @note - 5번 챌린지(G,A,H)는 A는 둘 다 있고, D, H는 서로 다른 한 지역의 영역만 있음.
+     *       - I는 D,H와 챌린지를 하지만, 겹치는 영역이 없음.
+     */
+    public void createExerciseRecordAndMatrix() {
+        Map<String, double[]> aPlaces = new HashMap<>();
+        Map<String, double[]> bPlaces = new HashMap<>();
+
+        double[] aLatitude = {37.335474,  37.335252,  37.334832,  37.334205,  37.333410,  37.333616,  37.334373,  37.335099,  37.335428};
+        double[] aLongitude = {126.809945, 126.810647, 126.811137, 126.811272, 126.810224, 126.809167, 126.808571, 126.808830, 126.809388};
+        aPlaces.put("latitude", aLatitude);
+        aPlaces.put("longitude", aLongitude);
+
+        double[] bLatitude = {37.318383,  37.318117,  37.317557,  37.316585,  37.315410,  37.315621,  37.316502,  37.317355,  37.318034};
+        double[] bLongitude = {126.854740, 126.855155, 126.855386, 126.855605, 126.855016, 126.854082, 126.853805, 126.853851, 126.854174};
+        bPlaces.put("latitude", bLatitude);
+        bPlaces.put("longitude", bLongitude);
+
+        int[] bothPlaceUsers = {1, 2, 5, 6, 10};
+        int[] aPlaceUsers = {4, 8, 11, 12, 13, 14, 15};
+        int[] bPlaceUsers = {3, 7, 9, 16, 17, 18, 19, 20};
+
+
+        //각 지역 과거 기록 생성
+        createThisWeekRecord(aPlaces, aPlaceUsers);
+        createThisWeekRecord(bPlaces, bPlaceUsers);
+
+        //각 지역 이번 주 기록 생성
+        createPastRecordsIn5Weeks(aPlaces, aPlaceUsers);
+        createPastRecordsIn5Weeks(bPlaces, bPlaceUsers);
+
+        //A, B지역 둘 다 영역이 있는 기록 생성
+        createThisWeekRecord(aPlaces, bothPlaceUsers);
+        createThisWeekRecord(bPlaces, bothPlaceUsers);
+
+        //이번 주 기록 생성
+        for (int userIdx : bothPlaceUsers) {
+            String alias = String.valueOf((char) (64 + userIdx));
+
+            for (int j=5; j>0; j--) { //5주간의 운동 기록 생성
+                ExerciseRecord recordInMon = ExerciseRecord.builder()
+                        .distance(createRandomNumber(100, 200))
+                        .ended(LocalDateTime.now().minusWeeks(j).with(MONDAY))
+                        .exerciseTime(createRandomNumber(1000, 3000))
+                        .message(alias + "의 " + j + "주 전 운동기록(월)")
+                        .started(LocalDateTime.now().minusWeeks(j).minusHours(j + 1).with(MONDAY))
+                        .stepCount(createRandomNumber(1000, 1500))
+                        .user(users[userIdx])
+                        .build();
+
+                for (int k=0; k<=4; k++) {
+                    recordInMon.addMatrix(new Matrix(aLatitude[k], aLongitude[k]));
+                    recordInMon.addMatrix(new Matrix(bLatitude[k], bLongitude[k]));
+                }
+
+                exerciseRecordRepository.save(recordInMon);
+
+                ExerciseRecord recordInFri = ExerciseRecord.builder()
+                        .distance(createRandomNumber(100, 200))
+                        .ended(LocalDateTime.now().minusWeeks(j).with(FRIDAY))
+                        .exerciseTime(createRandomNumber(1000, 3000))
+                        .message(alias + "의 " + j + "주 전 운동기록(금)")
+                        .started(LocalDateTime.now().minusWeeks(j).minusHours(j + 1).with(FRIDAY))
+                        .stepCount(createRandomNumber(1000, 1500))
+                        .user(users[userIdx])
+                        .build();
+
+                for (int k=5; k<=8; k++) {
+                    recordInMon.addMatrix(new Matrix(aLatitude[k], aLongitude[k]));
+                    recordInMon.addMatrix(new Matrix(bLatitude[k], bLongitude[k]));
+                }
+
+                exerciseRecordRepository.save(recordInFri);
+            }
+        }
+    }
+
+    private void createPastRecordsIn5Weeks(Map<String, double[]> places, int[] target) {
+        double[] latitudes = places.get("latitude");
+        double[] longitudes = places.get("longitude");
+
+        for (int userIdx : target) {
+            String alias = String.valueOf((char) (64 + userIdx));
+
+            for (int j=5; j>0; j--) { //5주간의 운동 기록 생성
+                ExerciseRecord recordInMon = ExerciseRecord.builder()
+                        .distance(createRandomNumber(100, 200))
+                        .ended(LocalDateTime.now().minusWeeks(j).with(MONDAY))
+                        .exerciseTime(createRandomNumber(1000, 3000))
+                        .message(alias + "의 " + j + "주 전 운동기록(월)")
+                        .started(LocalDateTime.now().minusWeeks(j).minusHours(j + 1).with(MONDAY))
+                        .stepCount(createRandomNumber(1000, 1500))
+                        .user(users[userIdx])
+                        .build();
+
+                for (int k = 0; k <= 8; k++) {
+                    recordInMon.addMatrix(new Matrix(latitudes[k], longitudes[k]));
+                }
+
+                exerciseRecordRepository.save(recordInMon);
+            }
+        }
+    }
+
+    private void createThisWeekRecord(Map<String, double[]> places, int[] target) {
+        double[] latitudes = places.get("latitude");
+        double[] longitudes = places.get("longitude");
+
+        for (int userIdx : target) {
+            String alias = String.valueOf((char) (64 + userIdx));
+
+            ExerciseRecord recordInThisWeek = ExerciseRecord.builder()
+                    .distance(createRandomNumber(100, 200))
+                    .ended(LocalDateTime.now().with(MONDAY))
+                    .exerciseTime(createRandomNumber(1000, 3000))
+                    .message(alias + "의 " + "이번 주 운동 기록")
+                    .started(LocalDateTime.now().minusHours(2).with(MONDAY))
+                    .stepCount(createRandomNumber(1000, 1500))
+                    .user(users[userIdx])
+                    .build();
+
+            for (int k = 0; k <= 8; k++) {
+                recordInThisWeek.addMatrix(new Matrix(latitudes[k], longitudes[k]));
+            }
+            exerciseRecordRepository.save(recordInThisWeek);
+        }
+    }
+
+    /**
+     * @description 친구 관계 생성
+     * 친구 목록
+     * A B
+     * A C
+     * A G
+     */
+    private void createFriend() {
+        Friend f1 = Friend.builder()
+                .status(FriendStatus.Accept)
+                .user(users[1])
+                .friend(users[2])
+                .build();
+
+        Friend f2 = Friend.builder()
+                .status(FriendStatus.Accept)
+                .user(users[3])
+                .friend(users[1])
+                .build();
+
+        Friend f3 = Friend.builder()
+                .status(FriendStatus.Accept)
+                .user(users[1])
+                .friend(users[7])
+                .build();
+
+        friendRepository.save(f1);
+        friendRepository.save(f2);
+        friendRepository.save(f3);
+    }
+
 }
