@@ -1,5 +1,6 @@
 package com.dnd.ground.domain.matrix.matrixRepository;
 
+import com.dnd.ground.domain.matrix.dto.MatrixUserSet;
 import com.dnd.ground.domain.user.User;
 import com.dnd.ground.global.util.Direction;
 import com.dnd.ground.global.util.GeometryUtil;
@@ -13,7 +14,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.*;
 
 import static com.dnd.ground.domain.exerciseRecord.QExerciseRecord.exerciseRecord;
 import static com.dnd.ground.domain.matrix.QMatrix.matrix;
@@ -23,8 +24,8 @@ import static java.time.DayOfWeek.MONDAY;
  * @description 운동 기록(영역) 관련 QueryDSL 레포지토리
  * @author  박찬호
  * @since   2023-02-14
- * @updated 1.일정 거리 내 영역 조회 구현
- *          - 2023-02-14 박찬호
+ * @updated 1.다수의 회원들의 영역 조회용 쿼리 생성
+ *          - 2023-02-15 박찬호
  */
 
 
@@ -49,6 +50,43 @@ public class MatrixRepositoryImpl implements MatrixRepositoryQuery {
                         containMBR(location)
                 )
                 .fetch();
+    }
+
+    public Map<User, List<Location>> findUsersMatrix(Set<User> users, Location location) {
+        LocalDateTime start = LocalDateTime.now().with(MONDAY).withHour(0).withMinute(0).withSecond(0).withNano(0);
+
+        List<MatrixUserSet> queryResult = queryFactory
+                .select(
+                        Projections.constructor(MatrixUserSet.class,
+                        Projections.fields(
+                                Location.class,
+                                Expressions.stringTemplate("ST_X({0})", matrix.point).castToNum(Double.class).as("latitude"),
+                                Expressions.stringTemplate("ST_Y({0})", matrix.point).castToNum(Double.class).as("longitude")
+                        ),
+                        exerciseRecord.user
+                        )
+                )
+                .from(matrix)
+                .innerJoin(exerciseRecord)
+                .on(
+                        exerciseRecord.started.between(start, LocalDateTime.now()),
+                        exerciseRecord.user.in(users),
+                        matrix.exerciseRecord.eq(exerciseRecord)
+                )
+                .where(
+                        containMBR(location)
+                ).fetch();
+
+        Map<User, List<Location>> result = new HashMap<>();
+
+        for (MatrixUserSet matrixUserSet : queryResult) {
+            List<Location> l = result.getOrDefault(matrixUserSet.getUser(), new ArrayList<>());
+            l.add(matrixUserSet.getLocation());
+            result.put(matrixUserSet.getUser(), l);
+
+        }
+        return result;
+
     }
 
     private BooleanExpression recordInPeriod(User user, LocalDateTime start, LocalDateTime end) {
