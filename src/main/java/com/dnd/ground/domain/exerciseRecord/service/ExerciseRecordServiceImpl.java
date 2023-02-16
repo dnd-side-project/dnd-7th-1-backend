@@ -1,24 +1,16 @@
 package com.dnd.ground.domain.exerciseRecord.service;
 
-import com.dnd.ground.domain.challenge.Challenge;
-import com.dnd.ground.domain.challenge.ChallengeColor;
-import com.dnd.ground.domain.challenge.repository.ChallengeRepository;
-import com.dnd.ground.domain.challenge.repository.UserChallengeRepository;
 import com.dnd.ground.domain.exerciseRecord.ExerciseRecord;
 import com.dnd.ground.domain.exerciseRecord.Repository.ExerciseRecordRepository;
 import com.dnd.ground.domain.exerciseRecord.dto.EndRequestDto;
 import com.dnd.ground.domain.friend.service.FriendService;
 import com.dnd.ground.domain.matrix.Matrix;
-import com.dnd.ground.domain.matrix.dto.MatrixDto;
-import com.dnd.ground.domain.matrix.matrixRepository.MatrixRepository;
 import com.dnd.ground.domain.user.User;
-import com.dnd.ground.domain.user.dto.HomeResponseDto;
 import com.dnd.ground.domain.user.dto.RankResponseDto;
 import com.dnd.ground.domain.user.dto.UserRequestDto;
 import com.dnd.ground.domain.user.dto.UserResponseDto;
 import com.dnd.ground.domain.user.repository.UserRepository;
 import com.dnd.ground.global.exception.ExceptionCodeSet;
-import com.dnd.ground.global.exception.FriendException;
 import com.dnd.ground.global.exception.UserException;
 import lombok.*;
 
@@ -33,9 +25,10 @@ import java.util.*;
 
 /**
  * @description 운동 기록 서비스 클래스
- * @author  박세헌
+ * @author  박세헌, 박찬호
  * @since   2022-08-01
- * @updated 2022-08-29 / 미사용 메소드 삭제 - 박찬호
+ * @updated 1.기록 시작 API 삭제
+ *          - 2023-02-16
  */
 
 @Service
@@ -45,93 +38,7 @@ public class ExerciseRecordServiceImpl implements ExerciseRecordService {
 
     private final ExerciseRecordRepository exerciseRecordRepository;
     private final UserRepository userRepository;
-    private final MatrixRepository matrixRepository;
     private final FriendService friendService;
-    private final ChallengeRepository challengeRepository;
-    private final UserChallengeRepository userChallengeRepository;
-
-    // 기록 시작
-    // 운동기록 id, 일주일 누적 영역 반환
-    public HomeResponseDto recordStart(String nickname){
-        User user = userRepository.findByNickname(nickname).orElseThrow(
-                () -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
-
-        /*회원의 matrix 와 정보 (userMatrix)*/
-        UserResponseDto.UserMatrix userMatrix = new UserResponseDto.UserMatrix(user);
-
-        List<ExerciseRecord> userRecordOfThisWeek = exerciseRecordRepository.findRecordOfThisWeek(user.getId()); // 이번주 운동기록 조회
-        List<MatrixDto> userMatrixSet = matrixRepository.findMatrixSetByRecords(userRecordOfThisWeek);  // 운동 기록의 영역 조회
-
-        //회원 정보 저장
-        userMatrix.setProperties(user.getNickname(), userMatrixSet.size(), userMatrixSet, null, null);
-
-        /*----------*/
-        //진행 중인 챌린지 목록 조회 List<UserChallenge>
-        List<Challenge> challenges = challengeRepository.findProgressChallenge(user);
-
-        //챌린지를 함께하지 않는 친구 목록
-        List<User> friendsNotChallenge = friendService.getFriends(user);
-
-        //나랑 챌린지를 함께 하는 사람들(친구+친구X 둘 다)
-        Set<User> friendsWithChallenge = new HashSet<>();
-
-        for (Challenge challenge : challenges) {
-            List<User> challengeUsers = userChallengeRepository.findChallengeUsers(challenge);
-            //챌린지를 함께하고 있는 사람들 조회
-            for (User cu : challengeUsers) {
-                friendsWithChallenge.add(cu);
-                friendsNotChallenge.remove(cu);
-            }
-        }
-        friendsWithChallenge.remove(user);
-        /*----------*/
-
-        /*챌린지를 안하는 친구들의 matrix 와 정보 (friendMatrices)*/
-        Map<String, List<MatrixDto>> friendHashMap= new HashMap<>();
-        List<UserResponseDto.FriendMatrix> friendMatrices = new ArrayList<>();
-
-        friendsNotChallenge.forEach(nf -> friendHashMap.put(nf.getNickname(),
-                matrixRepository.findMatrixSetByRecords(exerciseRecordRepository.findRecordOfThisWeek(nf.getId()))));  // 이번주 운동기록 조회하여 영역 대입
-
-        for (String friendNickname : friendHashMap.keySet()) {
-            User friend = userRepository.findByNickname(friendNickname).orElseThrow(
-                    () -> new FriendException(ExceptionCodeSet.FRIEND_NOT_FOUND));
-
-            friendMatrices.add(new UserResponseDto.FriendMatrix(friendNickname, friend.getLatitude(), friend.getLongitude(),
-                    friendHashMap.get(friendNickname), friend.getPicturePath()));
-        }
-
-        /*챌린지를 하는 사람들의 matrix 와 정보 (challengeMatrices)*/
-        List<UserResponseDto.ChallengeMatrix> challengeMatrices = new ArrayList<>();
-
-        for (User friend : friendsWithChallenge) {
-            Integer challengeNumber = challengeRepository.findCountChallenge(user, friend); // 함께하는 챌린지 수
-
-            //색깔 처리
-            Challenge challengeWithFriend = challengeRepository.findChallengesWithFriend(user, friend).get(0);//함께하는 첫번째 챌린지 조회
-            ChallengeColor challengeColor = userChallengeRepository.findChallengeColor(user, challengeWithFriend);//회원 기준 해당 챌린지 색깔
-
-            List<ExerciseRecord> challengeRecordOfThisWeek = exerciseRecordRepository.findRecordOfThisWeek(friend.getId()); // 이번주 운동기록 조회
-            List<MatrixDto> challengeMatrixSetDto = matrixRepository.findMatrixSetByRecords(challengeRecordOfThisWeek); // 운동 기록의 영역 조회
-
-            challengeMatrices.add(
-                    new UserResponseDto.ChallengeMatrix(
-                            friend.getNickname(), challengeNumber, challengeColor,
-                            friend.getLatitude(), friend.getLongitude(), challengeMatrixSetDto,
-                            friend.getPicturePath())
-            );
-        }
-
-        return HomeResponseDto.builder()
-                .userMatrices(userMatrix)
-                .friendMatrices(friendMatrices)
-                .challengeMatrices(challengeMatrices)
-                .challengesNumber(null)
-                .isShowMine(user.getIsShowMine())
-                .isShowFriend(user.getIsShowFriend())
-                .isPublicRecord(user.getIsPublicRecord())
-                .build();
-    }
 
     // 기록 끝
     @Transactional

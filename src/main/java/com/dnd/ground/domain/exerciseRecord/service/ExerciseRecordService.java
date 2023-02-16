@@ -17,9 +17,6 @@ import java.time.LocalDateTime;
 
 public interface ExerciseRecordService {
 
-
-    HomeResponseDto recordStart(String nickname);
-
     ResponseEntity<Boolean> recordEnd(EndRequestDto endRequestDto);
 
     RankResponseDto.Step stepRanking(UserRequestDto.LookUp requestDto) ;
