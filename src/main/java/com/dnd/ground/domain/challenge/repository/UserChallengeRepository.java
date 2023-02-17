@@ -20,7 +20,7 @@ import java.util.Optional;
  *          - 2022.10.01 박찬호
  */
 
-public interface UserChallengeRepository extends JpaRepository<UserChallenge, Long> {
+public interface UserChallengeRepository extends JpaRepository<UserChallenge, Long>, ChallengeQueryRepository {
     List<UserChallenge> findByUser(User user);
 
     //User로 챌린지 목록 조회

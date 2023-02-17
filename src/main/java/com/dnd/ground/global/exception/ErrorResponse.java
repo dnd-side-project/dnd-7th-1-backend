@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.springframework.lang.Nullable;
 import org.springframework.validation.FieldError;
 
 import java.util.List;
@@ -13,8 +12,8 @@ import java.util.List;
  * @description 예외 응답 메시지 포맷 클래스
  * @author  박찬호
  * @since   2022-08-24
- * @updated 1. 빠른 디버깅을 위한 trace 변수 추가
- *          - 2023.01.20 박찬호
+ * @updated 1 회원-챌린지(UC)에서 여러 명의 회원에 대한 예외 처리를 위해 nicknameList 추가
+ *          - 2023.02.17 박찬호
  */
 
 @Getter
@@ -28,6 +27,9 @@ public class ErrorResponse {
 
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
     private final String nickname;
+
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
+    private final List<String> nicknameList;
 
     @JsonInclude(JsonInclude.Include.NON_EMPTY) //값이 없으면 JSON 포함X
     private final List<ValidationError> errors;

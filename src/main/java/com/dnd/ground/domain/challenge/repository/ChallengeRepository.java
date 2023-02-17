@@ -15,11 +15,11 @@ import java.util.Optional;
  * @description 챌린지와 관련한 레포지토리
  * @author  박찬호
  * @since   2022-08-03
- * @updated 조인 시 일부 조건이 빠져있던 문제 해결
- *          - 2022.10.29 박찬호
+ * @updated 1.미사용 쿼리 삭제
+ *          - 2023.02.17 박찬호
  */
 
-public interface ChallengeRepository extends JpaRepository<Challenge, Long> {
+public interface ChallengeRepository extends JpaRepository<Challenge, Long>, ChallengeQueryRepository {
 
     //UUID로 챌린지 조회
     Optional<Challenge> findByUuid(@Param("uuid") String uuid);
@@ -35,16 +35,6 @@ public interface ChallengeRepository extends JpaRepository<Challenge, Long> {
     //완료된 챌린지 목록 정보 조회
     @Query("select c from Challenge c inner join UserChallenge uc on uc.challenge=c where uc.user=:user and c.status='Done' order by c.started ASC")
     List<Challenge> findDoneChallenge(@Param("user") User user);
-     
-    //진행 중인 챌린지 개수
-    @Query("select count(c) from Challenge c inner join UserChallenge uc on uc.challenge=c where " +
-            "uc.user=:user and c.status='Progress'")
-    Integer findCountChallenge(@Param("user") User user);
-
-    //친구와 함께 진행 중인 챌린지 개수
-    @Query("select count(c.id) from Challenge c where c IN (select uc.challenge from UserChallenge uc where uc.user=:user and uc.challenge=c) and " +
-            "c.status='Progress' and c = (select uc.challenge from UserChallenge uc where uc.challenge=c and uc.user =:friend)")
-    Integer findCountChallenge(@Param("user")User user, @Param("friend") User friend);
 
     //친구와 함께 진행 중인 챌린지 정보 조회
     @Query("select c from Challenge c where c IN (select uc.challenge from UserChallenge uc where uc.user=:user and uc.challenge=c) and " +
@@ -68,6 +58,9 @@ public interface ChallengeRepository extends JpaRepository<Challenge, Long> {
     List<Challenge> findChallengesBetweenStartAndEnd(@Param("user") User user,
                                                      @Param("start") LocalDate start,
                                                      @Param("end") LocalDate end);
+
+    @Query("SELECT c FROM Challenge c INNER JOIN UserChallenge uc ON uc.challenge=c AND uc.user=:user WHERE c.uuid=:uuid")
+    Optional<Challenge> findChallengeWithUser(@Param("user") User user, @Param("uuid") String uuid);
 
     //챌린지 이름으로 UUID 조회 - Dummy
     @Query("select c.uuid from Challenge c where c.name = :name")

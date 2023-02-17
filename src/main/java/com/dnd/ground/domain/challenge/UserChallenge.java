@@ -12,7 +12,7 @@ import javax.persistence.*;
  * @description User - Challenge 간 조인 테이블
  * @author  박찬호
  * @since   2022-07-27
- * @updated 1. 챌린지 색깔 관련 수정
+ * @updated 1. 생성자 수정: 파라미터로 전달 받은 ChallengeStatus로 객체를 생성함.
  *          - 2022-08-16 박찬호
  */
 
@@ -43,10 +43,10 @@ public class UserChallenge {
     private ChallengeColor color;
 
     //Constructor
-    public UserChallenge(Challenge challenge, User user, ChallengeColor color) {
+    public UserChallenge(Challenge challenge, User user, ChallengeColor color, ChallengeStatus status) {
         this.user = user;
         this.challenge = challenge;
-        this.status = ChallengeStatus.Wait;
+        this.status = status;
         this.color = color;
     }
 
