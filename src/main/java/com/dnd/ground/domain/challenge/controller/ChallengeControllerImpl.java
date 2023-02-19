@@ -11,6 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
 import java.util.List;
 
 
@@ -33,31 +34,31 @@ public class ChallengeControllerImpl implements ChallengeController {
 
     @PostMapping("/")
     @Operation(summary = "챌린지 생성", description = "챌린지 생성(Type: 영역 넓히기(Widen), 칸 누적하기(Accumulate)")
-    public ResponseEntity<ChallengeCreateResponseDto> createChallenge(@RequestBody ChallengeCreateRequestDto challengeCreateRequestDto) {
+    public ResponseEntity<ChallengeCreateResponseDto> createChallenge(@Valid @RequestBody ChallengeCreateRequestDto challengeCreateRequestDto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(challengeService.createChallenge(challengeCreateRequestDto));
     }
 
     @PostMapping("/accept")
     @Operation(summary = "챌린지 수락", description = "유저의 챌린지 수락")
-    public ResponseEntity<ChallengeResponseDto.Status> acceptChallenge(@RequestBody ChallengeRequestDto.CInfo requestDto) {
-        return ResponseEntity.ok().body(challengeService.changeUserChallengeStatus(requestDto, ChallengeStatus.Progress));
+    public ResponseEntity<ChallengeResponseDto.Status> acceptChallenge(@Valid @RequestBody ChallengeRequestDto.CInfo requestDto) {
+        return ResponseEntity.ok().body(challengeService.changeUserChallengeStatus(requestDto, ChallengeStatus.PROGRESS));
     }
 
     @PostMapping("/reject")
     @Operation(summary = "챌린지 거절", description = "유저의 챌린지 거절")
-    public ResponseEntity<ChallengeResponseDto.Status> rejectChallenge(@RequestBody ChallengeRequestDto.CInfo requestDto) {
-        return ResponseEntity.ok().body(challengeService.changeUserChallengeStatus(requestDto, ChallengeStatus.Reject));
+    public ResponseEntity<ChallengeResponseDto.Status> rejectChallenge(@Valid @RequestBody ChallengeRequestDto.CInfo requestDto) {
+        return ResponseEntity.ok().body(challengeService.changeUserChallengeStatus(requestDto, ChallengeStatus.REJECT));
     }
 
     @GetMapping("/invite")
     @Operation(summary = "초대받은 챌린지 목록", description = "초대 받은 챌린지와 관련한 정보 목록")
-    public ResponseEntity<List<ChallengeResponseDto.Invite>> getInviteChallenge(@RequestParam("nickname") String nickname) {
+    public ResponseEntity<List<ChallengeResponseDto.Invite>> getInviteChallenge(@Valid @RequestParam("nickname") String nickname) {
         return ResponseEntity.ok().body(challengeService.findInviteChallenge(nickname));
     }
 
     @GetMapping("/wait")
     @Operation(summary = "진행 대기 중인 챌린지 목록 조회", description = "대기 중 챌린지와 관련한 정보 목록")
-    public ResponseEntity<List<ChallengeResponseDto.Wait>> getWaitChallenges(@RequestParam("nickname") String nickname) {
+    public ResponseEntity<List<ChallengeResponseDto.Wait>> getWaitChallenges(@Valid @RequestParam("nickname") String nickname) {
         return ResponseEntity.ok().body(challengeService.findWaitChallenge(nickname));
     }
 
