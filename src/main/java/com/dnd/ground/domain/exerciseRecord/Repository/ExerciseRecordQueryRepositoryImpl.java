@@ -6,6 +6,8 @@ import com.dnd.ground.domain.exerciseRecord.dto.RankCond;
 import com.dnd.ground.domain.exerciseRecord.dto.RankDto;
 import com.dnd.ground.global.exception.ExceptionCodeSet;
 import com.dnd.ground.global.exception.ExerciseRecordException;
+import com.querydsl.core.types.ConstructorExpression;
+import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
@@ -26,9 +28,9 @@ import static com.dnd.ground.domain.user.QUser.user;
  * @description 운동 기록(영역) 관련 QueryDSL 레포지토리
  * @author  박세헌, 박찬호
  * @since   2022-08-01
- * @updated 1.누적 랭킹 조회 리팩토링
- *          2.영역 랭킹 조회 리팩토링
- *          2023-02-21
+ * @updated 1.쿼리를 실행하는 공통 부분 메소드로 분리
+ *          2.걸음수 랭킹 API 리팩토링 및 위치 변경
+ *          2023-02-22 박찬호
  */
 
 @Repository
@@ -53,55 +55,84 @@ public class ExerciseRecordQueryRepositoryImpl implements ExerciseRecordQueryRep
                 .fetch();
     }
 
-    @Override
-    public List<RankDto> findRankMatrixRankAllTime(RankCond condition) {
+    /**
+     * 랭킹 쿼리 실행 메소드
+     * @param constructor 조회할 랭킹 종류(Matrix, Area, Step ..)
+     * @param order 정렬 기준(조회하는 데이터 기준)
+     * @param tableJoinCondition 테이블 조인 조건(기간 등)
+     * @param condition 검색 조건
+     * @return 랭킹 결과
+     */
+    private List<RankDto> execQuery(ConstructorExpression<RankDto> constructor, OrderSpecifier<Long> order,
+                                    BooleanExpression tableJoinCondition, RankCond condition) {
         return queryFactory
-                .select(Projections.constructor(RankDto.class,
-                        user.nickname,
-                        user.picturePath,
-                        matrix.count()
-                ))
+                .select(constructor)
                 .from(user)
                 .leftJoin(exerciseRecord)
-                .on(
-                        exerciseRecord.user.eq(user),
-                        allTime()
-                )
+                .on(tableJoinCondition)
                 .leftJoin(matrix)
                 .on(matrix.exerciseRecord.eq(exerciseRecord))
                 .where(user.in(condition.getUsers()))
                 .groupBy(user.nickname)
-                .orderBy(matrix.count().desc())
+                .orderBy(order)
                 .fetch();
+    }
+
+    @Override
+    public List<RankDto> findRankMatrixRankAllTime(RankCond condition) {
+        ConstructorExpression<RankDto> constructor = Projections.constructor(RankDto.class,
+                user.nickname,
+                user.picturePath,
+                matrix.count()
+        );
+
+        BooleanExpression tableJoinCondition = exerciseRecord.user.eq(user).and(allTime());
+        OrderSpecifier<Long> order = matrix.count().desc();
+        return execQuery(constructor, order, tableJoinCondition, condition);
     }
 
     @Override
     public List<RankDto> findRankArea(RankCond condition) {
         if (condition.getStarted() == null || condition.getEnded() == null) throw new ExerciseRecordException(ExceptionCodeSet.INVALID_TIME);
 
+        ConstructorExpression<RankDto> constructor = Projections.constructor(
+                RankDto.class,
+                user.nickname,
+                user.picturePath,
+                matrix.countDistinct()
+        );
+
+        BooleanExpression tableJoinCondition = userEqAndInPeriod(condition.getStarted(), condition.getEnded());
+        OrderSpecifier<Long> order = matrix.countDistinct().desc();
+        return execQuery(constructor, order, tableJoinCondition, condition);
+    }
+
+    @Override
+    public List<RankDto> findRankStep(RankCond condition) {
+        if (condition.getStarted() == null || condition.getEnded() == null) throw new ExerciseRecordException(ExceptionCodeSet.INVALID_TIME);
+
         return queryFactory
                 .select(Projections.constructor(RankDto.class,
                         user.nickname,
                         user.picturePath,
-                        matrix.countDistinct()
+                        exerciseRecord.stepCount.sum()
+                                .castToNum(Long.class)
+                                .coalesce(0L)
                 ))
                 .from(user)
                 .leftJoin(exerciseRecord)
-                .on(
-                        exerciseRecord.user.eq(user),
-                        inPeriod(condition.getStarted(), condition.getEnded())
-                )
-                .leftJoin(matrix)
-                .on(matrix.exerciseRecord.eq(exerciseRecord))
+                .on(userEqAndInPeriod(condition.getStarted(), condition.getEnded()))
                 .where(user.in(condition.getUsers()))
                 .groupBy(user.nickname)
-                .orderBy(matrix.countDistinct().desc())
+                .orderBy(exerciseRecord.stepCount.sum()
+                        .castToNum(Long.class)
+                        .desc())
                 .fetch();
     }
 
-    private BooleanExpression inPeriod(LocalDateTime started, LocalDateTime ended) {
+    private BooleanExpression userEqAndInPeriod(LocalDateTime started, LocalDateTime ended) {
         return started != null && ended != null ?
-                exerciseRecord.started.after(started)
+                exerciseRecord.user.eq(user).and(exerciseRecord.started.after(started))
                         .and(exerciseRecord.ended.before(ended))
                 :
                 null;

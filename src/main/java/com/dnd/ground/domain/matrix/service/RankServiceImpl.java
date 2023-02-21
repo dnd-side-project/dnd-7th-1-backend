@@ -30,10 +30,8 @@ import java.util.Objects;
  * @description 운동 영역 서비스 클래스
  * @author  박세헌, 박찬호
  * @since   2022-08-01
- * @updated 1.클래스 역할 분리: 이름 변경(MatrixService -> RankService)
- *          2.누적 랭킹 조회 리팩토링
- *          3.영역 랭킹 조회 리팩토링
- *          2023-02-21 박찬호
+ * @updated 1.걸음수 랭킹 API 리팩토링 및 위치 변경
+ *          2023-02-22 박찬호
  */
 
 @Service
@@ -47,7 +45,7 @@ public class RankServiceImpl implements RankService {
     private final UserChallengeRepository userChallengeRepository;
 
     @Transactional
-    public Matrix save(Matrix matrix){
+    public Matrix save(Matrix matrix) {
         return matrixRepository.save(matrix);
     }
 
@@ -65,17 +63,30 @@ public class RankServiceImpl implements RankService {
 
     //영역 랭킹 조회
     public RankResponseDto.Area areaRanking(UserRequestDto.LookUp requestDto) {
-        String nickname = requestDto.getNickname();
         LocalDateTime started = requestDto.getStarted();
         LocalDateTime ended = requestDto.getEnded();
 
-        User user = userRepository.findByNickname(nickname).orElseThrow(
+        User user = userRepository.findByNickname(requestDto.getNickname()).orElseThrow(
                 () -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
 
         List<User> userAndFriends = friendService.getFriends(user);
         userAndFriends.add(user);
         List<RankDto> areaRank = exerciseRecordRepository.findRankArea(new RankCond(userAndFriends, started, ended));
         return new RankResponseDto.Area(calculateRank(areaRank));
+    }
+
+    //걸음수 랭킹 조회
+    public RankResponseDto.Step stepRanking(UserRequestDto.LookUp requestDto) {
+        LocalDateTime start = requestDto.getStarted();
+        LocalDateTime end = requestDto.getEnded();
+
+        User user = userRepository.findByNickname(requestDto.getNickname()).orElseThrow(
+                () -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
+
+        List<User> userAndFriends = friendService.getFriends(user);
+        userAndFriends.add(user);
+        List<RankDto> result = exerciseRecordRepository.findRankStep(new RankCond(userAndFriends, start, end));
+        return new RankResponseDto.Step(calculateRank(result));
     }
 
     /*챌린지 랭킹 조회*/
@@ -145,8 +156,8 @@ public class RankServiceImpl implements RankService {
         Long areaNumber = areaRankings.get(0).getScore();  // 맨 처음 user의 영역 수
         int rank = 1;
         int count = 1;
-        for (int i=1; i<areaRankings.size(); i++){
-            if (Objects.equals(areaRankings.get(i).getScore(), areaNumber)){  // 전 유저와 영역 수가 같다면 랭크 유지
+        for (int i = 1; i < areaRankings.size(); i++) {
+            if (Objects.equals(areaRankings.get(i).getScore(), areaNumber)) {  // 전 유저와 영역 수가 같다면 랭크 유지
                 areaRankings.get(i).setRank(rank);
                 count += 1;
                 continue;
@@ -184,5 +195,4 @@ public class RankServiceImpl implements RankService {
         }
         return response;
     }
-
 }

@@ -21,7 +21,7 @@ import static com.dnd.ground.domain.matrix.QMatrix.matrix;
 import static java.time.DayOfWeek.MONDAY;
 
 /**
- * @description 운동 기록(영역) 관련 QueryDSL 레포지토리
+ * @description 운동 기록(영역) 관련 QueryDSL 레포지토리 (특정 범위 내 영역 조회)
  * @author  박찬호
  * @since   2023-02-14
  * @updated 1.다수의 회원들의 영역 조회용 쿼리 생성
