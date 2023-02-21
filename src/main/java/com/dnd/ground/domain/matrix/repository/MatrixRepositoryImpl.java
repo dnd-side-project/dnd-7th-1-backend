@@ -1,4 +1,4 @@
-package com.dnd.ground.domain.matrix.matrixRepository;
+package com.dnd.ground.domain.matrix.repository;
 
 import com.dnd.ground.domain.matrix.dto.MatrixUserSet;
 import com.dnd.ground.domain.user.User;
@@ -35,7 +35,7 @@ public class MatrixRepositoryImpl implements MatrixRepositoryQuery {
     private final JPAQueryFactory queryFactory;
 
     @Override
-    public List<Location> findMatrixPoint(User user, Location location) {
+    public List<Location> findMatrixPoint(User user, Location location, double spanDelta) {
         LocalDateTime start = LocalDateTime.now().with(MONDAY).withHour(0).withMinute(0).withSecond(0).withNano(0);
 
         return queryFactory
@@ -47,12 +47,12 @@ public class MatrixRepositoryImpl implements MatrixRepositoryQuery {
                 .from(matrix)
                 .where(
                         recordInPeriod(user, start, LocalDateTime.now()),
-                        containMBR(location)
+                        containMBR(location, spanDelta)
                 )
                 .fetch();
     }
 
-    public Map<User, List<Location>> findUsersMatrix(Set<User> users, Location location) {
+    public Map<User, List<Location>> findUsersMatrix(Set<User> users, Location location, double spanDelta) {
         LocalDateTime start = LocalDateTime.now().with(MONDAY).withHour(0).withMinute(0).withSecond(0).withNano(0);
 
         List<MatrixUserSet> queryResult = queryFactory
@@ -74,7 +74,7 @@ public class MatrixRepositoryImpl implements MatrixRepositoryQuery {
                         matrix.exerciseRecord.eq(exerciseRecord)
                 )
                 .where(
-                        containMBR(location)
+                        containMBR(location, spanDelta)
                 ).fetch();
 
         Map<User, List<Location>> result = new HashMap<>();
@@ -100,13 +100,10 @@ public class MatrixRepositoryImpl implements MatrixRepositoryQuery {
                         )
         );
     }
-    private BooleanExpression containMBR(Location location) {
+    private BooleanExpression containMBR(Location location, Double spanDelta) {
         if (location == null) return null;
-        Double lat = location.getLatitude();
-        Double lon = location.getLongitude();
-
-        Location northEast = GeometryUtil.calculate(lat, lon, 3.0, Direction.NORTHEAST);
-        Location southWest = GeometryUtil.calculate(lat, lon, 3.0, Direction.SOUTHWEST);
+        Location northEast = GeometryUtil.calculate(location, spanDelta, Direction.NORTHEAST);
+        Location southWest = GeometryUtil.calculate(location, spanDelta, Direction.SOUTHWEST);
 
         return Expressions.booleanTemplate("function('MBRContains', {0}, {1})",
                         String.format("LINESTRING(%f %f, %f %f)",

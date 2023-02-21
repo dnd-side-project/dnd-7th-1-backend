@@ -1,4 +1,4 @@
-package com.dnd.ground.domain.matrix.matrixRepository;
+package com.dnd.ground.domain.matrix.repository;
 
 import com.dnd.ground.domain.user.User;
 import com.dnd.ground.domain.matrix.dto.Location;
@@ -15,6 +15,6 @@ import java.util.Set;
  *          - 2023-02-14 박찬호
  */
 public interface MatrixRepositoryQuery {
-    List<Location> findMatrixPoint(User user, Location location);
-    Map<User, List<Location>> findUsersMatrix(Set<User> users, Location location);
+    List<Location> findMatrixPoint(User user, Location location, double range);
+    Map<User, List<Location>> findUsersMatrix(Set<User> users, Location location, double spanDelta);
 }
