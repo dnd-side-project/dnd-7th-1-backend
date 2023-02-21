@@ -2,8 +2,10 @@ package com.dnd.ground.domain.exerciseRecord.Repository;
 
 import com.dnd.ground.domain.exerciseRecord.ExerciseRecord;
 
-import com.dnd.ground.domain.exerciseRecord.dto.ExerciseCond;
+import com.dnd.ground.domain.exerciseRecord.dto.RankCond;
 import com.dnd.ground.domain.exerciseRecord.dto.RankDto;
+import com.dnd.ground.global.exception.ExceptionCodeSet;
+import com.dnd.ground.global.exception.ExerciseRecordException;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
@@ -21,19 +23,18 @@ import static com.dnd.ground.domain.matrix.QMatrix.matrix;
 import static com.dnd.ground.domain.user.QUser.user;
 
 /**
- * @description 운동 기록 query 클래스(queryDsl 사용)
- *              1. 개인 이번주 기록
-                2. start-end 사이 운동기록
+ * @description 운동 기록(영역) 관련 QueryDSL 레포지토리
  * @author  박세헌, 박찬호
  * @since   2022-08-01
  * @updated 1.누적 랭킹 조회 리팩토링
+ *          2.영역 랭킹 조회 리팩토링
  *          2023-02-21
  */
 
 @Repository
 @Slf4j
 @RequiredArgsConstructor
-public class ExerciseRecordQueryRepositoryImpl implements ExerciseRecordQueryRepository{
+public class ExerciseRecordQueryRepositoryImpl implements ExerciseRecordQueryRepository {
     private final JPAQueryFactory queryFactory;
 
     // 개인 이번주 기록 (이번주 월요일 ~ 지금)
@@ -53,8 +54,8 @@ public class ExerciseRecordQueryRepositoryImpl implements ExerciseRecordQueryRep
     }
 
     @Override
-    public List<RankDto> findRankMatrixRankAllTime(ExerciseCond condition) {
-        List<RankDto> fetch = queryFactory
+    public List<RankDto> findRankMatrixRankAllTime(RankCond condition) {
+        return queryFactory
                 .select(Projections.constructor(RankDto.class,
                         user.nickname,
                         user.picturePath,
@@ -72,8 +73,30 @@ public class ExerciseRecordQueryRepositoryImpl implements ExerciseRecordQueryRep
                 .groupBy(user.nickname)
                 .orderBy(matrix.count().desc())
                 .fetch();
-        log.info("결과:{}", fetch.toString());
-        return fetch;
+    }
+
+    @Override
+    public List<RankDto> findRankArea(RankCond condition) {
+        if (condition.getStarted() == null || condition.getEnded() == null) throw new ExerciseRecordException(ExceptionCodeSet.INVALID_TIME);
+
+        return queryFactory
+                .select(Projections.constructor(RankDto.class,
+                        user.nickname,
+                        user.picturePath,
+                        matrix.countDistinct()
+                ))
+                .from(user)
+                .leftJoin(exerciseRecord)
+                .on(
+                        exerciseRecord.user.eq(user),
+                        inPeriod(condition.getStarted(), condition.getEnded())
+                )
+                .leftJoin(matrix)
+                .on(matrix.exerciseRecord.eq(exerciseRecord))
+                .where(user.in(condition.getUsers()))
+                .groupBy(user.nickname)
+                .orderBy(matrix.countDistinct().desc())
+                .fetch();
     }
 
     private BooleanExpression inPeriod(LocalDateTime started, LocalDateTime ended) {
@@ -89,4 +112,3 @@ public class ExerciseRecordQueryRepositoryImpl implements ExerciseRecordQueryRep
                 .and(exerciseRecord.ended.before(LocalDateTime.now()));
     }
 }
-

@@ -6,7 +6,7 @@ import com.dnd.ground.domain.exerciseRecord.Repository.ExerciseRecordRepository;
 import com.dnd.ground.domain.exerciseRecord.dto.RankDto;
 import com.dnd.ground.domain.friend.service.FriendService;
 import com.dnd.ground.domain.matrix.Matrix;
-import com.dnd.ground.domain.exerciseRecord.dto.ExerciseCond;
+import com.dnd.ground.domain.exerciseRecord.dto.RankCond;
 import com.dnd.ground.domain.matrix.repository.MatrixRepository;
 import com.dnd.ground.domain.user.User;
 import com.dnd.ground.domain.user.dto.RankResponseDto;
@@ -32,6 +32,7 @@ import java.util.Objects;
  * @since   2022-08-01
  * @updated 1.클래스 역할 분리: 이름 변경(MatrixService -> RankService)
  *          2.누적 랭킹 조회 리팩토링
+ *          3.영역 랭킹 조회 리팩토링
  *          2023-02-21 박찬호
  */
 
@@ -50,7 +51,7 @@ public class RankServiceImpl implements RankService {
         return matrixRepository.save(matrix);
     }
 
-    // 랭킹 조회(역대 누적 칸의 수 기준)
+    //역대 누적 랭킹 조회
     public RankResponseDto.Matrix matrixRankingAllTime(String nickname) {
         User user = userRepository.findByNickname(nickname).orElseThrow(
                 () -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
@@ -58,56 +59,23 @@ public class RankServiceImpl implements RankService {
         List<User> userAndFriends = friendService.getFriends(user);
         userAndFriends.add(user);
 
-        List<RankDto> rankMatrixRank = exerciseRecordRepository.findRankMatrixRankAllTime(new ExerciseCond(userAndFriends));
-
-        //랭킹계산
-        List<UserResponseDto.Ranking> response = new ArrayList<>();
-
-        RankDto first = rankMatrixRank.remove(0);
-        int rank = 1;
-        int interval = 1;
-        long prevScore = first.getScore();
-
-        response.add(new UserResponseDto.Ranking(rank, first.getNickname(), first.getScore(), first.getPicturePath()));
-        for (RankDto rankInfo : rankMatrixRank) {
-            Long score = rankInfo.getScore();
-            if (score < prevScore) {
-                rank += interval;
-                prevScore = score;
-                interval = 1;
-            } else {
-                interval++;
-            }
-
-            response.add(new UserResponseDto.Ranking(rank, rankInfo.getNickname(), score, rankInfo.getPicturePath()));
-        }
-        return new RankResponseDto.Matrix(response);
+        List<RankDto> matrixRank = exerciseRecordRepository.findRankMatrixRankAllTime(new RankCond(userAndFriends));
+        return new RankResponseDto.Matrix(calculateRank(matrixRank));
     }
 
-    // 랭킹 조회(누적 영역의 수 기준)
+    //영역 랭킹 조회
     public RankResponseDto.Area areaRanking(UserRequestDto.LookUp requestDto) {
-
         String nickname = requestDto.getNickname();
-        LocalDateTime start = requestDto.getStart();
-        LocalDateTime end = requestDto.getEnd();
+        LocalDateTime started = requestDto.getStarted();
+        LocalDateTime ended = requestDto.getEnded();
 
         User user = userRepository.findByNickname(nickname).orElseThrow(
                 () -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
 
-        List<User> friends = friendService.getFriends(user);  // 친구들 조회
-
-        List<UserResponseDto.Ranking> areaRankings = new ArrayList<>();  // [랭킹, 닉네임, 영역의 수]
-
-        // 유저의 닉네임과 영역의 수 대입
-        areaRankings.add(new UserResponseDto.Ranking(1, user.getNickname(),
-                (long) matrixRepository.findMatrixSetByRecords(exerciseRecordRepository.findRecord(user.getId(), start, end)).size(), user.getPicturePath()));
-
-        // 친구들의 닉네임과 영역의 수 대입
-        friends.forEach(f -> areaRankings.add(new UserResponseDto.Ranking(1, f.getNickname(),
-                (long) matrixRepository.findMatrixSetByRecords(exerciseRecordRepository.findRecord(f.getId(), start, end)).size(), f.getPicturePath())));
-
-        // 랭킹 계산 후 반환
-        return new RankResponseDto.Area(calculateUserAreaRank(areaRankings, user));
+        List<User> userAndFriends = friendService.getFriends(user);
+        userAndFriends.add(user);
+        List<RankDto> areaRank = exerciseRecordRepository.findRankArea(new RankCond(userAndFriends, started, ended));
+        return new RankResponseDto.Area(calculateRank(areaRank));
     }
 
     /*챌린지 랭킹 조회*/
@@ -193,32 +161,28 @@ public class RankServiceImpl implements RankService {
         return areaRankings;
     }
 
-    /*영역 기준 랭킹 계산(랭킹탭)*/
-    public List<UserResponseDto.Ranking> calculateUserAreaRank(List<UserResponseDto.Ranking> areaRankings, User user) {
-        //내림차순 정렬
-        areaRankings.sort((a, b) -> b.getScore().compareTo(a.getScore()));
+    public List<UserResponseDto.Ranking> calculateRank(List<RankDto> rankMatrixRank) {
+        List<UserResponseDto.Ranking> response = new ArrayList<>();
 
-        Long areaNumber = areaRankings.get(0).getScore();  // 맨 처음 user의 영역 수
+        RankDto first = rankMatrixRank.remove(0);
         int rank = 1;
-        int count = 1;
+        int interval = 1;
+        long prevScore = first.getScore();
 
-        for (int i=1; i<areaRankings.size(); i++){
-
-            // 전 유저와 영역 수가 같다면 랭크 유지
-            if (Objects.equals(areaRankings.get(i).getScore(), areaNumber)){
-                areaRankings.get(i).setRank(rank);
-                count += 1;
-                continue;
+        response.add(new UserResponseDto.Ranking(rank, first.getNickname(), first.getScore(), first.getPicturePath()));
+        for (RankDto rankInfo : rankMatrixRank) {
+            Long score = rankInfo.getScore();
+            if (score < prevScore) {
+                rank += interval;
+                prevScore = score;
+                interval = 1;
+            } else {
+                interval++;
             }
-            // 전 유저보다 영역수 가 작다면 앞에 있는 사람수 만큼이 자신 랭킹
-            count += 1;
-            rank = count;
 
-            areaRankings.get(i).setRank(rank);
-            areaNumber = areaRankings.get(i).getScore();  // 영역 수 update!
+            response.add(new UserResponseDto.Ranking(rank, rankInfo.getNickname(), score, rankInfo.getPicturePath()));
         }
-
-        return areaRankings;
+        return response;
     }
 
 }

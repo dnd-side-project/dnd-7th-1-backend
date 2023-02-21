@@ -27,7 +27,7 @@ import java.util.*;
  * @description 운동 기록 서비스 클래스
  * @author  박세헌, 박찬호
  * @since   2022-08-01
- * @updated 1.기록 시작 API 삭제
+ * @updated 1. 기록 종료 API 코드 개선
  *          - 2023-02-16
  */
 
@@ -70,8 +70,8 @@ public class ExerciseRecordServiceImpl implements ExerciseRecordService {
     public RankResponseDto.Step stepRanking(UserRequestDto.LookUp requestDto) {
 
         String nickname = requestDto.getNickname();
-        LocalDateTime start = requestDto.getStart();
-        LocalDateTime end = requestDto.getEnd();
+        LocalDateTime start = requestDto.getStarted();
+        LocalDateTime end = requestDto.getEnded();
 
         User user = userRepository.findByNickname(nickname).orElseThrow(
                 () -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
