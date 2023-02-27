@@ -7,8 +7,8 @@ import com.dnd.ground.domain.challenge.repository.UserChallengeRepository;
 import com.dnd.ground.domain.exerciseRecord.ExerciseRecord;
 import com.dnd.ground.domain.exerciseRecord.Repository.ExerciseRecordRepository;
 import com.dnd.ground.domain.matrix.dto.MatrixDto;
-import com.dnd.ground.domain.matrix.matrixRepository.MatrixRepository;
-import com.dnd.ground.domain.matrix.matrixService.MatrixService;
+import com.dnd.ground.domain.matrix.repository.MatrixRepository;
+import com.dnd.ground.domain.matrix.service.RankService;
 import com.dnd.ground.domain.user.User;
 import com.dnd.ground.domain.user.dto.RankResponseDto;
 import com.dnd.ground.domain.user.dto.UserResponseDto;
@@ -17,7 +17,6 @@ import com.dnd.ground.global.exception.*;
 import com.dnd.ground.global.util.UuidUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,8 +34,8 @@ import java.util.stream.Collectors;
  * @author 박찬호
  * @description 챌린지와 관련된 서비스의 역할을 분리한 구현체
  * @since 2022-08-03
- * @updated 1.챌린지 생성 API 리팩토링
- *          2022-02-17 박찬호
+ * @updated 1. 시간 필드 타입 LocalDate -> LocalDateTime으로 변경
+ *          - 2023.02.27
  */
 
 @Slf4j
@@ -48,7 +47,7 @@ public class ChallengeServiceImpl implements ChallengeService {
     private final ChallengeRepository challengeRepository;
     private final UserChallengeRepository userChallengeRepository;
     private final ExerciseRecordRepository exerciseRecordRepository;
-    private final MatrixService matrixService;
+    private final RankService matrixService;
     private final MatrixRepository matrixRepository;
     private static final int MAX_CHALLENGE_COUNT = 3;
 
@@ -71,7 +70,7 @@ public class ChallengeServiceImpl implements ChallengeService {
         User master = userRepository.findByNickname(requestDto.getNickname()).orElseThrow(
                 () -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
 
-        if (requestDto.getStarted().isBefore(LocalDate.now())) throw new ChallengeException(ExceptionCodeSet.CHALLENGE_DATE_INVALID);
+        if (requestDto.getStarted().isBefore(LocalDateTime.now())) throw new ChallengeException(ExceptionCodeSet.CHALLENGE_DATE_INVALID);
         if (challengeCountMap.get(master) > MAX_CHALLENGE_COUNT) throw new ChallengeException(ExceptionCodeSet.FAIL_CREATE_CHALLENGE);
 
         //챌린지 생성
@@ -79,6 +78,7 @@ public class ChallengeServiceImpl implements ChallengeService {
                 .uuid(UuidUtil.createUUID())
                 .name(requestDto.getName())
                 .started(requestDto.getStarted())
+                .ended(ChallengeService.getSunday(requestDto.getStarted()))
                 .message(requestDto.getMessage())
                 .type(requestDto.getType())
                 .build();
@@ -148,89 +148,25 @@ public class ChallengeServiceImpl implements ChallengeService {
         return new ChallengeResponseDto.Status(status);
     }
 
-    /*챌린지 상태 변경(매일 00:00 실행)*/
-    @Transactional
-    @Scheduled(cron = "0 0 0 * * *")
-    public void startPeriodChallenge() {
-        //챌린지 시작일이 오늘인 챌린지 리스트
-        List<Challenge> challenges = challengeRepository.findChallengesNotStarted(LocalDate.now());
-        int countDelete = 0; //삭제된 챌린지 수
-        int countUser = 0; //삭제된 유저 수
-        int countProgress = 0; // 진행 상태로 바뀐 챌린지 수
-
-        for (Challenge challenge : challenges) {
-            //Wait, Reject 상태의 유저 삭제
-            countUser += userChallengeRepository.deleteUCByChallenge(challenge);
-
-            List<UserChallenge> userChallenges = userChallengeRepository.findUCByChallenge(challenge);
-
-            //주최자만 남은 경우 챌린지와 주최자 삭제
-            if (userChallenges.size() == 1) {
-                userChallengeRepository.delete(userChallenges.get(0));
-                challengeRepository.delete(challenge);
-                countDelete++;
-            }
-            //챌린지 진행 상태로 변경
-            else {
-                for (UserChallenge userChallenge : userChallenges) {
-                    if (userChallenge.getStatus() != ChallengeStatus.MASTER)
-                        userChallenge.changeStatus(ChallengeStatus.PROGRESS);
-                }
-                challenge.updateStatus(ChallengeStatus.PROGRESS);
-            }
-        }
-
-        log.info("**챌린지 시작 메소드 실행** 현재 시간:{} | 삭제된 챌린지 개수:{} | 삭제된 유저 수:{} | 진행 상태로 바뀐 챌린지 개수:{}",
-                LocalDateTime.now(), countDelete, countUser, countProgress);
-    }
-
-    /*일주일 챌린지 마감(매주 일요일 오후 11시 59분 50초 실행)*/
-    @Transactional
-    @Scheduled(cron = "50 59 23 * * 0")
-    public void endPeriodChallenge() {
-        //진행 중인 챌린지 모두 조회
-        List<Challenge> challenges = challengeRepository.findChallengesByStatusEquals(ChallengeStatus.PROGRESS);
-        List<Challenge> waitChallenge = challengeRepository.findChallengesByStatusEquals(ChallengeStatus.WAIT);
-
-        challenges.addAll(waitChallenge);
-
-        for (Challenge challenge : challenges) {
-            //챌린지 완료
-
-            challenge.updateStatus(ChallengeStatus.DONE);
-
-            //각 유저들도 완료 상태 변경
-            List<UserChallenge> userChallenges = userChallengeRepository.findUCByChallenge(challenge);
-
-            for (UserChallenge userChallenge : userChallenges) {
-                if (userChallenge.getStatus() == ChallengeStatus.MASTER)
-                    userChallenge.changeStatus(ChallengeStatus.MASTER_DONE);
-                else
-                    userChallenge.changeStatus(ChallengeStatus.DONE);
-            }
-        }
-
-        log.info("**챌린지 종료 메소드 실행** 현재 시간:{} | 종료된 챌린지 개수:{}", LocalDateTime.now(), challenges.size());
-    }
-
-    /*초대 받은 챌린지 조회*/
+    /*초대 받은 챌린지 목록 조회*/
     public List<ChallengeResponseDto.Invite> findInviteChallenge(String nickname) {
         User user = userRepository.findByNickname(nickname).orElseThrow(
                 () -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
 
-        List<Challenge> challenges = challengeRepository.findChallengeInWait(user);
+        List<Challenge> challenges = challengeRepository.findChallengesByUserInStatus(user, ChallengeStatus.WAIT);
         List<ChallengeResponseDto.Invite> response = new ArrayList<>();
 
         for (Challenge challenge : challenges) {
+            User master = userChallengeRepository.findMasterInChallenge(challenge);
 
             response.add(
                     ChallengeResponseDto.Invite.builder()
                             .name(challenge.getName())
-                            .uuid(challenge.getUuid())
-                            .InviterNickname(userChallengeRepository.findMasterInChallenge(challenge).getNickname())
+                            .uuid(UuidUtil.bytesToHex(challenge.getUuid()))
+                            .InviterNickname(master.getNickname())
                             .message(challenge.getMessage())
                             .created(challenge.getCreated().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")))
-                            .picturePath(userChallengeRepository.findMasterInChallenge(challenge).getPicturePath())
+                            .picturePath(master.getPicturePath())
                             .build()
             );
         }
@@ -243,11 +179,13 @@ public class ChallengeServiceImpl implements ChallengeService {
         User user = userRepository.findByNickname(nickname).orElseThrow(
                 () -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
 
-        List<Challenge> waitChallenge = challengeRepository.findWaitChallenge(user);
+        List<Challenge> challenges = challengeRepository.findChallengesByUserInStatus(user, ChallengeStatus.WAIT);
         List<ChallengeResponseDto.Wait> response = new ArrayList<>();
 
-        for (Challenge challenge : waitChallenge) {
-            LocalDate started = challenge.getStarted();
+        Map<Challenge, ChallengeColor> colorInfo = challengeRepository.findChallengesColor(user, ChallengeStatus.WAIT);
+
+        for (Challenge challenge : challenges) {
+            LocalDateTime started = challenge.getStarted();
             List<String> picturePaths = new ArrayList<>();  // 유저의 프로필 사진
 
             userChallengeRepository.findChallengeUsers(challenge)
@@ -256,12 +194,12 @@ public class ChallengeServiceImpl implements ChallengeService {
             response.add(
                     ChallengeResponseDto.Wait.builder()
                             .name(challenge.getName())
-                            .uuid(challenge.getUuid())
+                            .uuid(new String(challenge.getUuid()))
                             .started(started)
-                            .ended(started.plusDays(7 - started.getDayOfWeek().getValue()))
+                            .ended(ChallengeService.getSunday(started))
                             .totalCount(userChallengeRepository.findUCCount(challenge)) //챌린지에 참여하는 전체 인원 수
                             .readyCount(userChallengeRepository.findUCReadyCount(challenge)) //Progress 상태 회원 수 + 주최자
-                            .color(userChallengeRepository.findChallengeColor(user, challenge))
+                            .color(colorInfo.get(challenge))
                             .picturePaths(picturePaths)
                             .build()
             );
@@ -280,12 +218,12 @@ public class ChallengeServiceImpl implements ChallengeService {
 
         for (Challenge challenge : progressChallenge) {
             Integer rank = -1; //랭킹
-            LocalDate started = challenge.getStarted(); //챌린지 시작 날짜
+            LocalDateTime started = challenge.getStarted(); //챌린지 시작 날짜
             List<String> picturePaths = new ArrayList<>(); // 유저들의 프로필 사진
 
             //해당 회원의 랭킹 추출
             if (challenge.getType() == ChallengeType.WIDEN) {
-                RankResponseDto.Area rankList = matrixService.challengeRank(challenge, started.atStartOfDay(), LocalDateTime.now());
+                RankResponseDto.Area rankList = matrixService.challengeRank(challenge, started, LocalDateTime.now());
 
                 for (UserResponseDto.Ranking ranking : rankList.getAreaRankings()) {
                     if (ranking.getNickname().equals(nickname)) {
@@ -297,7 +235,7 @@ public class ChallengeServiceImpl implements ChallengeService {
                 //챌린지를 함께 진행하는 회원 목록
                 List<User> member = userChallengeRepository.findChallengeUsers(challenge);
                 //기록 조회
-                List<Tuple> matrixCount = exerciseRecordRepository.findMatrixCount(member, started.atStartOfDay(), LocalDateTime.now());
+                List<Tuple> matrixCount = exerciseRecordRepository.findMatrixCount(member, started, LocalDateTime.now());
                 //랭킹 계산
                 for (UserResponseDto.Ranking ranking : matrixService.calculateMatrixRank(matrixCount, member)) {
                     if (ranking.getNickname().equals(nickname)) {
@@ -315,9 +253,9 @@ public class ChallengeServiceImpl implements ChallengeService {
             response.add(
                     ChallengeResponseDto.Progress.builder()
                             .name(challenge.getName())
-                            .uuid(challenge.getUuid())
+                            .uuid(new String(challenge.getUuid()))
                             .started(started)
-                            .ended(started.plusDays(7 - started.getDayOfWeek().getValue()))
+                            .ended(ChallengeService.getSunday(started))
                             .rank(rank)
                             .color(userChallengeRepository.findChallengeColor(user, challenge))
                             .picturePaths(picturePaths)
@@ -341,11 +279,11 @@ public class ChallengeServiceImpl implements ChallengeService {
 
         for (Challenge challenge : progressChallenge) {
             Integer rank = -1; //랭킹
-            LocalDate started = challenge.getStarted(); //챌린지 시작 날짜
+            LocalDateTime started = challenge.getStarted(); //챌린지 시작 날짜
 
             //해당 회원(친구)의 랭킹 추출
             if (challenge.getType() == ChallengeType.WIDEN) {
-                RankResponseDto.Area rankList = matrixService.challengeRank(challenge, started.atStartOfDay(), LocalDateTime.now());
+                RankResponseDto.Area rankList = matrixService.challengeRank(challenge, started, LocalDateTime.now());
 
                 for (UserResponseDto.Ranking ranking : rankList.getAreaRankings()) {
                     if (ranking.getNickname().equals(friendNickname)) {
@@ -357,7 +295,7 @@ public class ChallengeServiceImpl implements ChallengeService {
                 //챌린지를 함께 진행하는 회원 목록
                 List<User> member = userChallengeRepository.findChallengeUsers(challenge);
                 //기록 조회
-                List<Tuple> matrixCount = exerciseRecordRepository.findMatrixCount(member, started.atStartOfDay(), LocalDateTime.now());
+                List<Tuple> matrixCount = exerciseRecordRepository.findMatrixCount(member, started, LocalDateTime.now());
                 //랭킹 계산
                 for (UserResponseDto.Ranking ranking : matrixService.calculateMatrixRank(matrixCount, member)) {
                     if (ranking.getNickname().equals(friendNickname)) {
@@ -375,7 +313,7 @@ public class ChallengeServiceImpl implements ChallengeService {
             response.add(
                     ChallengeResponseDto.Progress.builder()
                             .name(challenge.getName())
-                            .uuid(challenge.getUuid())
+                            .uuid(new String(challenge.getUuid()))
                             .started(started)
                             .ended(started.plusDays(7 - started.getDayOfWeek().getValue()))
                             .rank(rank)
@@ -392,6 +330,17 @@ public class ChallengeServiceImpl implements ChallengeService {
         User user = userRepository.findByNickname(nickname).orElseThrow(
                 () -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
 
+        /**
+         * 포인트
+         * 1. 완료된 챌린지 마다 챌린지 정보 + 랭킹 계산이 각각! 들어가야 함.
+         * 2. RankDto는 프로필사진, 점수를 닉네임별로 group by해버림.
+         *
+         * .challenge.started and challenge.ended
+         * ㅡㅡ
+         * 1. 챌린지 함께하는 유저 조회 List<User>
+         * 2. 저걸로 랭킹계산
+         */
+
         List<Challenge> doneChallenge = challengeRepository.findDoneChallenge(user);
         List<ChallengeResponseDto.Done> response = new ArrayList<>();
         List<String> picturePaths = new ArrayList<>(); // 유저들의 프로필 사진
@@ -399,10 +348,10 @@ public class ChallengeServiceImpl implements ChallengeService {
         for (Challenge challenge : doneChallenge) {
 
             Integer rank = -1; //랭킹
-            LocalDate started = challenge.getStarted(); //챌린지 시작 날짜
+            LocalDateTime started = challenge.getStarted(); //챌린지 시작 날짜
             //해당 회원의 랭킹 추출
             if (challenge.getType() == ChallengeType.WIDEN) {
-                RankResponseDto.Area rankList = matrixService.challengeRank(challenge, started.atStartOfDay(), LocalDateTime.now());
+                RankResponseDto.Area rankList = matrixService.challengeRank(challenge, started, LocalDateTime.now());
 
                 for (UserResponseDto.Ranking ranking : rankList.getAreaRankings()) {
                     if (ranking.getNickname().equals(nickname)) {
@@ -414,7 +363,7 @@ public class ChallengeServiceImpl implements ChallengeService {
                 //챌린지를 함께 진행하는 회원 목록
                 List<User> member = userChallengeRepository.findChallengeUsers(challenge);
                 //기록 조회
-                List<Tuple> matrixCount = exerciseRecordRepository.findMatrixCount(member, started.atStartOfDay(), LocalDateTime.now());
+                List<Tuple> matrixCount = exerciseRecordRepository.findMatrixCount(member, started, LocalDateTime.now());
                 //랭킹 계산
                 for (UserResponseDto.Ranking ranking : matrixService.calculateMatrixRank(matrixCount, member)) {
                     if (ranking.getNickname().equals(nickname)) {
@@ -432,9 +381,9 @@ public class ChallengeServiceImpl implements ChallengeService {
             response.add(
                     ChallengeResponseDto.Done.builder()
                             .name(challenge.getName())
-                            .uuid(challenge.getUuid())
+                            .uuid(new String(challenge.getUuid()))
                             .started(started)
-                            .ended(started.plusDays(7 - started.getDayOfWeek().getValue()))
+                            .ended(ChallengeService.getSunday(started))
                             .rank(rank)
                             .color(userChallengeRepository.findChallengeColor(user, challenge))
                             .picturePaths(picturePaths)
@@ -450,15 +399,11 @@ public class ChallengeServiceImpl implements ChallengeService {
         User user = userRepository.findByNickname(request.getNickname()).orElseThrow(
                 () -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
 
-        Optional<Challenge> challengeWithUser = challengeRepository.findChallengeWithUser(user, request.getUuid());
-        if (challengeWithUser.isPresent()) log.info("결과:{}", challengeWithUser.get());
-        else log.info("없음.");
-
         Challenge challenge = challengeRepository.findByUuid(request.getUuid()).orElseThrow(
                 () -> new ChallengeException(ExceptionCodeSet.CHALLENGE_NOT_FOUND));
 
-        LocalDate started = challenge.getStarted(); //챌린지 시작 날짜
-        LocalDate ended = started.plusDays(7 - started.getDayOfWeek().getValue());
+        LocalDateTime started = challenge.getStarted(); //챌린지 시작 날짜
+        LocalDateTime ended = challenge.getEnded();
 
         List<UserChallenge> ucList = userChallengeRepository.findUCByChallenge(challenge);
         List<UCDto.UCInfo> infos = new ArrayList<>();
@@ -504,15 +449,15 @@ public class ChallengeServiceImpl implements ChallengeService {
         List<UserResponseDto.Ranking> rankings = new ArrayList<>(); //랭킹
         List<ExerciseRecord> records; //영역 기록
 
-        LocalDate started = challenge.getStarted(); //챌린지 시작 날짜
-        LocalDate ended = started.plusDays(7 - started.getDayOfWeek().getValue()); //챌린지 끝나는 날(해당 주 일요일)
+        LocalDateTime started = challenge.getStarted(); //챌린지 시작 날짜
+        LocalDateTime ended = challenge.getEnded(); //챌린지 끝나는 날(해당 주 일요일)
 
         Integer distance = 0; //거리
         Integer exerciseTime = 0; //운동시간
         Integer stepCount = 0; //걸음수
 
         //개인 기록 계산
-        records = exerciseRecordRepository.findRecord(user.getId(), started.atStartOfDay(), ended.atTime(LocalTime.MAX));
+        records = exerciseRecordRepository.findRecord(user.getId(), started, ended);
 
         for (ExerciseRecord record : records) {
             distance += record.getDistance();
@@ -524,14 +469,14 @@ public class ChallengeServiceImpl implements ChallengeService {
         matrices = matrixRepository.findMatrixSetByRecords(records);
 
         //챌린지 타입에 따른 랭킹 정보(순위, 닉네임, 점수) 계산
-        rankings = calculateChallengeRanking(challenge, members, started, ended, challenge.getType());
+        rankings = calculateChallengeRanking(challenge, members, started.toLocalDate(), ended.toLocalDate(), challenge.getType());
 
         return ChallengeResponseDto.ProgressDetail.builder()
                 .name(challenge.getName())
-                .uuid(challenge.getUuid())
+                .uuid(new String(challenge.getUuid()))
                 .type(challenge.getType())
                 .started(started)
-                .ended(started.plusDays(7 - started.getDayOfWeek().getValue()))
+                .ended(ChallengeService.getSunday(started))
                 .color(userChallengeRepository.findChallengeColor(user, challenge))
                 .matrices(matrices)
                 .rankings(rankings)
@@ -558,7 +503,7 @@ public class ChallengeServiceImpl implements ChallengeService {
 
         challenges.forEach(c -> cInfoRes.add(ChallengeResponseDto.CInfoRes.builder()
                 .name(c.getName())
-                .uuid(c.getUuid())
+                .uuid(new String(c.getUuid()))
                 .started(c.getStarted())
                 .ended(c.getStarted().plusDays(7 - c.getStarted().getDayOfWeek().getValue()))
                 .color(userChallengeRepository.findChallengeColor(user, c))
@@ -580,8 +525,8 @@ public class ChallengeServiceImpl implements ChallengeService {
         List<UserResponseDto.Ranking> rankings = new ArrayList<>();
         List<ExerciseRecord> records;
 
-        LocalDate started = challenge.getStarted(); //챌린지 시작 날짜
-        LocalDate ended = started.plusDays(7 - started.getDayOfWeek().getValue()); //챌린지 끝나는 날(해당 주 일요일)
+        LocalDateTime started = challenge.getStarted(); //챌린지 시작 날짜
+        LocalDateTime ended = challenge.getEnded(); //챌린지 끝나는 날(해당 주 일요일)
 
         //챌린지 타입에 따른 결과 저장
         if (challenge.getType().equals(ChallengeType.WIDEN)) {
@@ -589,7 +534,7 @@ public class ChallengeServiceImpl implements ChallengeService {
                 ChallengeColor color = userChallengeRepository.findChallengeColor(member, challenge);
 
                 //각 유저의 챌린지 기간동안의 기록
-                records = exerciseRecordRepository.findRecord(member.getId(), started.atStartOfDay(), ended.atTime(LocalTime.MAX));
+                records = exerciseRecordRepository.findRecord(member.getId(), started, ended);
                 //개인 영역 기록 저장
                 List<MatrixDto> matrixSetByRecord = matrixRepository.findMatrixSetByRecords(records);
                 matrixList.add(
@@ -608,7 +553,7 @@ public class ChallengeServiceImpl implements ChallengeService {
                 ChallengeColor color = userChallengeRepository.findChallengeColor(user, challenge);
 
                 //개인 기록 계산
-                records = exerciseRecordRepository.findRecord(user.getId(), started.atStartOfDay(), ended.atTime(LocalTime.MAX));
+                records = exerciseRecordRepository.findRecord(user.getId(), started, ended);
                 List<MatrixDto> matrixSetByRecord = matrixRepository.findMatrixSetByRecords(records);
 
                 matrixList.add(
@@ -617,7 +562,7 @@ public class ChallengeServiceImpl implements ChallengeService {
             }
             //랭킹 계산
             //모든 회원의 칸 수 기록을 Tuple[닉네임, 이번주 누적 칸수] 내림차순으로 정리
-            List<Tuple> matrixCount = exerciseRecordRepository.findMatrixCount(members, started.atStartOfDay(), ended.atTime(LocalTime.MAX));
+            List<Tuple> matrixCount = exerciseRecordRepository.findMatrixCount(members, started, ended);
             rankings = matrixService.calculateMatrixRank(matrixCount, members);
         }
 

@@ -6,11 +6,9 @@ import com.dnd.ground.domain.challenge.ChallengeType;
 import com.dnd.ground.domain.matrix.dto.MatrixDto;
 import com.dnd.ground.domain.user.dto.UserResponseDto;
 import io.swagger.annotations.ApiModelProperty;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
+import lombok.*;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -35,11 +33,11 @@ public class ChallengeResponseDto {
         @ApiModelProperty(value="챌린지 UUID", example="11ed1e26d25aa6b4b02fbb2d0e652b0f")
         private String uuid;
 
-        @ApiModelProperty(value="챌린지 시작 날짜", example="2022-08-18")
-        private LocalDate started;
+        @ApiModelProperty(value="챌린지 시작 날짜", example="2022-08-18T00:00:00")
+        private LocalDateTime started;
 
-        @ApiModelProperty(value = "챌린지 종료 날짜(시작 날짜 주의 일요일)", example = "2022-08-12")
-        private LocalDate ended;
+        @ApiModelProperty(value = "챌린지 종료 날짜(시작 날짜 주의 일요일)", example = "2022-08-12:00:00:00")
+        private LocalDateTime ended;
 
         @ApiModelProperty(value="챌린지 색깔", example="Red")
         private ChallengeColor color;
@@ -56,11 +54,11 @@ public class ChallengeResponseDto {
         @ApiModelProperty(value="챌린지 UUID", example="11ed1e26d25aa6b4b02fbb2d0e652b0f")
         private String uuid;
 
-        @ApiModelProperty(value="챌린지 시작 날짜", example="2022-08-12")
-        private LocalDate started;
+        @ApiModelProperty(value="챌린지 시작 날짜", example="2022-08-12T00:00:00")
+        private LocalDateTime started;
 
         @ApiModelProperty(value="챌린지 종료 날짜(시작 날짜 주의 일요일)", example="2022-08-14")
-        private LocalDate ended;
+        private LocalDateTime ended;
 
         @ApiModelProperty(value="챌린지에 참여하는 전체 인원", example="4")
         private Integer totalCount;
@@ -85,11 +83,11 @@ public class ChallengeResponseDto {
         @ApiModelProperty(value="챌린지 UUID", example="11ed1e26d25aa6b4b02fbb2d0e652b0f")
         private String uuid;
 
-        @ApiModelProperty(value="챌린지 시작 날짜", example="2022-08-15")
-        private LocalDate started;
+        @ApiModelProperty(value="챌린지 시작 날짜", example="2022-08-15T00:00:00")
+        private LocalDateTime started;
 
-        @ApiModelProperty(value="챌린지 종료 날짜(시작 날짜 주의 일요일)", example="2022-08-15")
-        private LocalDate ended;
+        @ApiModelProperty(value="챌린지 종료 날짜(시작 날짜 주의 일요일)", example="2022-08-15T13:00:00")
+        private LocalDateTime ended;
 
         @ApiModelProperty(value="챌린지 내 랭킹(영역)", example="2")
         private Integer rank;
@@ -111,11 +109,11 @@ public class ChallengeResponseDto {
         @ApiModelProperty(value="챌린지 UUID", example="11ed1e26d25aa6b4b02fbb2d0e652b0f")
         private String uuid;
 
-        @ApiModelProperty(value="챌린지 시작 날짜", example="2022-08-15")
-        private LocalDate started;
+        @ApiModelProperty(value="챌린지 시작 날짜", example="2022-08-15T00:00:00")
+        private LocalDateTime started;
 
-        @ApiModelProperty(value="챌린지 종료 날짜(시작 날짜 주의 일요일)", example="2022-08-15")
-        private LocalDate ended;
+        @ApiModelProperty(value="챌린지 종료 날짜(시작 날짜 주의 일요일)", example="2022-08-15T12:00:11")
+        private LocalDateTime ended;
 
         @ApiModelProperty(value="챌린지 내 랭킹(영역)", example="2")
         private Integer rank;
@@ -166,11 +164,11 @@ public class ChallengeResponseDto {
         @ApiModelProperty(value="챌린지 색상(Red, Pink, Yellow)", example="Pink")
         private ChallengeColor color;
 
-        @ApiModelProperty(value="챌린지 시작 날짜", example="2022-08-17")
-        private LocalDate started;
+        @ApiModelProperty(value="챌린지 시작 날짜", example="2022-08-17T00:00:00")
+        private LocalDateTime started;
 
-        @ApiModelProperty(value="챌린지 종료 날짜", example="2022-08-21", dataType = "LocalDate", notes="챌린지 종료 날짜(일요일)")
-        private LocalDate ended;
+        @ApiModelProperty(value="챌린지 종료 날짜", example="2022-08-21T12:00:00", dataType = "LocalDate", notes="챌린지 종료 날짜(일요일)")
+        private LocalDateTime ended;
 
         @ApiModelProperty(value="영역 정보", example="[{\"latitude\": 1.0,\"longitude\": 1.0}]")
         private List<MatrixDto> matrices;
@@ -202,27 +200,20 @@ public class ChallengeResponseDto {
         @ApiModelProperty(value="챌린지 색상(Red, Pink, Yellow)", example="Pink")
         private ChallengeColor color;
 
-        @ApiModelProperty(value="챌린지 시작 날짜", example="2022-08-17")
-        private LocalDate started;
+        @ApiModelProperty(value="챌린지 시작 날짜", example="2022-08-17T00:00:00")
+        private LocalDateTime started;
 
-        @ApiModelProperty(value="챌린지 종료 날짜", example="2022-08-21")
-        private LocalDate ended;
+        @ApiModelProperty(value="챌린지 종료 날짜", example="2022-08-21T00:00:00")
+        private LocalDateTime ended;
 
         @ApiModelProperty(value="챌린지에 참가하는 회원 정보 목록", example="[{picturePath: \"http:\\/\\/k.kakaocdn.net\\/dn\\/uQVeo\\/btrLgESJyjg\\/Pff3k36lRWkQ98ebAlexv1\\/img_640x640.jpg\", nickname: \"NickA\", status:\"Wait\"}]")
-        List<UCInfo> infos;
+        List<UCDto.UCInfo> infos;
     }
 
-    //챌린지에 참가하는 멤버들의 정보
-    @Data
     @AllArgsConstructor
-    public static class UCInfo {
-        @ApiModelProperty(value="주최자의 프로필 사진 URI(카카오 프로필 사용 시 kakao/카카오회원번호)", example="http:\\/\\/k.kakaocdn.net\\/dn\\/uQVeo\\/btrLgESJyjg\\/Pff3k36lRWkQ98ebAlexv1\\/img_640x640.jpg")
-        private String picturePath;
-
-        @ApiModelProperty(value = "닉네임", example = "NickA")
-        private String nickname;
-
-        @ApiModelProperty(value = "챌린지 준비 상태 여부", example = "Wait")
+    @Getter
+    public static class Status {
+        @ApiModelProperty(value = "변경된 챌린지 상태", example = "Reject")
         private ChallengeStatus status;
     }
 

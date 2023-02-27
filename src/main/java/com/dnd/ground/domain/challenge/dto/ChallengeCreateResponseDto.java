@@ -5,15 +5,15 @@ import io.swagger.annotations.ApiModelProperty;
 import lombok.Builder;
 import lombok.Data;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
  * @description 챌린지 생성과 관련한 Response DTO
  * @author  박찬호
  * @since   2022-08-26
- * @updated 1. 챌린지 생성 API 리팩토링
- *          - 2023.02.17 박찬호
+ * @updated 1. 시간 필드 타입 LocalDate -> LocalDateTime으로 변경
+ *          - 2023.02.27
  */
 
 @Data
@@ -25,11 +25,11 @@ public class ChallengeCreateResponseDto {
     @ApiModelProperty(value = "챌린지 메시지", example = "너~ 가보자고~")
     private String message;
 
-    @ApiModelProperty(value = "챌린지 시작 날짜", example = "2022-08-16")
-    private LocalDate started;
+    @ApiModelProperty(value = "챌린지 시작 날짜", example = "2022-08-16T00:00:00")
+    private LocalDateTime started;
     
-    @ApiModelProperty(value = "챌린지 종료 날짜", example = "2022-08-21")
-    private LocalDate ended;
+    @ApiModelProperty(value = "챌린지 종료 날짜", example = "2022-08-21T00:00:00")
+    private LocalDateTime ended;
 
     @ApiModelProperty(value = "챌린지에서 제외된 멤버 수", example = "2")
     private Integer exceptMemberCount;
