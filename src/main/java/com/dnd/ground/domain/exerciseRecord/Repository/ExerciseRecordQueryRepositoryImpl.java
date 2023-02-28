@@ -35,9 +35,11 @@ import static com.querydsl.core.group.GroupBy.list;
 
 /**
  * @description 운동 기록(영역) 관련 QueryDSL 레포지토리
- * @author  박세헌, 박찬호
+ * @author  박찬호
  * @since   2022-08-01
  * @updated 1.함께하는 챌린지 조회 쿼리 작성
+ *          2.친구와 함께하는 챌린지 조회(+랭킹 정보) 쿼리 작성
+ *          3.챌린지 랭킹 조회 쿼리 Cross join 방지를 위한 조회 데이터 명시(select절)
  *          2023-02-28
  */
 
@@ -144,6 +146,16 @@ public class ExerciseRecordQueryRepositoryImpl implements ExerciseRecordQueryRep
         QUserChallenge subUC = new QUserChallenge("subUC");
 
         return queryFactory
+                .select(
+                        user.nickname,
+                        user.picturePath,
+                        challenge.type,
+                        new CaseBuilder()
+                                .when(challenge.type.eq(ChallengeType.ACCUMULATE))
+                                .then(matrix.count())
+                                .when(challenge.type.eq(ChallengeType.WIDEN))
+                                .then(matrix.point.countDistinct())
+                                .otherwise(0L))
                 .from(user)
                 .innerJoin(userChallenge)
                 .on(userChallenge.user.eq(user))
@@ -170,7 +182,72 @@ public class ExerciseRecordQueryRepositoryImpl implements ExerciseRecordQueryRep
                 .leftJoin(matrix)
                 .on(matrix.exerciseRecord.eq(exerciseRecord))
                 .groupBy(challenge, user.nickname)
-                .orderBy(challenge.id.desc())
+                .orderBy(challenge.started.asc())
+                .transform(
+                        groupBy(challenge).as(
+                                list(Projections.constructor(RankDto.class,
+                                        user.nickname,
+                                        user.picturePath,
+                                        new CaseBuilder()
+                                                .when(challenge.type.eq(ChallengeType.ACCUMULATE))
+                                                .then(matrix.count())
+                                                .when(challenge.type.eq(ChallengeType.WIDEN))
+                                                .then(matrix.point.countDistinct())
+                                                .otherwise(0L)
+                                ))
+                        )
+                );
+    }
+
+    @Override
+    public Map<Challenge, List<RankDto>> findChallengeMatrixRankWithFriend(User targetUser, User friend, ChallengeStatus status) {
+        QChallenge subChallenge = new QChallenge("subChallenge");
+        QUserChallenge subUC = new QUserChallenge("subUC");
+        QUserChallenge subUC2 = new QUserChallenge("subUC2");
+
+        return queryFactory
+                .select(
+                        user.nickname,
+                        user.picturePath,
+                        challenge.type,
+                        new CaseBuilder()
+                                .when(challenge.type.eq(ChallengeType.ACCUMULATE))
+                                .then(matrix.count())
+                                .when(challenge.type.eq(ChallengeType.WIDEN))
+                                .then(matrix.point.countDistinct())
+                                .otherwise(0L))
+                .from(user)
+                .innerJoin(userChallenge)
+                .on(userChallenge.user.eq(user))
+                .innerJoin(challenge)
+                .on(
+                        userChallenge.challenge.eq(challenge),
+                        challenge.status.eq(status),
+                        challenge.in(
+                                JPAExpressions
+                                        .selectFrom(subChallenge)
+                                        .innerJoin(subUC)
+                                        .on(
+                                                subUC.challenge.eq(subChallenge),
+                                                subUC.user.eq(targetUser)
+                                        )
+                                        .innerJoin(subUC2)
+                                        .on(
+                                                subUC2.challenge.eq(subChallenge),
+                                                subUC2.user.eq(friend)
+                                        )
+                        )
+                )
+                .leftJoin(exerciseRecord)
+                .on(
+                        exerciseRecord.user.eq(user),
+                        exerciseRecord.started.goe(challenge.started),
+                        exerciseRecord.ended.loe(challenge.ended)
+                )
+                .leftJoin(matrix)
+                .on(matrix.exerciseRecord.eq(exerciseRecord))
+                .groupBy(challenge, user.nickname)
+                .orderBy(challenge.started.asc())
                 .transform(
                         groupBy(challenge).as(
                                 list(Projections.constructor(RankDto.class,

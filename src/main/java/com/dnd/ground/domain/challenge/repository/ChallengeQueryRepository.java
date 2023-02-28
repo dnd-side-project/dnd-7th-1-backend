@@ -4,6 +4,7 @@ import com.dnd.ground.domain.challenge.Challenge;
 import com.dnd.ground.domain.challenge.ChallengeColor;
 import com.dnd.ground.domain.challenge.ChallengeStatus;
 import com.dnd.ground.domain.challenge.UserChallenge;
+import com.dnd.ground.domain.challenge.dto.UCDto;
 import com.dnd.ground.domain.user.User;
 
 import java.util.List;
@@ -15,6 +16,7 @@ import java.util.Set;
  * @description QueryDSL을 활용한 챌린지 관련 쿼리용 인터페이스
  * @since 2023-02-15
  * @updated 1.회원 닉네임, 챌린지 UUID를 통해 UC 조회하는 쿼리 생성
+ *          2.챌린지 상태에 따라, 챌린지와 챌린지에 참여하고 있는 인원의 UC 조회
  *          - 2023.02.28 박찬호
  */
 public interface ChallengeQueryRepository {
@@ -25,4 +27,5 @@ public interface ChallengeQueryRepository {
     Map<User, Long> findUsersProgressChallengeCount(Set<String> users);
     List<Challenge> findChallengesByUserInStatus(User user, ChallengeStatus status);
     UserChallenge findUC(String nickname, String uuid);
+    Map<Challenge, List<UCDto.UCInfo>> findUCPerChallenges(User targetUser, ChallengeStatus status);
 }

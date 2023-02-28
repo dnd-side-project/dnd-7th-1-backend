@@ -13,10 +13,10 @@ import java.util.Map;
 
 /**
  * @description 운동 기록 query 인터페이스
- * @author  박세헌, 박찬호
+ * @author  박찬호
  * @since   2022-08-01
- * @updated 1.걸음수 랭킹 API 리팩토링 및 위치 변경
- *          2023-02-22 박찬호
+ * @updated 1.함께하는 챌린지 조회 쿼리 작성
+ *          2.친구와 함께하는 챌린지 조회(+랭킹 정보) 쿼리 작성
  */
 
 public interface ExerciseRecordQueryRepository {
@@ -26,4 +26,5 @@ public interface ExerciseRecordQueryRepository {
     List<RankDto> findRankArea(RankCond condition);
     List<RankDto> findRankStep(RankCond condition);
     Map<Challenge, List<RankDto>> findChallengeMatrixRank(User targetUser, ChallengeStatus status);
+    Map<Challenge, List<RankDto>> findChallengeMatrixRankWithFriend(User targetUser, User friend, ChallengeStatus status);
 }

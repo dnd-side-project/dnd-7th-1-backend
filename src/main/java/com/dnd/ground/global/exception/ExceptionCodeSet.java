@@ -8,8 +8,8 @@ import org.springframework.http.HttpStatus;
  * @description 에러 코드 구현체
  * @author  박찬호
  * @since   2022-08-24
- * @updated 1.인증 관련 예외 Http Status 401로 수정(403->401)
- *          -2023.01.29 박찬호
+ * @updated 1.NOT_FOUND_UC 생성
+ *          -2023.02.28 박찬호
  */
 
 @RequiredArgsConstructor
@@ -63,6 +63,7 @@ public enum ExceptionCodeSet {
     NOT_FOUND_MEMBER(HttpStatus.BAD_REQUEST, "4503", "초대 받은 멤버를 찾을 수 없습니다."),
     FAIL_CREATE_CHALLENGE(HttpStatus.BAD_REQUEST, "4504", "챌린지를 생성할 수 없습니다."),
     NOT_ALONE_CHALLENGE(HttpStatus.BAD_REQUEST, "4505", "챌린지를 혼자 진행할 수 없습니다."),
+    NOT_FOUND_UC(HttpStatus.BAD_REQUEST, "4506", "챌린지와 회원에 관한 정보를 찾을 수 없습니다."),
 
     //운동 기록 및 영역
     RECORD_NOT_FOUND(HttpStatus.BAD_REQUEST, "5000", "운동 기록이 존재하지 않습니다."),

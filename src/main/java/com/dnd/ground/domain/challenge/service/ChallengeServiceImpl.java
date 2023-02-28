@@ -11,7 +11,6 @@ import com.dnd.ground.domain.matrix.dto.MatrixDto;
 import com.dnd.ground.domain.matrix.repository.MatrixRepository;
 import com.dnd.ground.domain.matrix.service.RankService;
 import com.dnd.ground.domain.user.User;
-import com.dnd.ground.domain.user.dto.RankResponseDto;
 import com.dnd.ground.domain.user.dto.UserResponseDto;
 import com.dnd.ground.domain.user.repository.UserRepository;
 import com.dnd.ground.global.exception.*;
@@ -38,6 +37,7 @@ import java.util.stream.Collectors;
  * @updated 1.진행 완료된 챌린지 목록 조회 개선
  *          2.진행 중 챌린지 목록 조회 개선
  *          3.UC 상태 변경 API 개선(쿼리 수정)
+ *          4.친구와 함께 진행중인 챌린지 목록 조회 개선(쿼리 및 랭킹 계산 개선)
  *          - 2023.02.28
  */
 
@@ -173,32 +173,39 @@ public class ChallengeServiceImpl implements ChallengeService {
         User user = userRepository.findByNickname(nickname).orElseThrow(
                 () -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
 
-        List<Challenge> challenges = challengeRepository.findChallengesByUserInStatus(user, ChallengeStatus.WAIT);
-        List<ChallengeResponseDto.Wait> response = new ArrayList<>();
-
+        Map<Challenge, List<UCDto.UCInfo>> challengesInfo = challengeRepository.findUCPerChallenges(user, ChallengeStatus.WAIT);
         Map<Challenge, ChallengeColor> colorInfo = challengeRepository.findChallengesColor(user, ChallengeStatus.WAIT);
 
-        for (Challenge challenge : challenges) {
-            LocalDateTime started = challenge.getStarted();
-            List<String> picturePaths = new ArrayList<>();  // 유저의 프로필 사진
+        List<ChallengeResponseDto.Wait> response = new ArrayList<>();
 
-            userChallengeRepository.findChallengeUsers(challenge)
-                    .forEach(u -> picturePaths.add(u.getPicturePath()));
+        for (Map.Entry<Challenge, List<UCDto.UCInfo>> entry : challengesInfo.entrySet()) {
+            Challenge challenge = entry.getKey();
+            List<UCDto.UCInfo> ucInfo = entry.getValue();
+            List<String> pictures = new ArrayList<>();
+            int memberCount = 0;
+            int readyCount = 0;
+
+            for (UCDto.UCInfo uc : ucInfo) {
+                pictures.add(uc.getPicturePath());
+                if (uc.getStatus().equals(ChallengeStatus.PROGRESS) || uc.getStatus().equals(ChallengeStatus.MASTER))
+                    readyCount++;
+
+                memberCount++;
+            }
 
             response.add(
                     ChallengeResponseDto.Wait.builder()
                             .name(challenge.getName())
-                            .uuid(new String(challenge.getUuid()))
-                            .started(started)
-                            .ended(ChallengeService.getSunday(started))
-                            .totalCount(userChallengeRepository.findUCCount(challenge)) //챌린지에 참여하는 전체 인원 수
-                            .readyCount(userChallengeRepository.findUCReadyCount(challenge)) //Progress 상태 회원 수 + 주최자
+                            .uuid(UuidUtil.bytesToHex(challenge.getUuid()))
+                            .started(challenge.getStarted())
+                            .ended(challenge.getEnded())
+                            .totalCount(memberCount)
+                            .readyCount(readyCount)
                             .color(colorInfo.get(challenge))
-                            .picturePaths(picturePaths)
+                            .picturePaths(pictures)
                             .build()
             );
         }
-
         return response;
     }
 
@@ -243,50 +250,21 @@ public class ChallengeServiceImpl implements ChallengeService {
         User friend = userRepository.findByNickname(friendNickname).orElseThrow(
                 () -> new FriendException(ExceptionCodeSet.FRIEND_NOT_FOUND));
 
-        List<Challenge> progressChallenge = challengeRepository.findChallengesWithFriend(user, friend);
+        Map<Challenge, List<RankDto>> challengesWithFriend = exerciseRecordRepository.findChallengeMatrixRankWithFriend(user, friend, ChallengeStatus.PROGRESS);
+        Map<Challenge, ChallengeColor> colors = challengeRepository.findChallengesColor(user, ChallengeStatus.PROGRESS);
         List<ChallengeResponseDto.Progress> response = new ArrayList<>();
 
-        for (Challenge challenge : progressChallenge) {
-            Integer rank = -1; //랭킹
-            LocalDateTime started = challenge.getStarted(); //챌린지 시작 날짜
-
-            //해당 회원(친구)의 랭킹 추출
-            if (challenge.getType() == ChallengeType.WIDEN) {
-                RankResponseDto.Area rankList = rankService.challengeRank(challenge, started, LocalDateTime.now());
-
-                for (UserResponseDto.Ranking ranking : rankList.getAreaRankings()) {
-                    if (ranking.getNickname().equals(friendNickname)) {
-                        rank = ranking.getRank();
-                        break;
-                    }
-                }
-            } else if (challenge.getType() == ChallengeType.ACCUMULATE) {
-                //챌린지를 함께 진행하는 회원 목록
-                List<User> member = userChallengeRepository.findChallengeUsers(challenge);
-                //기록 조회
-                List<Tuple> matrixCount = exerciseRecordRepository.findMatrixCount(member, started, LocalDateTime.now());
-                //랭킹 계산
-                for (UserResponseDto.Ranking ranking : rankService.calculateMatrixRank(matrixCount, member)) {
-                    if (ranking.getNickname().equals(friendNickname)) {
-                        rank = ranking.getRank();
-                        break;
-                    }
-                }
-            }
-
-            //랭킹이 -1인 경우 예외 처리
-            if (rank == -1) {
-                throw new ExerciseRecordException(ExceptionCodeSet.RANKING_CAL_FAIL);
-            }
+        for (Map.Entry<Challenge, List<RankDto>> entry : challengesWithFriend.entrySet()) {
+            Challenge challenge = entry.getKey();
 
             response.add(
                     ChallengeResponseDto.Progress.builder()
                             .name(challenge.getName())
-                            .uuid(new String(challenge.getUuid()))
-                            .started(started)
-                            .ended(started.plusDays(7 - started.getDayOfWeek().getValue()))
-                            .rank(rank)
-                            .color(userChallengeRepository.findChallengeColor(user, challenge))
+                            .uuid(UuidUtil.bytesToHex(challenge.getUuid()))
+                            .started(challenge.getStarted())
+                            .ended(challenge.getEnded())
+                            .rank(rankService.calculateUserRank(entry.getValue(), friend).getRank())
+                            .color(colors.get(challenge))
                             .build()
             );
         }

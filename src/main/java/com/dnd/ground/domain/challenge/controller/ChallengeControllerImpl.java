@@ -40,13 +40,13 @@ public class ChallengeControllerImpl implements ChallengeController {
 
     @PostMapping("/accept")
     @Operation(summary = "챌린지 수락", description = "유저의 챌린지 수락")
-    public ResponseEntity<ChallengeResponseDto.Status> acceptChallenge(@Valid @RequestBody ChallengeRequestDto.CInfo requestDto) {
+    public ResponseEntity<ChallengeResponseDto.Status> acceptChallenge(@RequestBody ChallengeRequestDto.CInfo requestDto) {
         return ResponseEntity.ok().body(challengeService.changeUserChallengeStatus(requestDto, ChallengeStatus.PROGRESS));
     }
 
     @PostMapping("/reject")
     @Operation(summary = "챌린지 거절", description = "유저의 챌린지 거절")
-    public ResponseEntity<ChallengeResponseDto.Status> rejectChallenge(@Valid @RequestBody ChallengeRequestDto.CInfo requestDto) {
+    public ResponseEntity<ChallengeResponseDto.Status> rejectChallenge(@RequestBody ChallengeRequestDto.CInfo requestDto) {
         return ResponseEntity.ok().body(challengeService.changeUserChallengeStatus(requestDto, ChallengeStatus.REJECT));
     }
 
