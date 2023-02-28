@@ -35,7 +35,9 @@ import java.util.stream.Collectors;
  * @author 박찬호
  * @description 챌린지와 관련된 서비스의 역할을 분리한 구현체
  * @since 2022-08-03
- * @updated 1. 진행 완료된 챌린지 리팩토링
+ * @updated 1.진행 완료된 챌린지 목록 조회 개선
+ *          2.진행 중 챌린지 목록 조회 개선
+ *          3.UC 상태 변경 API 개선(쿼리 수정)
  *          - 2023.02.28
  */
 
@@ -128,24 +130,15 @@ public class ChallengeServiceImpl implements ChallengeService {
     /*유저-챌린지 상태 변경*/
     @Transactional
     public ChallengeResponseDto.Status changeUserChallengeStatus(ChallengeRequestDto.CInfo requestDto, ChallengeStatus status) {
-        //정보 조회
-        Challenge challenge = challengeRepository.findByUuid(requestDto.getUuid()).orElseThrow(
-                () -> new ChallengeException(ExceptionCodeSet.CHALLENGE_NOT_FOUND));
+        UserChallenge userChallenge = challengeRepository.findUC(requestDto.getNickname(), requestDto.getUuid());
 
-        User user = userRepository.findByNickname(requestDto.getNickname()).orElseThrow(
-                () -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
-
-        UserChallenge userChallenge = userChallengeRepository.findByUserAndChallenge(user, challenge).orElseThrow(
-                () -> new ChallengeException(ExceptionCodeSet.USER_CHALLENGE_NOT_FOUND, user.getNickname()));
-
-        //주최자의 상태 변경X
-        if (userChallenge.getStatus() == ChallengeStatus.MASTER) {
-            throw new ChallengeException(ExceptionCodeSet.MASTER_STATUS_NOT_CHANGE, user.getNickname());
+        if (userChallenge == null) throw new ChallengeException(ExceptionCodeSet.NOT_FOUND_UC);
+        else if (userChallenge.getStatus() == ChallengeStatus.MASTER) { //주최자의 상태 변경X
+            throw new ChallengeException(ExceptionCodeSet.MASTER_STATUS_NOT_CHANGE, requestDto.getNickname());
         }
 
         //상태 변경
         userChallenge.changeStatus(status);
-
         return new ChallengeResponseDto.Status(status);
     }
 
@@ -214,52 +207,27 @@ public class ChallengeServiceImpl implements ChallengeService {
         User user = userRepository.findByNickname(nickname).orElseThrow(
                 () -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
 
-        List<Challenge> progressChallenge = challengeRepository.findProgressChallenge(user);
         List<ChallengeResponseDto.Progress> response = new ArrayList<>();
+        Map<Challenge, List<RankDto>> challengeMatrixRank = exerciseRecordRepository.findChallengeMatrixRank(user, ChallengeStatus.PROGRESS);
+        Map<Challenge, ChallengeColor> colors = challengeRepository.findChallengesColor(user, ChallengeStatus.PROGRESS);
 
-        for (Challenge challenge : progressChallenge) {
-            Integer rank = -1; //랭킹
-            LocalDateTime started = challenge.getStarted(); //챌린지 시작 날짜
-            List<String> picturePaths = new ArrayList<>(); // 유저들의 프로필 사진
+        for (Map.Entry<Challenge, List<RankDto>> entry : challengeMatrixRank.entrySet()) {
+            Challenge challenge = entry.getKey();
+            List<RankDto> rankInfo = entry.getValue();
 
-            //해당 회원의 랭킹 추출
-            if (challenge.getType() == ChallengeType.WIDEN) {
-                RankResponseDto.Area rankList = rankService.challengeRank(challenge, started, LocalDateTime.now());
-
-                for (UserResponseDto.Ranking ranking : rankList.getAreaRankings()) {
-                    if (ranking.getNickname().equals(nickname)) {
-                        rank = ranking.getRank();
-                    }
-                    picturePaths.add(ranking.getPicturePath());
-                }
-            } else if (challenge.getType() == ChallengeType.ACCUMULATE) {
-                //챌린지를 함께 진행하는 회원 목록
-                List<User> member = userChallengeRepository.findChallengeUsers(challenge);
-                //기록 조회
-                List<Tuple> matrixCount = exerciseRecordRepository.findMatrixCount(member, started, LocalDateTime.now());
-                //랭킹 계산
-                for (UserResponseDto.Ranking ranking : rankService.calculateMatrixRank(matrixCount, member)) {
-                    if (ranking.getNickname().equals(nickname)) {
-                        rank = ranking.getRank();
-                    }
-                    picturePaths.add(ranking.getPicturePath());
-                }
-            }
-
-            //랭킹이 -1인 경우 예외 처리
-            if (rank == -1) {
-                throw new ExerciseRecordException(ExceptionCodeSet.RANKING_CAL_FAIL);
-            }
+            List<String> pictures = rankInfo.stream()
+                    .map(RankDto::getPicturePath)
+                    .collect(Collectors.toList());
 
             response.add(
                     ChallengeResponseDto.Progress.builder()
                             .name(challenge.getName())
-                            .uuid(new String(challenge.getUuid()))
-                            .started(started)
-                            .ended(ChallengeService.getSunday(started))
-                            .rank(rank)
-                            .color(userChallengeRepository.findChallengeColor(user, challenge))
-                            .picturePaths(picturePaths)
+                            .uuid(UuidUtil.bytesToHex(challenge.getUuid()))
+                            .started(challenge.getStarted())
+                            .ended(challenge.getEnded())
+                            .rank(rankService.calculateUserRank(rankInfo, user).getRank())
+                            .color(colors.get(challenge))
+                            .picturePaths(pictures)
                             .build()
             );
         }

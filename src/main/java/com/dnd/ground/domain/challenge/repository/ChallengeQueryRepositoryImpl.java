@@ -3,6 +3,7 @@ package com.dnd.ground.domain.challenge.repository;
 import com.dnd.ground.domain.challenge.*;
 import com.dnd.ground.domain.challenge.dto.ChallengeColorDto;
 import com.dnd.ground.domain.user.User;
+import com.dnd.ground.global.util.UuidUtil;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
@@ -18,16 +19,15 @@ import java.util.Set;
 
 import static com.dnd.ground.domain.challenge.QChallenge.challenge;
 import static com.dnd.ground.domain.challenge.QUserChallenge.userChallenge;
+import static com.dnd.ground.domain.user.QUser.user;
 import static com.querydsl.core.group.GroupBy.groupBy;
 
 /**
  * @description QueryDSL을 활용한 챌린지 관련 구현체
  * @author 박찬호
  * @since 2023-02-15
- * @updated 1.챌린지, UC 및 상태 조건식 메소드로 추출
- *          2.챌린지 색깔 조회 쿼리 결과 Map으로 변경
- *          3.회원이 참여하고 있는 챌린지 조회 쿼리 생성
- * - 2023.02.15 박찬호
+ * @updated 1.회원 닉네임, 챌린지 UUID를 통해 UC 조회하는 쿼리 생성
+ *          - 2023.02.28 박찬호
  */
 @RequiredArgsConstructor
 @Slf4j
@@ -140,6 +140,23 @@ public class ChallengeQueryRepositoryImpl implements ChallengeQueryRepository {
                 )
                 .orderBy(challenge.created.asc())
                 .fetch();
+    }
+
+    @Override
+    public UserChallenge findUC(String nickname, String uuid) {
+        return queryFactory
+                .selectFrom(userChallenge)
+                .innerJoin(challenge)
+                .on(
+                        userChallenge.challenge.eq(challenge),
+                        challenge.uuid.eq(UuidUtil.hexToBytes(uuid))
+                )
+                .innerJoin(user)
+                .on(
+                        userChallenge.user.eq(user),
+                        user.nickname.eq(nickname)
+                )
+                .fetchOne();
     }
 
     private BooleanExpression containUserInChallenge(User user) {

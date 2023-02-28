@@ -16,27 +16,11 @@ import java.util.Optional;
  * @description 회원-챌린지 간 조인엔티티와 관련한 레포지토리
  * @author  박찬호
  * @since   2022-08-03
- * @updated 1. 챌린지-회원 관계 테이블에 데이터가 있는 회원 조회 쿼리 추가
- *          - 2022.10.01 박찬호
+ * @updated 1. 미사용 쿼리 제거
+ *          - 2023.02.28 박찬호
  */
 
 public interface UserChallengeRepository extends JpaRepository<UserChallenge, Long>, ChallengeQueryRepository {
-    List<UserChallenge> findByUser(User user);
-
-    //User로 챌린지 목록 조회
-    @Query("select c from Challenge c inner join UserChallenge uc on uc.user=:user")
-    List<Challenge> findChallenges(@Param("user") User user);
-
-    //User를 통해 진행 중인 챌린지가 있는 회원 조회
-    @Query("select u from User u inner join UserChallenge uc on uc.user=:user where " +
-            "(uc.challenge = (select c from Challenge c where c=uc.challenge and c.status='Progress') and u = :user) ")
-    Optional<User> findChallenging(@Param("user") User user);
-
-    //User를 통해 진행 중인 챌린지가 없는 회원 조회
-    @Query("select u from User u inner join UserChallenge uc on uc.user=:user where " +
-            "(uc.challenge = (select c from Challenge c where c=uc.challenge and c.status<>'Progress') and u = :user) ")
-    Optional<User> findNotChallenging(@Param("user") User user);
-
     //챌린지에 포함된 회원 조회
     @Query("select uc.user from UserChallenge uc where uc.challenge=:challenge")
     List<User> findChallengeUsers(@Param("challenge") Challenge challenge);
@@ -64,11 +48,6 @@ public interface UserChallengeRepository extends JpaRepository<UserChallenge, Lo
     //챌린지의 주최자 조회
     @Query("select uc.user from UserChallenge uc where uc.challenge=:challenge and uc.status='Master'")
     User findMasterInChallenge(@Param("challenge") Challenge challenge);
-
-
-    //회원이 참여하고 있는 챌린지 개수 (챌린지 상태 상관X)
-    @Query("select count(uc) from UserChallenge uc where uc.user=:user and (uc.status<>'Done' or uc.status<>'Reject' or uc.status<>'MasterDone')")
-    int findCountChallenge(@Param("user")User user);
 
     //챌린지 색깔 조회
     @Query("select uc.color from UserChallenge uc where uc.user=:user and uc.challenge=:challenge")
