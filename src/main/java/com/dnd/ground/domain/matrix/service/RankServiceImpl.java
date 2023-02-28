@@ -13,6 +13,7 @@ import com.dnd.ground.domain.user.dto.RankResponseDto;
 import com.dnd.ground.domain.user.dto.UserRequestDto;
 import com.dnd.ground.domain.user.dto.UserResponseDto;
 import com.dnd.ground.domain.user.repository.UserRepository;
+import com.dnd.ground.global.exception.CommonException;
 import com.dnd.ground.global.exception.ExceptionCodeSet;
 import com.dnd.ground.global.exception.UserException;
 import lombok.*;
@@ -28,10 +29,10 @@ import java.util.Objects;
 
 /**
  * @description 운동 영역 서비스 클래스
- * @author  박세헌, 박찬호
+ * @author  박찬호
  * @since   2022-08-01
- * @updated 1.걸음수 랭킹 API 리팩토링 및 위치 변경
- *          2023-02-22 박찬호
+ * @updated 1. 특정 회원의 랭킹 계산 메소드 작성
+ *          - 2023.02.28
  */
 
 @Service
@@ -58,10 +59,11 @@ public class RankServiceImpl implements RankService {
         userAndFriends.add(user);
 
         List<RankDto> matrixRank = exerciseRecordRepository.findRankMatrixRankAllTime(new RankCond(userAndFriends));
-        return new RankResponseDto.Matrix(calculateRank(matrixRank));
+        return new RankResponseDto.Matrix(calculateUsersRank(matrixRank));
     }
 
     //영역 랭킹 조회
+    @Override
     public RankResponseDto.Area areaRanking(UserRequestDto.LookUp requestDto) {
         LocalDateTime started = requestDto.getStarted();
         LocalDateTime ended = requestDto.getEnded();
@@ -72,10 +74,11 @@ public class RankServiceImpl implements RankService {
         List<User> userAndFriends = friendService.getFriends(user);
         userAndFriends.add(user);
         List<RankDto> areaRank = exerciseRecordRepository.findRankArea(new RankCond(userAndFriends, started, ended));
-        return new RankResponseDto.Area(calculateRank(areaRank));
+        return new RankResponseDto.Area(calculateUsersRank(areaRank));
     }
 
     //걸음수 랭킹 조회
+    @Override
     public RankResponseDto.Step stepRanking(UserRequestDto.LookUp requestDto) {
         LocalDateTime start = requestDto.getStarted();
         LocalDateTime end = requestDto.getEnded();
@@ -86,10 +89,11 @@ public class RankServiceImpl implements RankService {
         List<User> userAndFriends = friendService.getFriends(user);
         userAndFriends.add(user);
         List<RankDto> result = exerciseRecordRepository.findRankStep(new RankCond(userAndFriends, start, end));
-        return new RankResponseDto.Step(calculateRank(result));
+        return new RankResponseDto.Step(calculateUsersRank(result));
     }
 
     /*챌린지 랭킹 조회*/
+    @Override
     public RankResponseDto.Area challengeRank(Challenge challenge, LocalDateTime start, LocalDateTime end) {
         List<User> member = userChallengeRepository.findChallengeUsers(challenge);//챌린지에 참여하는 회원 리스트
         List<UserResponseDto.Ranking> areaRankings = new ArrayList<>();
@@ -172,16 +176,18 @@ public class RankServiceImpl implements RankService {
         return areaRankings;
     }
 
-    public List<UserResponseDto.Ranking> calculateRank(List<RankDto> rankMatrixRank) {
+    //점수 기준 랭킹 계산
+    @Override
+    public List<UserResponseDto.Ranking> calculateUsersRank(List<RankDto> ranks) {
         List<UserResponseDto.Ranking> response = new ArrayList<>();
 
-        RankDto first = rankMatrixRank.remove(0);
+        RankDto first = ranks.remove(0);
         int rank = 1;
         int interval = 1;
         long prevScore = first.getScore();
 
         response.add(new UserResponseDto.Ranking(rank, first.getNickname(), first.getScore(), first.getPicturePath()));
-        for (RankDto rankInfo : rankMatrixRank) {
+        for (RankDto rankInfo : ranks) {
             Long score = rankInfo.getScore();
             if (score < prevScore) {
                 rank += interval;
@@ -194,5 +200,31 @@ public class RankServiceImpl implements RankService {
             response.add(new UserResponseDto.Ranking(rank, rankInfo.getNickname(), score, rankInfo.getPicturePath()));
         }
         return response;
+    }
+
+    @Override
+    public UserResponseDto.Ranking calculateUserRank(List<RankDto> ranks, User targetUser) {
+        RankDto first = ranks.remove(0);
+        if (first.getNickname().equals(targetUser.getNickname()))
+            return new UserResponseDto.Ranking(1, targetUser.getNickname(), first.getScore(), targetUser.getPicturePath());
+
+        int rank = 1;
+        int interval = 1;
+        long prevScore = first.getScore();
+
+        for (RankDto rankInfo : ranks) {
+            Long score = rankInfo.getScore();
+            if (score < prevScore) {
+                rank += interval;
+                prevScore = score;
+                interval = 1;
+            } else {
+                interval++;
+            }
+
+            if (rankInfo.getNickname().equals(targetUser.getNickname()))
+                return new UserResponseDto.Ranking(rank, targetUser.getNickname(), score, targetUser.getPicturePath());
+        }
+        throw new CommonException(ExceptionCodeSet.RANKING_CAL_FAIL);
     }
 }

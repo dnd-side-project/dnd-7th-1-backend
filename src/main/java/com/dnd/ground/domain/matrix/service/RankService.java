@@ -1,6 +1,7 @@
 package com.dnd.ground.domain.matrix.service;
 
 import com.dnd.ground.domain.challenge.Challenge;
+import com.dnd.ground.domain.exerciseRecord.dto.RankDto;
 import com.dnd.ground.domain.matrix.Matrix;
 import com.dnd.ground.domain.user.User;
 import com.dnd.ground.domain.user.dto.RankResponseDto;
@@ -15,8 +16,8 @@ import java.util.List;
  * @description 랭킹 관련 서비스
  * @author  박찬호
  * @since   2022-08-01
- * @updated 1.걸음수 랭킹 API 리팩토링 및 위치 변경
- *          2023-02-22 박찬호
+ * @updated 1. 특정 회원의 랭킹 계산 메소드 생성
+ *          - 2023.02.28
  */
 
 public interface RankService {
@@ -28,4 +29,6 @@ public interface RankService {
 
     List<UserResponseDto.Ranking> calculateMatrixRank(List<Tuple> matrixCount, List<User> member);
     List<UserResponseDto.Ranking> calculateAreaRank(List<UserResponseDto.Ranking> areaRankings);
+    List<UserResponseDto.Ranking> calculateUsersRank(List<RankDto> rankMatrixRank);
+    UserResponseDto.Ranking calculateUserRank(List<RankDto> ranks, User targetUser);
 }

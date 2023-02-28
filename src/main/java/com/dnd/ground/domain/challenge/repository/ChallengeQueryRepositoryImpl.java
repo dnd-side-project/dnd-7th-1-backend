@@ -96,7 +96,7 @@ public class ChallengeQueryRepositoryImpl implements ChallengeQueryRepository {
         return result;
     }
 
-    /*진행 중인 챌린지 정보 조회(색깔)*/
+    /*챌린지 상태에 따른 색깔 조회*/
     @Override
     public Map<Challenge, ChallengeColor> findChallengesColor(User user, ChallengeStatus status) {
         return queryFactory

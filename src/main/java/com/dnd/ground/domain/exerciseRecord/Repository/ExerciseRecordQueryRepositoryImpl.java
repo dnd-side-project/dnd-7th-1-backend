@@ -1,15 +1,19 @@
 package com.dnd.ground.domain.exerciseRecord.Repository;
 
+import com.dnd.ground.domain.challenge.*;
 import com.dnd.ground.domain.exerciseRecord.ExerciseRecord;
 
 import com.dnd.ground.domain.exerciseRecord.dto.RankCond;
 import com.dnd.ground.domain.exerciseRecord.dto.RankDto;
+import com.dnd.ground.domain.user.User;
 import com.dnd.ground.global.exception.ExceptionCodeSet;
 import com.dnd.ground.global.exception.ExerciseRecordException;
 import com.querydsl.core.types.ConstructorExpression;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.core.types.dsl.CaseBuilder;
+import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,18 +23,22 @@ import java.time.DayOfWeek;
 import java.time.LocalDateTime;
 import java.time.temporal.TemporalAdjusters;
 import java.util.List;
+import java.util.Map;
 
+import static com.dnd.ground.domain.challenge.QChallenge.challenge;
+import static com.dnd.ground.domain.challenge.QUserChallenge.userChallenge;
 import static com.dnd.ground.domain.exerciseRecord.QExerciseRecord.exerciseRecord;
 import static com.dnd.ground.domain.matrix.QMatrix.matrix;
 import static com.dnd.ground.domain.user.QUser.user;
+import static com.querydsl.core.group.GroupBy.groupBy;
+import static com.querydsl.core.group.GroupBy.list;
 
 /**
  * @description 운동 기록(영역) 관련 QueryDSL 레포지토리
  * @author  박세헌, 박찬호
  * @since   2022-08-01
- * @updated 1.쿼리를 실행하는 공통 부분 메소드로 분리
- *          2.걸음수 랭킹 API 리팩토링 및 위치 변경
- *          2023-02-22 박찬호
+ * @updated 1.함께하는 챌린지 조회 쿼리 작성
+ *          2023-02-28
  */
 
 @Repository
@@ -99,11 +107,11 @@ public class ExerciseRecordQueryRepositoryImpl implements ExerciseRecordQueryRep
                 RankDto.class,
                 user.nickname,
                 user.picturePath,
-                matrix.countDistinct()
+                matrix.point.countDistinct()
         );
 
         BooleanExpression tableJoinCondition = userEqAndInPeriod(condition.getStarted(), condition.getEnded());
-        OrderSpecifier<Long> order = matrix.countDistinct().desc();
+        OrderSpecifier<Long> order = matrix.point.countDistinct().desc();
         return execQuery(constructor, order, tableJoinCondition, condition);
     }
 
@@ -128,6 +136,55 @@ public class ExerciseRecordQueryRepositoryImpl implements ExerciseRecordQueryRep
                         .castToNum(Long.class)
                         .desc())
                 .fetch();
+    }
+
+    @Override
+    public Map<Challenge, List<RankDto>> findChallengeMatrixRank(User targetUser, ChallengeStatus status) {
+        QChallenge subChallenge = new QChallenge("subChallenge");
+        QUserChallenge subUC = new QUserChallenge("subUC");
+
+        return queryFactory
+                .from(user)
+                .innerJoin(userChallenge)
+                .on(userChallenge.user.eq(user))
+                .innerJoin(challenge)
+                .on(
+                        userChallenge.challenge.eq(challenge),
+                        challenge.status.eq(status),
+                        challenge.in(
+                                JPAExpressions
+                                        .selectFrom(subChallenge)
+                                        .innerJoin(subUC)
+                                        .on(
+                                                subUC.challenge.eq(subChallenge),
+                                                subUC.user.eq(targetUser)
+                                        )
+                        )
+                )
+                .leftJoin(exerciseRecord)
+                .on(
+                        exerciseRecord.user.eq(user),
+                        exerciseRecord.started.goe(challenge.started),
+                        exerciseRecord.ended.loe(challenge.ended)
+                )
+                .leftJoin(matrix)
+                .on(matrix.exerciseRecord.eq(exerciseRecord))
+                .groupBy(challenge, user.nickname)
+                .orderBy(challenge.id.desc())
+                .transform(
+                        groupBy(challenge).as(
+                                list(Projections.constructor(RankDto.class,
+                                        user.nickname,
+                                        user.picturePath,
+                                        new CaseBuilder()
+                                                .when(challenge.type.eq(ChallengeType.ACCUMULATE))
+                                                .then(matrix.count())
+                                                .when(challenge.type.eq(ChallengeType.WIDEN))
+                                                .then(matrix.point.countDistinct())
+                                                .otherwise(0L)
+                                ))
+                        )
+                );
     }
 
     private BooleanExpression userEqAndInPeriod(LocalDateTime started, LocalDateTime ended) {
