@@ -1,7 +1,5 @@
 package com.dnd.ground.domain.matrix.service;
 
-import com.dnd.ground.domain.challenge.Challenge;
-import com.dnd.ground.domain.challenge.repository.UserChallengeRepository;
 import com.dnd.ground.domain.exerciseRecord.Repository.ExerciseRecordRepository;
 import com.dnd.ground.domain.exerciseRecord.dto.RankDto;
 import com.dnd.ground.domain.friend.service.FriendService;
@@ -31,8 +29,8 @@ import java.util.Objects;
  * @description 운동 영역 서비스 클래스
  * @author  박찬호
  * @since   2022-08-01
- * @updated 1. 특정 회원의 랭킹 계산 메소드 작성
- *          - 2023.02.28
+ * @updated 1. 미사용 메소드 제거
+ *          - 2023.03.01
  */
 
 @Service
@@ -43,7 +41,6 @@ public class RankServiceImpl implements RankService {
     private final UserRepository userRepository;
     private final FriendService friendService;
     private final ExerciseRecordRepository exerciseRecordRepository;
-    private final UserChallengeRepository userChallengeRepository;
 
     @Transactional
     public Matrix save(Matrix matrix) {
@@ -90,26 +87,6 @@ public class RankServiceImpl implements RankService {
         userAndFriends.add(user);
         List<RankDto> result = exerciseRecordRepository.findRankStep(new RankCond(userAndFriends, start, end));
         return new RankResponseDto.Step(calculateUsersRank(result));
-    }
-
-    /*챌린지 랭킹 조회*/
-    @Override
-    public RankResponseDto.Area challengeRank(Challenge challenge, LocalDateTime start, LocalDateTime end) {
-        List<User> member = userChallengeRepository.findChallengeUsers(challenge);//챌린지에 참여하는 회원 리스트
-        List<UserResponseDto.Ranking> areaRankings = new ArrayList<>();
-
-        for (User m : member) {
-            areaRankings.add(
-                    new UserResponseDto.Ranking(
-                            1,
-                            m.getNickname(),
-                            (long) matrixRepository.findMatrixSetByRecords(exerciseRecordRepository.findRecord(m.getId(), start, end)).size(),
-                            m.getPicturePath())
-            );
-        }
-
-        //랭킹 계산 후 반환
-        return new RankResponseDto.Area(calculateAreaRank(areaRankings));
     }
 
     /*칸 수 기준 랭킹 계산*/

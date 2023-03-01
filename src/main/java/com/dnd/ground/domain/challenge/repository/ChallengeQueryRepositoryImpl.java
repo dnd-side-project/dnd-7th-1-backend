@@ -2,6 +2,7 @@ package com.dnd.ground.domain.challenge.repository;
 
 import com.dnd.ground.domain.challenge.*;
 import com.dnd.ground.domain.challenge.dto.ChallengeColorDto;
+import com.dnd.ground.domain.challenge.dto.ChallengeCond;
 import com.dnd.ground.domain.challenge.dto.QUCDto_UCInfo;
 import com.dnd.ground.domain.challenge.dto.UCDto;
 import com.dnd.ground.domain.user.User;
@@ -155,23 +156,26 @@ public class ChallengeQueryRepositoryImpl implements ChallengeQueryRepository {
 
     /*챌린지 상태에 따라, 챌린지와 챌린지에 참여하고 있는 인원의 UC 조회*/
     @Override
-    public Map<Challenge, List<UCDto.UCInfo>> findUCPerChallenges(User targetUser, ChallengeStatus status) {
+    public Map<Challenge, List<UCDto.UCInfo>> findUCInChallenge(ChallengeCond condition) {
         QUserChallenge subUC = new QUserChallenge("subUC");
 
         return queryFactory
                 .from(challenge)
                 .innerJoin(userChallenge)
                 .on(
-                        eqChallengeAndStatus(status),
+                        eqChallengeAndStatus(condition.getStatus()),
                         userChallenge.challenge.in(
                                 JPAExpressions
                                         .select(subUC.challenge)
                                         .from(subUC)
-                                        .where(subUC.user.eq(targetUser))
+                                        .where(subUC.user.eq(condition.getUser()))
                         )
                 )
                 .innerJoin(user)
                 .on(user.eq(userChallenge.user))
+                .where(
+                        ucEqChallengeUuid(condition.getUuid())
+                )
                 .orderBy(challenge.created.asc())
                 .transform(
                         groupBy(challenge).as(
@@ -195,5 +199,9 @@ public class ChallengeQueryRepositoryImpl implements ChallengeQueryRepository {
     private BooleanExpression eqChallengeAndStatus(ChallengeStatus status) {
         return userChallenge.challenge.eq(challenge)
                 .and(challenge.status.eq(status));
+    }
+
+    private BooleanExpression ucEqChallengeUuid(byte[] uuid) {
+        return uuid != null ? userChallenge.challenge.uuid.eq(uuid) : null;
     }
 }

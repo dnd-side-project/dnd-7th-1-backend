@@ -1,10 +1,8 @@
 package com.dnd.ground.domain.exerciseRecord.Repository;
 
-import com.dnd.ground.domain.challenge.Challenge;
-import com.dnd.ground.domain.challenge.ChallengeStatus;
 import com.dnd.ground.domain.exerciseRecord.ExerciseRecord;
-import com.dnd.ground.domain.exerciseRecord.dto.RankCond;
-import com.dnd.ground.domain.exerciseRecord.dto.RankDto;
+import com.dnd.ground.domain.exerciseRecord.dto.RecordDto;
+import com.dnd.ground.domain.matrix.dto.Location;
 import com.dnd.ground.domain.user.User;
 
 import java.time.LocalDateTime;
@@ -12,19 +10,13 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * @description 운동 기록 query 인터페이스
+ * @description 운동 기록 조회 관련 QueryDSL 레포지토리
  * @author  박찬호
- * @since   2022-08-01
- * @updated 1.함께하는 챌린지 조회 쿼리 작성
- *          2.친구와 함께하는 챌린지 조회(+랭킹 정보) 쿼리 작성
+ * @since   2023-03-01
+ * @updated 1. 특정 기간 내 운동 기록 조회 쿼리 생성
+ *          2. 특정 기간 내 운동 기록 및 영역 조회 쿼리 생성
  */
-
 public interface ExerciseRecordQueryRepository {
-    List<ExerciseRecord> findRecordOfThisWeek(Long id);
-    List<ExerciseRecord> findRecord(Long id, LocalDateTime start, LocalDateTime end);
-    List<RankDto> findRankMatrixRankAllTime(RankCond condition);
-    List<RankDto> findRankArea(RankCond condition);
-    List<RankDto> findRankStep(RankCond condition);
-    Map<Challenge, List<RankDto>> findChallengeMatrixRank(User targetUser, ChallengeStatus status);
-    Map<Challenge, List<RankDto>> findChallengeMatrixRankWithFriend(User targetUser, User friend, ChallengeStatus status);
+    List<RecordDto> findRecordInPeriod(User targetUser, LocalDateTime start, LocalDateTime end);
+    Map<ExerciseRecord, List<Location>> findRecordWithLocation(User user, LocalDateTime started, LocalDateTime ended);
 }

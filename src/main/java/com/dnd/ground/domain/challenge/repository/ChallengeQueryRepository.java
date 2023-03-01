@@ -4,6 +4,7 @@ import com.dnd.ground.domain.challenge.Challenge;
 import com.dnd.ground.domain.challenge.ChallengeColor;
 import com.dnd.ground.domain.challenge.ChallengeStatus;
 import com.dnd.ground.domain.challenge.UserChallenge;
+import com.dnd.ground.domain.challenge.dto.ChallengeCond;
 import com.dnd.ground.domain.challenge.dto.UCDto;
 import com.dnd.ground.domain.user.User;
 
@@ -27,5 +28,5 @@ public interface ChallengeQueryRepository {
     Map<User, Long> findUsersProgressChallengeCount(Set<String> users);
     List<Challenge> findChallengesByUserInStatus(User user, ChallengeStatus status);
     UserChallenge findUC(String nickname, String uuid);
-    Map<Challenge, List<UCDto.UCInfo>> findUCPerChallenges(User targetUser, ChallengeStatus status);
+    Map<Challenge, List<UCDto.UCInfo>> findUCInChallenge(ChallengeCond condition);
 }

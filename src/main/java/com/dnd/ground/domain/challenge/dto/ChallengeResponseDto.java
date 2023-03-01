@@ -3,7 +3,7 @@ package com.dnd.ground.domain.challenge.dto;
 import com.dnd.ground.domain.challenge.ChallengeColor;
 import com.dnd.ground.domain.challenge.ChallengeStatus;
 import com.dnd.ground.domain.challenge.ChallengeType;
-import com.dnd.ground.domain.matrix.dto.MatrixDto;
+import com.dnd.ground.domain.matrix.dto.Location;
 import com.dnd.ground.domain.user.dto.UserResponseDto;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.*;
@@ -15,8 +15,8 @@ import java.util.List;
  * @description 챌린지와 관련한 Response DTO
  * @author  박찬호
  * @since   2022-08-12
- * @updated 1. 진행 대기 중 챌린지 상세 정보 조회를 위한 DTO 생성
- *          2022-11-23 박찬호
+ * @updated 1. MatrixDto -> Location
+ *          2023-03-01 박찬호
  */
 
 
@@ -171,7 +171,7 @@ public class ChallengeResponseDto {
         private LocalDateTime ended;
 
         @ApiModelProperty(value="영역 정보", example="[{\"latitude\": 1.0,\"longitude\": 1.0}]")
-        private List<MatrixDto> matrices;
+        private List<Location> matrices;
 
         @ApiModelProperty(value="랭킹 정보", example="[{\"rank\": 1, \"nickname\": \"NickB\", \"score\": 4}]")
         private List<UserResponseDto.Ranking> rankings;

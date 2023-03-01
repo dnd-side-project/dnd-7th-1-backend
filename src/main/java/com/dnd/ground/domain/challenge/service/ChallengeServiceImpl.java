@@ -7,6 +7,7 @@ import com.dnd.ground.domain.challenge.repository.UserChallengeRepository;
 import com.dnd.ground.domain.exerciseRecord.ExerciseRecord;
 import com.dnd.ground.domain.exerciseRecord.Repository.ExerciseRecordRepository;
 import com.dnd.ground.domain.exerciseRecord.dto.RankDto;
+import com.dnd.ground.domain.matrix.dto.Location;
 import com.dnd.ground.domain.matrix.dto.MatrixDto;
 import com.dnd.ground.domain.matrix.repository.MatrixRepository;
 import com.dnd.ground.domain.matrix.service.RankService;
@@ -34,11 +35,8 @@ import java.util.stream.Collectors;
  * @author 박찬호
  * @description 챌린지와 관련된 서비스의 역할을 분리한 구현체
  * @since 2022-08-03
- * @updated 1.진행 완료된 챌린지 목록 조회 개선
- *          2.진행 중 챌린지 목록 조회 개선
- *          3.UC 상태 변경 API 개선(쿼리 수정)
- *          4.친구와 함께 진행중인 챌린지 목록 조회 개선(쿼리 및 랭킹 계산 개선)
- *          - 2023.02.28
+ * @updated 1.진행 중인 챌린지 상세 조회 개선
+ *          - 2023.03.01
  */
 
 @Slf4j
@@ -70,8 +68,8 @@ public class ChallengeServiceImpl implements ChallengeService {
             throw new ChallengeException(ExceptionCodeSet.NOT_FOUND_MEMBER, notFoundUsers);
         }
 
-        User master = userRepository.findByNickname(requestDto.getNickname()).orElseThrow(
-                () -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
+        User master = userRepository.findByNickname(requestDto.getNickname())
+                .orElseThrow(() -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
 
         if (requestDto.getStarted().isBefore(LocalDateTime.now())) throw new ChallengeException(ExceptionCodeSet.CHALLENGE_DATE_INVALID);
         if (challengeCountMap.get(master) > MAX_CHALLENGE_COUNT) throw new ChallengeException(ExceptionCodeSet.FAIL_CREATE_CHALLENGE);
@@ -144,8 +142,8 @@ public class ChallengeServiceImpl implements ChallengeService {
 
     /*초대 받은 챌린지 목록 조회*/
     public List<ChallengeResponseDto.Invite> findInviteChallenge(String nickname) {
-        User user = userRepository.findByNickname(nickname).orElseThrow(
-                () -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
+        User user = userRepository.findByNickname(nickname)
+                .orElseThrow(() -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
 
         List<Challenge> challenges = challengeRepository.findChallengesByUserInStatus(user, ChallengeStatus.WAIT);
         List<ChallengeResponseDto.Invite> response = new ArrayList<>();
@@ -170,10 +168,10 @@ public class ChallengeServiceImpl implements ChallengeService {
 
     /*진행 대기 중인 챌린지 리스트 조회*/
     public List<ChallengeResponseDto.Wait> findWaitChallenge(String nickname) {
-        User user = userRepository.findByNickname(nickname).orElseThrow(
-                () -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
+        User user = userRepository.findByNickname(nickname)
+                .orElseThrow(() -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
 
-        Map<Challenge, List<UCDto.UCInfo>> challengesInfo = challengeRepository.findUCPerChallenges(user, ChallengeStatus.WAIT);
+        Map<Challenge, List<UCDto.UCInfo>> challengesInfo = challengeRepository.findUCInChallenge(new ChallengeCond(user, ChallengeStatus.WAIT));
         Map<Challenge, ChallengeColor> colorInfo = challengeRepository.findChallengesColor(user, ChallengeStatus.WAIT);
 
         List<ChallengeResponseDto.Wait> response = new ArrayList<>();
@@ -250,7 +248,7 @@ public class ChallengeServiceImpl implements ChallengeService {
         User friend = userRepository.findByNickname(friendNickname).orElseThrow(
                 () -> new FriendException(ExceptionCodeSet.FRIEND_NOT_FOUND));
 
-        Map<Challenge, List<RankDto>> challengesWithFriend = exerciseRecordRepository.findChallengeMatrixRankWithFriend(user, friend, ChallengeStatus.PROGRESS);
+        Map<Challenge, List<RankDto>> challengesWithFriend = exerciseRecordRepository.findChallengeMatrixRankWithUsers(user, List.of(friend), ChallengeStatus.PROGRESS);
         Map<Challenge, ChallengeColor> colors = challengeRepository.findChallengesColor(user, ChallengeStatus.PROGRESS);
         List<ChallengeResponseDto.Progress> response = new ArrayList<>();
 
@@ -308,18 +306,16 @@ public class ChallengeServiceImpl implements ChallengeService {
 
     /*진행 대기 중 챌린지 상세 조회*/
     public ChallengeResponseDto.WaitDetail getDetailWaitChallenge(ChallengeRequestDto.CInfo request) {
-        User user = userRepository.findByNickname(request.getNickname()).orElseThrow(
-                () -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
+        User user = userRepository.findByNickname(request.getNickname())
+                .orElseThrow(() -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
 
-        Challenge challenge = challengeRepository.findByUuid(request.getUuid()).orElseThrow(
-                () -> new ChallengeException(ExceptionCodeSet.CHALLENGE_NOT_FOUND));
+        Challenge challenge = challengeRepository.findByUuid(UuidUtil.hexToBytes(request.getUuid()))
+                .orElseThrow(() -> new ChallengeException(ExceptionCodeSet.CHALLENGE_NOT_FOUND));
 
-        LocalDateTime started = challenge.getStarted(); //챌린지 시작 날짜
-        LocalDateTime ended = challenge.getEnded();
+        Map<Challenge, ChallengeColor> colors = challengeRepository.findChallengesColor(user, ChallengeStatus.WAIT);
+        List<UserChallenge> ucList = userChallengeRepository.findByChallenge(challenge);
 
-        List<UserChallenge> ucList = userChallengeRepository.findUCByChallenge(challenge);
         List<UCDto.UCInfo> infos = new ArrayList<>();
-
         for (UserChallenge uc : ucList) {
             User userInUC = uc.getUser();
             UCDto.UCInfo ucInfo = new UCDto.UCInfo(userInUC.getPictureName(), userInUC.getNickname(), uc.getStatus());
@@ -336,59 +332,54 @@ public class ChallengeServiceImpl implements ChallengeService {
         return ChallengeResponseDto.WaitDetail.builder()
                 .name(challenge.getName())
                 .type(challenge.getType())
-                .color(userChallengeRepository.findChallengeColor(user, challenge))
-                .started(started)
-                .ended(ended)
+                .color(colors.get(challenge))
+                .started(challenge.getStarted())
+                .ended(challenge.getEnded())
                 .infos(infos)
                 .build();
     }
 
     /*진행 중인 챌린지 상세 조회*/
     public ChallengeResponseDto.ProgressDetail getDetailProgress(ChallengeRequestDto.CInfo request) {
-        User user = userRepository.findByNickname(request.getNickname()).orElseThrow(
-                () -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
+        User user = userRepository.findByNickname(request.getNickname())
+                .orElseThrow(() -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
 
-        Challenge challenge = challengeRepository.findByUuid(request.getUuid()).orElseThrow(
-                () -> new ChallengeException(ExceptionCodeSet.CHALLENGE_NOT_FOUND));
+        Challenge challenge = challengeRepository.findByUuid(UuidUtil.hexToBytes(request.getUuid()))
+                .orElseThrow(() -> new ChallengeException(ExceptionCodeSet.CHALLENGE_NOT_FOUND));
 
-        //필요한 변수 선언
-        List<User> members = userChallengeRepository.findChallengeUsers(challenge); //본인 포함 챌린지에 참여하는 인원들
+        //개인 기록 계산 및 영역 저장
+        LocalDateTime started = challenge.getStarted();
+        LocalDateTime ended = challenge.getEnded();
+        int distance = 0; //거리
+        int exerciseTime = 0; //운동시간
+        int stepCount = 0; //걸음수
 
-        //참여하는 챌린지가 아니면 예외처리
-        if (!members.contains(user)) throw new ChallengeException(ExceptionCodeSet.USER_CHALLENGE_NOT_FOUND);
+        Map<ExerciseRecord, List<Location>> recordWithLocation = exerciseRecordRepository.findRecordWithLocation(user, started, ended);
+        List<Location> matrices = new ArrayList<>();
 
-        List<MatrixDto> matrices; //영역 기록
-        List<UserResponseDto.Ranking> rankings = new ArrayList<>(); //랭킹
-        List<ExerciseRecord> records; //영역 기록
+        for (Map.Entry<ExerciseRecord, List<Location>> entry : recordWithLocation.entrySet()) {
+            ExerciseRecord record = entry.getKey();
 
-        LocalDateTime started = challenge.getStarted(); //챌린지 시작 날짜
-        LocalDateTime ended = challenge.getEnded(); //챌린지 끝나는 날(해당 주 일요일)
-
-        Integer distance = 0; //거리
-        Integer exerciseTime = 0; //운동시간
-        Integer stepCount = 0; //걸음수
-
-        //개인 기록 계산
-        records = exerciseRecordRepository.findRecord(user.getId(), started, ended);
-
-        for (ExerciseRecord record : records) {
             distance += record.getDistance();
             exerciseTime += record.getExerciseTime();
             stepCount += record.getStepCount();
+
+            matrices.addAll(entry.getValue());
         }
 
-        //영역 정보 조회
-        matrices = matrixRepository.findMatrixSetByRecords(records);
+        //랭킹 계산
+        List<User> members = userChallengeRepository.findChallengeUsers(challenge); //본인 포함 챌린지에 참여하는 인원들
+        if (!members.contains(user)) throw new ChallengeException(ExceptionCodeSet.USER_CHALLENGE_NOT_FOUND); //참여하는 챌린지가 아니면 예외처리
 
-        //챌린지 타입에 따른 랭킹 정보(순위, 닉네임, 점수) 계산
-        rankings = calculateChallengeRanking(challenge, members, started.toLocalDate(), ended.toLocalDate(), challenge.getType());
+        Map<Challenge, List<RankDto>> challengeMatrixRankWithMembers = exerciseRecordRepository.findChallengeMatrixRankWithUsers(user, members, ChallengeStatus.PROGRESS);
+        List<UserResponseDto.Ranking> rankings = rankService.calculateUsersRank(challengeMatrixRankWithMembers.get(challenge));
 
         return ChallengeResponseDto.ProgressDetail.builder()
                 .name(challenge.getName())
-                .uuid(new String(challenge.getUuid()))
+                .uuid(UuidUtil.bytesToHex(challenge.getUuid()))
                 .type(challenge.getType())
                 .started(started)
-                .ended(ChallengeService.getSunday(started))
+                .ended(ended)
                 .color(userChallengeRepository.findChallengeColor(user, challenge))
                 .matrices(matrices)
                 .rankings(rankings)
@@ -524,7 +515,7 @@ public class ChallengeServiceImpl implements ChallengeService {
         if (userChallenge.getStatus() != ChallengeStatus.MASTER) {
             return false;
         } else {
-            List<UserChallenge> userChallenges = userChallengeRepository.findUCByChallenge(challenge);
+            List<UserChallenge> userChallenges = userChallengeRepository.findByChallenge(challenge);
             userChallengeRepository.deleteAll(userChallenges);
             challengeRepository.delete(challenge);
             return true;

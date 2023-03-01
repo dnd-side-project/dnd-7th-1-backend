@@ -12,7 +12,7 @@ import java.util.List;
  * @description 챌린지와 관련된 서비스의 역할을 분리한 인터페이스
  * @author  박찬호
  * @since   2022-08-03
- * @updated 1. 시간 필드 타입 LocalDate -> LocalDateTime으로 변경
+ * @updated 1.LocalTime.MAX시 월요일 00시로 들어가는 오류가 있어, 1초 빼서 반환
  *          - 2023.02.27
  */
 
@@ -35,6 +35,6 @@ public interface ChallengeService {
     Boolean deleteChallenge(ChallengeRequestDto.CInfo request);
 
     static LocalDateTime getSunday(LocalDateTime started) {
-        return LocalDateTime.of(started.plusDays(7 - started.getDayOfWeek().getValue()).toLocalDate(), LocalTime.MAX);
+        return LocalDateTime.of(started.plusDays(7 - started.getDayOfWeek().getValue()).toLocalDate(), LocalTime.MAX.minusSeconds(1));
     }
 }
