@@ -23,8 +23,8 @@ import org.springframework.web.multipart.MultipartFile;
  * @description 회원 관련 컨트롤러 구현체
  * @author  박세헌, 박찬호
  * @since   2022-08-02
- * @updated 1.회원 정보 수정 구현 완료
- *          - 2022-10-22 박찬호
+ * @updated 1.회원 영역 데이터 조회 시 일부 영역 내 데이터만 조회하도록 수정
+ *          - 2023-02-14 박찬호
  */
 
 @Api(tags = "회원")
@@ -42,8 +42,8 @@ public class UserControllerImpl implements UserController {
             description = "닉네임을 통해 홈화면에 필요한 유저 정보(userMatrices)\n" +
                     "나와 챌린지를 안하는 친구 정보(friendMatrices, 리스트)\n" +
                     "나와 챌린지를 하는 유저 정보(challengeMatrices, 리스트) 조회")
-    public ResponseEntity<HomeResponseDto> home(@RequestParam("nickname") String nickName){
-        return ResponseEntity.ok(userService.showHome(nickName));
+    public ResponseEntity<HomeResponseDto> home(@ModelAttribute UserRequestDto.Home request){
+        return ResponseEntity.ok(userService.showHome(request));
     }
 
     @GetMapping("/info")
@@ -119,7 +119,7 @@ public class UserControllerImpl implements UserController {
 
     @PostMapping("/event-list")
     @Operation(summary = "기록이 있는 날짜 조회", description = "기록이 있는 날짜 조회")
-    public ResponseEntity<UserResponseDto.dayEventList> getDayEventList(@RequestBody UserRequestDto.dayEventList requestDto){
+    public ResponseEntity<UserResponseDto.dayEventList> getDayEventList(@RequestBody UserRequestDto.DayEventList requestDto){
         return ResponseEntity.ok(userService.getDayEventList(requestDto));
     }
 

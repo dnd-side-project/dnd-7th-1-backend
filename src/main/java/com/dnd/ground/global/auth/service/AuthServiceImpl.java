@@ -26,8 +26,8 @@ import java.util.regex.Pattern;
  * @description 회원의 인증/인가 및 회원 정보 관련 서비스 구현체
  * @author  박찬호
  * @since   2022-09-07
- * @updated 1.loadByUsername() 메소드의 password encoder 인스턴스 변수로 이동
- *          - 2022.01-30 박찬호
+ * @updated 1.회원가입 intro 제거
+ *          - 2022.01-31 박찬호
  */
 
 @Slf4j
@@ -109,7 +109,7 @@ public class AuthServiceImpl implements AuthService, UserDetailsService {
                     .created(LocalDateTime.now())
                     .nickname(nickname)
                     .email(signDto.getEmail())
-                    .intro(signDto.getIntro())
+                    .intro(null)
                     .latitude(null)
                     .longitude(null)
                     .isShowMine(true)

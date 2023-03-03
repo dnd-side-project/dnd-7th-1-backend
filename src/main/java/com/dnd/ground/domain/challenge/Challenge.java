@@ -3,7 +3,6 @@ package com.dnd.ground.domain.challenge;
 import lombok.*;
 
 import javax.persistence.*;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -12,8 +11,9 @@ import java.util.List;
  * @description 챌린지 엔티티
  * @author  박찬호
  * @since   2022-07-26
- * @updated 1.챌린지 색깔 필드 삭제
- *          - 2022-08-16 박찬호
+ * @updated 1.ended 필드 추가
+ *          2.started 타입 LocalDateTime으로 변경
+ *          - 2023-02-27 박찬호
  */
 
 @Getter
@@ -29,14 +29,17 @@ public class Challenge {
     @Column(name = "challenge_id")
     private Long id;
 
-    @Column(columnDefinition = "CHAR(32)", nullable = false, unique = true)
-    private String uuid;
+    @Column(columnDefinition = "BINARY(16)", nullable = false, unique = true)
+    private byte[] uuid;
 
     @Column(name = "challenge_name", nullable = false)
     private String name;
 
     @Column(name = "challenge_started", nullable = false)
-    private LocalDate started;
+    private LocalDateTime started;
+
+    @Column(name = "challenge_ended", nullable = false)
+    private LocalDateTime ended;
 
     @Column(name = "challenge_created", nullable = false)
     @Builder.Default
@@ -48,7 +51,7 @@ public class Challenge {
     @Enumerated(EnumType.STRING)
     @Column(name = "challenge_status", nullable = false)
     @Builder.Default
-    private ChallengeStatus status = ChallengeStatus.Wait;
+    private ChallengeStatus status = ChallengeStatus.WAIT;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "challenge_type", nullable = false)
@@ -58,10 +61,11 @@ public class Challenge {
     private List<UserChallenge> users = new ArrayList<>();
 
     @Builder(builderMethodName = "create")
-    public Challenge(String name, String uuid, LocalDate started, String message, ChallengeType type) {
+    public Challenge(String name, byte[] uuid, LocalDateTime started, LocalDateTime ended, String message, ChallengeType type) {
         this.uuid = uuid;
         this.name = name;
         this.started = started;
+        this.ended = ended;
         this.message = message;
         this.type = type;
     }

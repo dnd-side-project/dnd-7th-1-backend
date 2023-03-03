@@ -1,9 +1,12 @@
 package com.dnd.ground.domain.user.dto;
 
+import com.dnd.ground.domain.matrix.dto.Location;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 import javax.validation.constraints.NotNull;
 import java.time.LocalDate;
@@ -14,8 +17,8 @@ import java.util.List;
  * @description 회원 관련 Request Dto
  * @author  박세헌, 박찬호
  * @since   2022-08-18
- * @updated 1.회원 정보 수정 구현 완료
- *          - 2022-10-22 박찬호
+ * @updated 1.회원 영역 데이터 조회 시 일부 영역 내 데이터만 조회하도록 수정
+ *          - 2023-02-14 박찬호
  */
 
 @Data
@@ -36,6 +39,20 @@ public class UserRequestDto {
         @ApiModelProperty(name = "내 위치 공개", example = "true", required = true)
         private Boolean isPublicRecord;
         //..필터 추가 예정
+    }
+
+    @Getter
+    @Setter
+    static public class Home {
+        public Home(String nickname, Double latitude, Double longitude) {
+            this.nickname = nickname;
+            this.location = new Location(latitude, longitude);
+        }
+        @ApiModelProperty(name = "유저의 닉네임", example = "NickA", required = true)
+        private String nickname;
+
+        @ApiModelProperty(name = "현재 위치", required = true)
+        private Location location;
     }
 
     @Data
@@ -74,7 +91,7 @@ public class UserRequestDto {
 
     /* 운동 기록 날짜 조회시 사용하는 dto */
     @Data
-    static public class dayEventList{
+    static public class DayEventList {
         @ApiModelProperty(name = "닉네임", example = "NickA", required = true)
         private String nickname;
 
