@@ -25,7 +25,7 @@ import static java.time.DayOfWeek.MONDAY;
  * @description 운동 기록(영역) 관련 QueryDSL 레포지토리 (특정 범위 내 영역 조회)
  * @author  박찬호
  * @since   2023-02-14
- * @updated 1.영역 조회를 유연하게 하기 위한 파라미터 변경
+ * @updated 1.영역 개수 카운트 쿼리 생성
  *          - 2023-03-03 박찬호
  */
 
@@ -85,7 +85,17 @@ public class MatrixRepositoryImpl implements MatrixRepositoryQuery {
 
         }
         return result;
+    }
 
+    @Override
+    public long matrixCount(MatrixCond condition) {
+        return queryFactory
+                .select(matrix.count())
+                .from(matrix)
+                .where(
+                        recordInPeriod(condition.getUser(), condition.getStarted(), condition.getEnded())
+                )
+                .fetchFirst();
     }
 
     private BooleanExpression recordInPeriod(User user, LocalDateTime start, LocalDateTime end) {

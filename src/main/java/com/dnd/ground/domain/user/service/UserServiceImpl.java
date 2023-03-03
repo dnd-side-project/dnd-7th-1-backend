@@ -2,10 +2,10 @@ package com.dnd.ground.domain.user.service;
 
 import com.dnd.ground.domain.challenge.Challenge;
 import com.dnd.ground.domain.challenge.ChallengeColor;
-import com.dnd.ground.domain.challenge.dto.ChallengeColorDto;
+import com.dnd.ground.domain.challenge.ChallengeStatus;
+import com.dnd.ground.domain.challenge.dto.ChallengeCond;
 import com.dnd.ground.domain.challenge.dto.ChallengeResponseDto;
 import com.dnd.ground.domain.challenge.repository.ChallengeRepository;
-import com.dnd.ground.domain.challenge.repository.UserChallengeRepository;
 import com.dnd.ground.domain.challenge.service.ChallengeService;
 import com.dnd.ground.domain.exerciseRecord.ExerciseRecord;
 import com.dnd.ground.domain.exerciseRecord.Repository.ExerciseRecordRepository;
@@ -16,9 +16,10 @@ import com.dnd.ground.domain.friend.dto.FriendCondition;
 import com.dnd.ground.domain.friend.dto.FriendResponseDto;
 import com.dnd.ground.domain.friend.repository.FriendRepository;
 import com.dnd.ground.domain.friend.service.FriendService;
+import com.dnd.ground.domain.matrix.dto.MatrixCond;
 import com.dnd.ground.domain.matrix.dto.MatrixDto;
-import com.dnd.ground.domain.matrix.matrixRepository.MatrixRepository;
-import com.dnd.ground.domain.matrix.matrixService.MatrixService;
+import com.dnd.ground.domain.matrix.repository.MatrixRepository;
+import com.dnd.ground.domain.matrix.service.RankService;
 import com.dnd.ground.domain.user.User;
 import com.dnd.ground.domain.user.dto.*;
 import com.dnd.ground.domain.user.repository.UserRepository;
@@ -44,6 +45,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static java.time.DayOfWeek.MONDAY;
 import static java.time.temporal.TemporalAdjusters.firstDayOfMonth;
 import static java.time.temporal.TemporalAdjusters.lastDayOfMonth;
 
@@ -51,8 +53,8 @@ import static java.time.temporal.TemporalAdjusters.lastDayOfMonth;
  * @description 유저 서비스 클래스
  * @author 박세헌, 박찬호
  * @since 2022-08-01
- * @updated 1.메인 화면 조회 시, 범위 내 영역 조회하도록 수정 및 DB 쿼리 요청 수 최소화
- *          - 2023-02-15 박찬호
+ * @updated 1.메인 화면 조회 시, 이번 주 영역 수가 일정 범위 내만 카운트 되는 문제 해결
+ *          - 2023-03-03 박찬호
  */
 
 @Slf4j
@@ -68,7 +70,7 @@ public class UserServiceImpl implements UserService {
     private final FriendService friendService;
     private final FriendRepository friendRepository;
     private final MatrixRepository matrixRepository;
-    private final MatrixService matrixService;
+    private final RankService matrixService;
     private final AmazonS3Service amazonS3Service;
     private final AuthService authService;
 
@@ -82,14 +84,16 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findByNickname(request.getNickname()).orElseThrow(
                 () -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
 
-        Location location = request.getLocation();
+        Location location = Objects.requireNonNull(request.getCenter(), ExceptionCodeSet.EMPTY_LOCATION.getMessage());
+        double spanDelta = Objects.requireNonNull(request.getSpanDelta(), ExceptionCodeSet.EMPTY_RANGE.getMessage());
 
         /*회원 영역 조회*/
-        List<Location> userMatricesThisWeek = matrixRepository.findMatrixPoint(user, location);
+        LocalDateTime monday = LocalDateTime.now().with(MONDAY).withHour(0).withMinute(0).withSecond(0).withNano(0);
+        List<Location> userMatricesThisWeek = matrixRepository.findMatrixPoint(new MatrixCond(user, location, spanDelta, monday, LocalDateTime.now()));
 
         UserResponseDto.UserMatrix userMatrix  = UserResponseDto.UserMatrix.builder()
                 .nickname(user.getNickname())
-                .matricesNumber((long) userMatricesThisWeek.size())
+                .matricesNumber(matrixRepository.matrixCount(new MatrixCond(user, monday, LocalDateTime.now())))
                 .latitude(user.getLatitude())
                 .longitude(user.getLongitude())
                 .matrices(userMatricesThisWeek)
@@ -103,7 +107,7 @@ public class UserServiceImpl implements UserService {
         //친구 목록 조회
         FriendCondition friendCond = FriendCondition.builder()
                 .user(user)
-                .status(FriendStatus.Accept)
+                .status(FriendStatus.ACCEPT)
                 .build();
         List<User> friends = friendRepository.findFriends(friendCond);
         friends.removeAll(challengeMembers); // 챌린지를 함께하는 친구 제외
@@ -112,7 +116,7 @@ public class UserServiceImpl implements UserService {
         Set<User> friendsMembers = new HashSet<>();
         friendsMembers.addAll(challengeMembers);
         friendsMembers.addAll(friends);
-        Map<User, List<Location>> usersMatrix = matrixRepository.findUsersMatrix(friendsMembers, location);
+        Map<User, List<Location>> usersMatrix = matrixRepository.findUsersMatrix(friendsMembers, location, spanDelta);
         /*----------*/
 
         /*친구 Response 생성*/
@@ -135,21 +139,15 @@ public class UserServiceImpl implements UserService {
         List<UserResponseDto.ChallengeMatrix> challengeMatrices = new ArrayList<>();
 
         //함께하는 챌린지 개수 조회
-        Map<User, Long> challengeCount = challengeRepository.findProgressChallengeCount(user);
+        Map<User, Long> challengeCount = challengeRepository.findUsersProgressChallengeCount(user);
 
         //챌린지 진행 정보 조회
         Map<User, Challenge> challengeInfo = challengeRepository.findProgressChallengesInfo(user);
 
         //챌린지 색깔 조회
-        List<ChallengeColorDto> challengesColor = challengeRepository.findProgressChallengesColor(user);
+        Map<Challenge, ChallengeColor>  challengesColor = challengeRepository.findChallengesColor(new ChallengeCond(user, ChallengeStatus.PROGRESS));
 
         for (User member : challengeMembers) {
-            //챌린지 색깔 탐색
-            ChallengeColor color = null;
-            for (ChallengeColorDto challengeColorDto : challengesColor) {
-                color = challengeColorDto.findColor(challengeInfo.get(member));
-                if (color != null) break;
-            }
 
             challengeMatrices.add(
                     UserResponseDto.ChallengeMatrix.builder()
@@ -158,7 +156,7 @@ public class UserServiceImpl implements UserService {
                             .longitude(member.getLongitude())
                             .picturePath(member.getPicturePath())
                             .challengeNumber(challengeCount.get(member))
-                            .challengeColor(color)
+                            .challengeColor(challengesColor.get(challengeInfo.get(member)))
                             .matrices(usersMatrix.get(member))
                             .build()
             );
@@ -228,14 +226,15 @@ public class UserServiceImpl implements UserService {
 
 
         //친구 관계 확인
-        FriendStatus isFriend = friendService.getFriendStatus(user, friend);
+//        FriendStatus isFriend = friendService.getFriendStatus(user, friend);
+        FriendStatus isFriend = FriendStatus.ACCEPT;
 
         //랭킹 추출 (이번 주 영역, 역대 누적 칸수, 랭킹)
         Integer rank = -1;
         Long allMatrixNumber = -1L;
         Long areas = -1L;
 
-        RankResponseDto.Matrix matrixRanking = matrixService.matrixRanking(friendNickname);
+        RankResponseDto.Matrix matrixRanking = matrixService.matrixRankingAllTime(friendNickname);
 
         //역대 누적 칸수 및 랭킹 정보
         for (UserResponseDto.Ranking allRankInfo : matrixRanking.getMatrixRankings()) {
@@ -269,8 +268,8 @@ public class UserServiceImpl implements UserService {
     public UserResponseDto.ActivityRecordResponseDto getActivityRecord(UserRequestDto.LookUp requestDto) {
 
         String nickname = requestDto.getNickname();
-        LocalDateTime start = requestDto.getStart();
-        LocalDateTime end = requestDto.getEnd();
+        LocalDateTime start = requestDto.getStarted();
+        LocalDateTime end = requestDto.getEnded();
 
         User user = userRepository.findByNickname(nickname).orElseThrow(
                 () -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));

@@ -13,9 +13,11 @@ import java.util.Set;
  * @author  박찬호
  * @since   2023-02-14
  * @updated 1.영역 조회를 유연하게 하기 위한 파라미터 변경
+ *          2.영역 개수 카운트 쿼리 생성
  *          - 2023-03-03 박찬호
  */
 public interface MatrixRepositoryQuery {
     List<Location> findMatrixPoint(MatrixCond condition);
     Map<User, List<Location>> findUsersMatrix(Set<User> users, Location location, double spanDelta);
+    long matrixCount(MatrixCond condition);
 }
