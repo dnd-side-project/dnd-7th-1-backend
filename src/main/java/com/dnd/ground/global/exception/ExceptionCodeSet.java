@@ -8,8 +8,8 @@ import org.springframework.http.HttpStatus;
  * @description 에러 코드 구현체
  * @author  박찬호
  * @since   2022-08-24
- * @updated 1.인증 관련 예외 Http Status 401로 수정(403->401)
- *          -2023.01.29 박찬호
+ * @updated 1.NOT_FOUND_UC 생성
+ *          -2023.02.28 박찬호
  */
 
 @RequiredArgsConstructor
@@ -18,6 +18,8 @@ public enum ExceptionCodeSet {
     //회원
     USER_NOT_FOUND(HttpStatus.BAD_REQUEST, "1000", "회원이 존재하지 않습니다."),
     DUPLICATE_NICKNAME(HttpStatus.BAD_REQUEST, "1001", "중복된 닉네임입니다."),
+    EMPTY_LOCATION(HttpStatus.BAD_REQUEST, "1002", "현재 위치 정보가 필요합니다."),
+    EMPTY_RANGE(HttpStatus.BAD_REQUEST, "1003", "조회할 영역 범위가 필요합니다."),
 
     //인증,인가
     USER_NOT_SIGNUP(HttpStatus.UNAUTHORIZED, "2000", "카카오 로그인만 진행하고, 회원가입은 하지 않은 유저입니다."),
@@ -48,6 +50,7 @@ public enum ExceptionCodeSet {
     FRIEND_EXCEED(HttpStatus.BAD_REQUEST, "3002", "최대 친구 수를 초과하였습니다."),
     FRIEND_RES_FAIL(HttpStatus.INTERNAL_SERVER_ERROR, "3003", "친구 요청에 대한 응답을 실패했습니다."),
     FRIEND_FAIL_DELETE(HttpStatus.INTERNAL_SERVER_ERROR, "3004", "친구 삭제를 실패했습니다."),
+    FRIEND_DUPL(HttpStatus.BAD_REQUEST, "3005", "이미 친구입니다."),
 
     //챌린지
     CHALLENGE_NOT_FOUND(HttpStatus.BAD_REQUEST, "4000", "챌린지가 존재하지 않습니다."),
@@ -57,10 +60,15 @@ public enum ExceptionCodeSet {
     USER_CHALLENGE_NOT_FOUND(HttpStatus.BAD_REQUEST, "4500", "챌린지에 참가하는 회원이 아닙니다."),
     MASTER_STATUS_NOT_CHANGE(HttpStatus.BAD_REQUEST, "4501", "주최자의 상태를 변경할 수 없습니다."),
     CHALLENGE_EXCEED(HttpStatus.BAD_REQUEST, "4502", "3개 이상의 챌린지에 동시에 참여 할 수 없습니다."),
+    NOT_FOUND_MEMBER(HttpStatus.BAD_REQUEST, "4503", "초대 받은 멤버를 찾을 수 없습니다."),
+    FAIL_CREATE_CHALLENGE(HttpStatus.BAD_REQUEST, "4504", "챌린지를 생성할 수 없습니다."),
+    NOT_ALONE_CHALLENGE(HttpStatus.BAD_REQUEST, "4505", "챌린지를 혼자 진행할 수 없습니다."),
+    NOT_FOUND_UC(HttpStatus.BAD_REQUEST, "4506", "챌린지와 회원에 관한 정보를 찾을 수 없습니다."),
 
     //운동 기록 및 영역
     RECORD_NOT_FOUND(HttpStatus.BAD_REQUEST, "5000", "운동 기록이 존재하지 않습니다."),
     RANKING_CAL_FAIL(HttpStatus.INTERNAL_SERVER_ERROR, "5001", "랭킹 계산 과정에서 에러가 발생했습니다"),
+    INVALID_TIME(HttpStatus.BAD_REQUEST, "5002", "시간이 올바르지 않습니다."),
 
     //ETC
     OK(HttpStatus.OK, "0000", "성공적으로 동작하였습니다."),
@@ -80,6 +88,13 @@ public enum ExceptionCodeSet {
     public static ExceptionCodeSet findExceptionByCode(String code) {
         for (ExceptionCodeSet exceptionCode : ExceptionCodeSet.values()) {
             if (exceptionCode.getCode().equals(code)) return exceptionCode;
+        }
+        return null;
+    }
+
+    public static ExceptionCodeSet findExceptionByMsg(String msg) {
+        for (ExceptionCodeSet exceptionCode : ExceptionCodeSet.values()) {
+            if (exceptionCode.getMessage().equals(msg)) return exceptionCode;
         }
         return null;
     }

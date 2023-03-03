@@ -1,4 +1,4 @@
-package com.dnd.ground.domain.matrix.matrixRepository;
+package com.dnd.ground.domain.matrix.repository;
 
 import com.dnd.ground.domain.exerciseRecord.ExerciseRecord;
 import com.dnd.ground.domain.matrix.Matrix;
@@ -17,7 +17,7 @@ import java.util.List;
  *          -2022.09.29 박찬호
  */
 
-public interface MatrixRepository extends JpaRepository<Matrix, Long> {
+public interface MatrixRepository extends JpaRepository<Matrix, Long>, MatrixRepositoryQuery {
 
     // 운동기록들을 통해 매트릭스 정보 조회(중복o)
     @Query("select new com.dnd.ground.domain.matrix.dto.MatrixDto(m.latitude, m.longitude) " +
@@ -28,6 +28,7 @@ public interface MatrixRepository extends JpaRepository<Matrix, Long> {
     @Query("select distinct new com.dnd.ground.domain.matrix.dto.MatrixDto(m.latitude, m.longitude) " +
             "from Matrix m join m.exerciseRecord e where e in :exerciseRecords")
     List<MatrixDto> findMatrixSetByRecords(List<ExerciseRecord> exerciseRecords);
+
 
     // 운동기록을 통해 매트릭스 정보 조회(중복x)
     @Query("select distinct new com.dnd.ground.domain.matrix.dto.MatrixDto(m.latitude, m.longitude) " +

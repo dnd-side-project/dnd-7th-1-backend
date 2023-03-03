@@ -1,14 +1,17 @@
 package com.dnd.ground.global.exception;
 
+import com.dnd.ground.domain.user.User;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * @description 챌린지와 관련된 예외를 처리하는 클래스
  * @author  박찬호
  * @since   2022-08-25
- * @updated 1. BaseException을 상속받아, 챌린지와 관련한 예외를 처리하는 클래스로 사용.
- *          - 2022.12.03 박찬호
+ * @updated 1. 회원-챌린지(UC)에서 여러 명의 회원에 대한 예외 처리를 위해 필드 추가
+ *          - 2023.02.17 박찬호
  */
 
 @Getter
@@ -16,7 +19,6 @@ public class ChallengeException extends BaseExceptionAbs {
 
     public ChallengeException(ExceptionCodeSet exceptionCode) {
         super(exceptionCode);
-        this.nickname = null;
     }
 
     public ChallengeException(ExceptionCodeSet exceptionCode, String nickname) {
@@ -24,5 +26,11 @@ public class ChallengeException extends BaseExceptionAbs {
         this.nickname = nickname;
     }
 
-    private final String nickname;
+    public ChallengeException(ExceptionCodeSet exceptionCode, List<User> userList) {
+        super(exceptionCode);
+        this.nicknameList = userList.stream().map(User::getNickname).collect(Collectors.toList());;
+    }
+
+    private String nickname;
+    private List<String> nicknameList;
 }
