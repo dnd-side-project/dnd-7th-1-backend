@@ -7,6 +7,7 @@ import com.dnd.ground.domain.challenge.dto.QUCDto_UCInfo;
 import com.dnd.ground.domain.challenge.dto.UCDto;
 import com.dnd.ground.domain.user.User;
 import com.dnd.ground.global.util.UuidUtil;
+import com.querydsl.core.types.Predicate;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.JPAExpressions;
@@ -14,6 +15,7 @@ import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -28,9 +30,9 @@ import static com.querydsl.core.group.GroupBy.list;
  * @description QueryDSL을 활용한 챌린지 관련 구현체
  * @author 박찬호
  * @since 2023-02-15
- * @updated 1.회원 닉네임, 챌린지 UUID를 통해 UC 조회하는 쿼리 생성
- *          2.챌린지 상태에 따라, 챌린지와 챌린지에 참여하고 있는 인원의 UC 조회
- *          - 2023.02.28 박찬호
+ * @updated 1.상태에 따른 챌린지 조회 쿼리를 동적 쿼리를 활용해 챌린지 조회 쿼리로 수정
+ *          2.챌린지 색상 조회 쿼리의 파라미터 수정
+ *          - 2023.03.03 박찬호
  */
 @RequiredArgsConstructor
 @Slf4j
@@ -89,7 +91,7 @@ public class ChallengeQueryRepositoryImpl implements ChallengeQueryRepository {
 
     /*챌린지 상태에 따른 색깔 조회*/
     @Override
-    public Map<Challenge, ChallengeColor> findChallengesColor(User user, ChallengeStatus status) {
+    public Map<Challenge, ChallengeColor> findChallengesColor(ChallengeCond condition) {
         return queryFactory
                 .select(Projections.constructor(ChallengeColorDto.class,
                                 userChallenge.challenge,
@@ -98,13 +100,10 @@ public class ChallengeQueryRepositoryImpl implements ChallengeQueryRepository {
                 )
                 .from(userChallenge)
                 .innerJoin(challenge)
-                .on(
-                        eqChallengeAndStatus(status)
-                )
-                .where(userChallenge.user.eq(user))
+                .on(eqChallengeAndStatus(condition.getStatus()))
+                .where(userChallenge.user.eq(condition.getUser()))
                 .transform(
-                        groupBy(challenge)
-                                .as(userChallenge.color)
+                        groupBy(challenge).as(userChallenge.color)
                 );
     }
 
@@ -122,18 +121,25 @@ public class ChallengeQueryRepositoryImpl implements ChallengeQueryRepository {
                 .transform(groupBy(userChallenge.user).as(userChallenge.count()));
     }
 
-    /*초대받은 챌린지 조회*/
+    /*조건에 따른 조회*/
     @Override
-    public List<Challenge> findChallengesByUserInStatus(User user, ChallengeStatus status) {
+    public List<Challenge> findChallengesByCond(ChallengeCond condition) {
         return queryFactory
                 .selectFrom(challenge)
                 .innerJoin(userChallenge)
                 .on(
-                        eqChallengeAndStatus(status),
-                        userChallenge.user.eq(user)
+                        eqChallengeAndStatus(condition.getStatus())
+                )
+                .where(
+                        userChallenge.user.eq(condition.getUser()),
+                        inPeriod(condition.getStarted(), condition.getEnded())
                 )
                 .orderBy(challenge.created.asc())
                 .fetch();
+    }
+
+    private Predicate inPeriod(LocalDateTime started, LocalDateTime ended) {
+        return started != null && ended != null ? challenge.started.goe(started).and(challenge.ended.loe(ended)) : null;
     }
 
     /*닉네임과 UUID를 기반으로 UC조회*/
@@ -197,8 +203,7 @@ public class ChallengeQueryRepositoryImpl implements ChallengeQueryRepository {
     }
 
     private BooleanExpression eqChallengeAndStatus(ChallengeStatus status) {
-        return userChallenge.challenge.eq(challenge)
-                .and(challenge.status.eq(status));
+        return status != null ? userChallenge.challenge.eq(challenge).and(challenge.status.eq(status)) : userChallenge.challenge.eq(challenge);
     }
 
     private BooleanExpression ucEqChallengeUuid(byte[] uuid) {

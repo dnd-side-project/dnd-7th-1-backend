@@ -22,12 +22,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.Tuple;
-import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
-import java.time.temporal.TemporalAdjusters;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -35,7 +33,7 @@ import java.util.stream.Collectors;
  * @author 박찬호
  * @description 챌린지와 관련된 서비스의 역할을 분리한 구현체
  * @since 2022-08-03
- * @updated 1.진행 중인 챌린지 상세 조회 개선
+ * @updated 1.해당 운동기록이 참여하고 있는 챌린지 개선
  *          - 2023.03.01
  */
 
@@ -145,7 +143,7 @@ public class ChallengeServiceImpl implements ChallengeService {
         User user = userRepository.findByNickname(nickname)
                 .orElseThrow(() -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
 
-        List<Challenge> challenges = challengeRepository.findChallengesByUserInStatus(user, ChallengeStatus.WAIT);
+        List<Challenge> challenges = challengeRepository.findChallengesByCond(new ChallengeCond(user, ChallengeStatus.WAIT));
         List<ChallengeResponseDto.Invite> response = new ArrayList<>();
 
         for (Challenge challenge : challenges) {
@@ -172,7 +170,7 @@ public class ChallengeServiceImpl implements ChallengeService {
                 .orElseThrow(() -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
 
         Map<Challenge, List<UCDto.UCInfo>> challengesInfo = challengeRepository.findUCInChallenge(new ChallengeCond(user, ChallengeStatus.WAIT));
-        Map<Challenge, ChallengeColor> colorInfo = challengeRepository.findChallengesColor(user, ChallengeStatus.WAIT);
+        Map<Challenge, ChallengeColor> colorInfo = challengeRepository.findChallengesColor(new ChallengeCond(user, ChallengeStatus.WAIT));
 
         List<ChallengeResponseDto.Wait> response = new ArrayList<>();
 
@@ -214,7 +212,7 @@ public class ChallengeServiceImpl implements ChallengeService {
 
         List<ChallengeResponseDto.Progress> response = new ArrayList<>();
         Map<Challenge, List<RankDto>> challengeMatrixRank = exerciseRecordRepository.findChallengeMatrixRank(user, ChallengeStatus.PROGRESS);
-        Map<Challenge, ChallengeColor> colors = challengeRepository.findChallengesColor(user, ChallengeStatus.PROGRESS);
+        Map<Challenge, ChallengeColor> colors = challengeRepository.findChallengesColor(new ChallengeCond(user, ChallengeStatus.PROGRESS));
 
         for (Map.Entry<Challenge, List<RankDto>> entry : challengeMatrixRank.entrySet()) {
             Challenge challenge = entry.getKey();
@@ -249,7 +247,7 @@ public class ChallengeServiceImpl implements ChallengeService {
                 () -> new FriendException(ExceptionCodeSet.FRIEND_NOT_FOUND));
 
         Map<Challenge, List<RankDto>> challengesWithFriend = exerciseRecordRepository.findChallengeMatrixRankWithUsers(user, List.of(friend), ChallengeStatus.PROGRESS);
-        Map<Challenge, ChallengeColor> colors = challengeRepository.findChallengesColor(user, ChallengeStatus.PROGRESS);
+        Map<Challenge, ChallengeColor> colors = challengeRepository.findChallengesColor(new ChallengeCond(user, ChallengeStatus.PROGRESS));
         List<ChallengeResponseDto.Progress> response = new ArrayList<>();
 
         for (Map.Entry<Challenge, List<RankDto>> entry : challengesWithFriend.entrySet()) {
@@ -278,7 +276,7 @@ public class ChallengeServiceImpl implements ChallengeService {
         List<ChallengeResponseDto.Done> response = new ArrayList<>();
 
         Map<Challenge, List<RankDto>> challengeMatrixRank = exerciseRecordRepository.findChallengeMatrixRank(user, ChallengeStatus.DONE);
-        Map<Challenge, ChallengeColor> colors = challengeRepository.findChallengesColor(user, ChallengeStatus.DONE);
+        Map<Challenge, ChallengeColor> colors = challengeRepository.findChallengesColor(new ChallengeCond(user, ChallengeStatus.DONE));
 
         for (Map.Entry<Challenge, List<RankDto>> entry : challengeMatrixRank.entrySet()) {
             Challenge challenge = entry.getKey();
@@ -312,7 +310,7 @@ public class ChallengeServiceImpl implements ChallengeService {
         Challenge challenge = challengeRepository.findByUuid(UuidUtil.hexToBytes(request.getUuid()))
                 .orElseThrow(() -> new ChallengeException(ExceptionCodeSet.CHALLENGE_NOT_FOUND));
 
-        Map<Challenge, ChallengeColor> colors = challengeRepository.findChallengesColor(user, ChallengeStatus.WAIT);
+        Map<Challenge, ChallengeColor> colors = challengeRepository.findChallengesColor(new ChallengeCond(user, ChallengeStatus.WAIT));
         List<UserChallenge> ucList = userChallengeRepository.findByChallenge(challenge);
 
         List<UCDto.UCInfo> infos = new ArrayList<>();
@@ -391,26 +389,24 @@ public class ChallengeServiceImpl implements ChallengeService {
 
     /*해당 운동기록이 참여하고 있는 챌린지*/
     public List<ChallengeResponseDto.CInfoRes> findChallengeByRecord(ExerciseRecord exerciseRecord) {
-
-        User user = userRepository.findByExerciseRecord(exerciseRecord).orElseThrow(
-                () -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
-
-        // LocalDate 형태로 변환
-        LocalDateTime startedTime = exerciseRecord.getStarted();
-        LocalDate startedDate = LocalDate.of(startedTime.getYear(), startedTime.getMonth(), startedTime.getDayOfMonth());
-        LocalDate monday = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        User user = userRepository.findByExerciseRecord(exerciseRecord)
+                .orElseThrow(() -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
 
         // 해당주 월요일 ~ 기록 시간 사이 시작한 챌린지들 조회
-        List<Challenge> challenges = challengeRepository.findChallengesBetweenStartAndEnd(user, monday, startedDate);
+        List<Challenge> challenges = challengeRepository.findChallengesByCond(new ChallengeCond(user, exerciseRecord.getStarted(), exerciseRecord.getEnded()));
+        Map<Challenge, ChallengeColor> colors = challengeRepository.findChallengesColor(new ChallengeCond(user));
         List<ChallengeResponseDto.CInfoRes> cInfoRes = new ArrayList<>();
 
-        challenges.forEach(c -> cInfoRes.add(ChallengeResponseDto.CInfoRes.builder()
-                .name(c.getName())
-                .uuid(new String(c.getUuid()))
-                .started(c.getStarted())
-                .ended(c.getStarted().plusDays(7 - c.getStarted().getDayOfWeek().getValue()))
-                .color(userChallengeRepository.findChallengeColor(user, c))
-                .build()));
+        challenges.forEach(c -> cInfoRes.add(
+                ChallengeResponseDto.CInfoRes.builder()
+                        .name(c.getName())
+                        .uuid(UuidUtil.bytesToHex(c.getUuid()))
+                        .started(c.getStarted())
+                        .ended(c.getEnded())
+                        .color(colors.get(c))
+                        .build()
+                )
+        );
 
         return cInfoRes;
     }

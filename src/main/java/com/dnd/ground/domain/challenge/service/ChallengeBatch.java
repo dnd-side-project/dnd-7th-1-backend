@@ -44,7 +44,7 @@ public class ChallengeBatch {
             //Wait, Reject 상태의 유저 삭제
             countUser += userChallengeRepository.deleteUCByChallenge(challenge);
 
-            List<UserChallenge> userChallenges = userChallengeRepository.findUCByChallenge(challenge);
+            List<UserChallenge> userChallenges = userChallengeRepository.findByChallenge(challenge);
 
             //주최자만 남은 경우 챌린지와 주최자 삭제
             if (userChallenges.size() == 1) {
@@ -80,7 +80,7 @@ public class ChallengeBatch {
             challenge.updateStatus(ChallengeStatus.DONE);
 
             //각 유저들도 완료 상태 변경
-            List<UserChallenge> userChallenges = userChallengeRepository.findUCByChallenge(challenge);
+            List<UserChallenge> userChallenges = userChallengeRepository.findByChallenge(challenge);
 
             for (UserChallenge userChallenge : userChallenges) {
                 if (userChallenge.getStatus() == ChallengeStatus.MASTER_PROGRESS)

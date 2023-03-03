@@ -16,17 +16,17 @@ import java.util.Set;
  * @author 박찬호
  * @description QueryDSL을 활용한 챌린지 관련 쿼리용 인터페이스
  * @since 2023-02-15
- * @updated 1.회원 닉네임, 챌린지 UUID를 통해 UC 조회하는 쿼리 생성
- *          2.챌린지 상태에 따라, 챌린지와 챌린지에 참여하고 있는 인원의 UC 조회
- *          - 2023.02.28 박찬호
+ * @updated 1.상태에 따른 챌린지 조회 쿼리를 동적 쿼리를 활용해 챌린지 조회 쿼리로 수정
+ *          2.챌린지 색상 조회 쿼리의 파라미터 수정
+ *          - 2023.03.03 박찬호
  */
 public interface ChallengeQueryRepository {
     List<User> findUCInProgress(User user);
     Map<User, Long> findUsersProgressChallengeCount(User user);
     Map<User, Challenge> findProgressChallengesInfo(User user);
-    Map<Challenge, ChallengeColor> findChallengesColor(User user, ChallengeStatus status);
+    Map<Challenge, ChallengeColor> findChallengesColor(ChallengeCond condition);
     Map<User, Long> findUsersProgressChallengeCount(Set<String> users);
-    List<Challenge> findChallengesByUserInStatus(User user, ChallengeStatus status);
+    List<Challenge> findChallengesByCond(ChallengeCond condition);
     UserChallenge findUC(String nickname, String uuid);
     Map<Challenge, List<UCDto.UCInfo>> findUCInChallenge(ChallengeCond condition);
 }
