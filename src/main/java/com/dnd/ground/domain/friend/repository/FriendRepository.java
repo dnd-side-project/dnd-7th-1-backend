@@ -19,18 +19,18 @@ import java.util.Optional;
  *          - 2022.10.29 박찬호
  */
 
-public interface FriendRepository extends JpaRepository<Friend, Long> {
+public interface FriendRepository extends JpaRepository<Friend, Long>, FriendQueryRepository {
 
     //User를 통해 친구 목록 조회
-    @Query("select f from Friend f where (f.friend =:user or f.user = :user) and f.status='Accept'")
+    @Query("select f from Friend f where f.user = :user and f.status='ACCEPT'")
     List<Friend> findFriendsByUser(@Param("user") User user);
 
-    //친구 요청 리스트 조회
-    @Query("select f.user from User u inner join Friend f on f.friend=:user and f.status='Wait' where f.friend=u")
+    //요청 받은 친구 목록 조회
+    @Query("SELECT f.user from Friend f where f.friend=:user and f.status='WAIT'")
     Slice<User> findReceiveRequest(@Param("user") User user, PageRequest pageRequest);
 
-    @Query("select f from Friend f where (f.user=:user or f.friend=:friend) and f.status='Accept'")
-    Slice<Friend> findFriendsByUserWithPaging(@Param("user") User user, @Param("friend") User friend, PageRequest pageRequest);
+    @Query("select f from Friend f where f.user=:user and f.status='ACCEPT'")
+    Slice<Friend> findFriendsByUserWithPaging(@Param("user") User user, PageRequest pageRequest);
 
     Optional<Friend> findById(Long id);
 
@@ -45,11 +45,11 @@ public interface FriendRepository extends JpaRepository<Friend, Long> {
     //요청 대기, 친구 상태인 친구 관계 조회
     @Query("select f from Friend f where" +
             " (f.user=:user and f.friend=:friend) or (f.user=:friend and f.friend=:user)" +
-            "and f.status<>'Reject'")
+            "and f.status<>'REJECT'")
     Optional<Friend> findFriendInProgress(@Param("user") User user, @Param("friend") User friend);
 
     //요청 대기중인 친구 관계 조회
-    @Query("select f from Friend f where f.user=:user and f.friend=:friend and f.status='Wait'")
+    @Query("select f from Friend f where f.user=:user and f.friend=:friend and f.status='WAIT'")
     Optional<Friend> findRequestFriend(@Param("user") User user, @Param("friend") User friend);
 
 }
