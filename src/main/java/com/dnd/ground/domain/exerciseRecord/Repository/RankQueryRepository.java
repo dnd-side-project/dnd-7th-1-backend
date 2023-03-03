@@ -15,8 +15,8 @@ import java.util.Map;
  * @description 운동 기록 query 인터페이스
  * @author  박찬호
  * @since   2022-08-01
- * @updated 1.운동 영역과 랭킹의 분리를 위한 클래스 이름 변경
- *          2023-03-01 박찬호
+ * @updated 1.특정 챌린지의 랭킹 정보 조회 쿼리 추가
+ *          2023-03-03 박찬호
  */
 
 public interface RankQueryRepository {
@@ -27,4 +27,5 @@ public interface RankQueryRepository {
     List<RankDto> findRankStep(RankCond condition);
     Map<Challenge, List<RankDto>> findChallengeMatrixRank(User targetUser, ChallengeStatus status);
     Map<Challenge, List<RankDto>> findChallengeMatrixRankWithUsers(User targetUser, List<User> friend, ChallengeStatus status);
+    List<RankDto> findRankByChallenge(Challenge targetChallenge);
 }

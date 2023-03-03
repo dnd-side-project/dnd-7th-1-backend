@@ -37,8 +37,8 @@ import static com.querydsl.core.group.GroupBy.list;
  * @description 운동 기록(영역) 관련 QueryDSL 레포지토리
  * @author  박찬호
  * @since   2022-08-01
- * @updated 1.운동 영역과 랭킹의 분리를 위한 클래스 이름 변경
- *          2023-03-01 박찬호
+ * @updated 1.특정 챌린지의 랭킹 정보 조회 쿼리 추가
+ *          2023-03-03 박찬호
  */
 
 @Repository
@@ -263,6 +263,41 @@ public class RankQueryRepositoryImpl implements RankQueryRepository {
                                 ))
                         )
                 );
+    }
+
+    @Override
+    public List<RankDto> findRankByChallenge(Challenge targetChallenge) {
+        return queryFactory
+                .select(Projections.constructor(RankDto.class,
+                        user.nickname,
+                        user.picturePath,
+                        challenge.type,
+                        new CaseBuilder()
+                                .when(challenge.type.eq(ChallengeType.ACCUMULATE))
+                                .then(matrix.count())
+                                .when(challenge.type.eq(ChallengeType.WIDEN))
+                                .then(matrix.point.countDistinct())
+                                .otherwise(0L)
+                ))
+                .from(user)
+                .innerJoin(challenge)
+                .on(challenge.eq(targetChallenge))
+                .innerJoin(userChallenge)
+                .on(
+                        userChallenge.challenge.eq(challenge),
+                        userChallenge.user.eq(user)
+                )
+                .leftJoin(exerciseRecord)
+                .on(
+                        exerciseRecord.user.eq(user),
+                        exerciseRecord.started.goe(challenge.started),
+                        exerciseRecord.ended.loe(challenge.ended)
+                )
+                .leftJoin(matrix)
+                .on(matrix.exerciseRecord.eq(exerciseRecord))
+                .groupBy(challenge, user.nickname)
+                .orderBy(challenge.started.asc())
+                .fetch();
     }
 
     private BooleanExpression userEqAndInPeriod(LocalDateTime started, LocalDateTime ended) {

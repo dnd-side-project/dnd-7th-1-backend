@@ -1,5 +1,6 @@
 package com.dnd.ground.domain.matrix.repository;
 
+import com.dnd.ground.domain.matrix.dto.MatrixCond;
 import com.dnd.ground.domain.matrix.dto.MatrixUserSet;
 import com.dnd.ground.domain.user.User;
 import com.dnd.ground.global.util.Direction;
@@ -24,8 +25,8 @@ import static java.time.DayOfWeek.MONDAY;
  * @description 운동 기록(영역) 관련 QueryDSL 레포지토리 (특정 범위 내 영역 조회)
  * @author  박찬호
  * @since   2023-02-14
- * @updated 1.다수의 회원들의 영역 조회용 쿼리 생성
- *          - 2023-02-15 박찬호
+ * @updated 1.영역 조회를 유연하게 하기 위한 파라미터 변경
+ *          - 2023-03-03 박찬호
  */
 
 
@@ -35,9 +36,7 @@ public class MatrixRepositoryImpl implements MatrixRepositoryQuery {
     private final JPAQueryFactory queryFactory;
 
     @Override
-    public List<Location> findMatrixPoint(User user, Location location, double spanDelta) {
-        LocalDateTime start = LocalDateTime.now().with(MONDAY).withHour(0).withMinute(0).withSecond(0).withNano(0);
-
+    public List<Location> findMatrixPoint(MatrixCond condition) {
         return queryFactory
                 .select(Projections.fields(Location.class,
                         Expressions.stringTemplate("ST_X({0})", matrix.point).castToNum(Double.class).as("latitude"),
@@ -46,8 +45,8 @@ public class MatrixRepositoryImpl implements MatrixRepositoryQuery {
                 ))
                 .from(matrix)
                 .where(
-                        recordInPeriod(user, start, LocalDateTime.now()),
-                        containMBR(location, spanDelta)
+                        recordInPeriod(condition.getUser(), condition.getStarted(), condition.getEnded()),
+                        containMBR(condition.getLocation(), condition.getSpanDelta())
                 )
                 .fetch();
     }

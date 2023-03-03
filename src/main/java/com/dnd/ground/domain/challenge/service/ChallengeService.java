@@ -12,8 +12,8 @@ import java.util.List;
  * @description 챌린지와 관련된 서비스의 역할을 분리한 인터페이스
  * @author  박찬호
  * @since   2022-08-03
- * @updated 1.LocalTime.MAX시 월요일 00시로 들어가는 오류가 있어, 1초 빼서 반환
- *          - 2023.02.27
+ * @updated 1.챌린지 상세보기: 지도 API 개선
+ *          2023-03-03 박찬호
  */
 
 public interface ChallengeService {
@@ -28,7 +28,7 @@ public interface ChallengeService {
     List<ChallengeResponseDto.Invite> findInviteChallenge(String nickname);
     ChallengeResponseDto.WaitDetail getDetailWaitChallenge(ChallengeRequestDto.CInfo requestDto);
     ChallengeResponseDto.ProgressDetail getDetailProgress(ChallengeRequestDto.CInfo requestDto);
-    ChallengeMapResponseDto.Detail getChallengeDetailMap(String uuid);
+    ChallengeMapResponseDto.Detail getChallengeDetailMap(String uuid, String nickname);
 
     List<ChallengeResponseDto.CInfoRes> findChallengeByRecord(ExerciseRecord exerciseRecord);
 

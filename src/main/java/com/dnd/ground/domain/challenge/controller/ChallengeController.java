@@ -1,6 +1,5 @@
 package com.dnd.ground.domain.challenge.controller;
 
-import com.dnd.ground.domain.challenge.ChallengeStatus;
 import com.dnd.ground.domain.challenge.dto.*;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -12,8 +11,8 @@ import java.util.List;
  * @description 챌린지와 관련된 컨트롤러의 역할을 분리한 인터페이스
  * @author  박찬호
  * @since   2022-08-01
- * @updated 1.챌린지 상태 변경 API Response 변경
- *          2022-01-17 박찬호
+ * @updated 1.챌린지 상세보기: 지도 API 개선
+ *          2023-03-03 박찬호
  */
 
 public interface ChallengeController {
@@ -24,5 +23,5 @@ public interface ChallengeController {
     ResponseEntity<List<ChallengeResponseDto.Progress>> getProgressChallenges(@RequestParam("nickname") String nickname);
     ResponseEntity<List<ChallengeResponseDto.Invite>> getInviteChallenge(@RequestParam("nickname") String nickname);
     ResponseEntity<ChallengeResponseDto.ProgressDetail> getDetailProgressChallenge(@RequestBody ChallengeRequestDto.CInfo requestDto);
-    ResponseEntity<ChallengeMapResponseDto.Detail> getChallengeDetailMap(@RequestParam("uuid") String uuid);
+    ResponseEntity<ChallengeMapResponseDto.Detail> getChallengeDetailMap(@RequestParam("uuid") String uuid, @RequestParam("nickname") String nickname);
 }
