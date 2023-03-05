@@ -1,7 +1,7 @@
 package com.dnd.ground.domain.exerciseRecord.dto;
 
 import com.dnd.ground.domain.challenge.dto.ChallengeResponseDto;
-import com.dnd.ground.domain.matrix.dto.MatrixDto;
+import com.dnd.ground.domain.matrix.dto.Location;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Builder;
 import lombok.Data;
@@ -14,10 +14,8 @@ import java.util.List;
  *              2. 활동 기록 response Dto
  * @author  박세헌, 박찬호
  * @since   2022-08-16
- * @updated 1. 운동 시작 시간, 끝 시간 날짜 분리
- *          2. EInfo 해당 운동 기록이 참여한 챌린지 필드 추가
- *          3. exerciseId -> recordId 수정
- *          - 2022-08-18 박세헌
+ * @updated 1. MatrixDto -> Location 변경
+ *          - 2023-03-05 박찬호
  */
 
 @Data
@@ -53,7 +51,7 @@ public class RecordResponseDto {
         private String message;
 
         @ApiModelProperty(value="해당 기록의 칸 정보")
-        private List<MatrixDto> matrices;
+        private List<Location> matrices;
 
         @ApiModelProperty(value = "해당 운동 기록이 참여한 챌린지들")
         private List<ChallengeResponseDto.CInfoRes> challenges;

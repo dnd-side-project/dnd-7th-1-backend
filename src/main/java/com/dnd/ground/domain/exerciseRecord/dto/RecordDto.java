@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 /**
- * @description 영역 조회 관련 (QueryDSL) DTO
+ * @description 운동 기록 조회 관련 (QueryDSL) DTO
  * @author  박찬호
  * @since   2023-03-01
  * @updated 1. 클래스 생성
@@ -31,5 +31,19 @@ public class RecordDto {
         this.started = started;
         this.ended = ended;
         this.message = message;
+    }
+
+    @Getter
+    public static class Stats {
+        private long stepCount;
+        private long distanceCount;
+        private long exerciseTimeCount;
+
+        @QueryProjection
+        public Stats(long stepCount, long distanceCount, long exerciseTimeCount) {
+            this.stepCount = stepCount;
+            this.distanceCount = distanceCount;
+            this.exerciseTimeCount = exerciseTimeCount;
+        }
     }
 }

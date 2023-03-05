@@ -14,8 +14,8 @@ import java.util.List;
  * @description 운동 기록 엔티티
  * @author  박찬호, 박세헌
  * @since   2022-07-27
- * @updated 1.matrices의 builder default 추가
- *          -2023.02.14 박찬호
+ * @updated 1.기록 업데이트 메소드 삭제
+ *          2023-03-05 박찬호
  */
 
 @Getter
@@ -63,23 +63,13 @@ public class ExerciseRecord {
         this.ended = LocalDateTime.now();
         this.user = user;
         this.started = LocalDateTime.now();
+        this.matrices = new ArrayList<>();
     }
 
     // 칸 추가
     public void addMatrix(Matrix matrix){
         this.matrices.add(matrix);
         matrix.belongRecord(this);
-    }
-
-    // 정보 추가
-    public void updateInfo(Integer distance, Integer stepCount,
-                           Integer second, String message, LocalDateTime started, LocalDateTime ended){
-        this.started = started;
-        this.ended = ended;
-        this.distance = distance;
-        this.stepCount = stepCount;
-        this.exerciseTime = second;
-        this.message = message;
     }
 
     // 메시지 수정
