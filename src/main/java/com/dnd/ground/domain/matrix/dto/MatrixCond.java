@@ -10,8 +10,8 @@ import java.time.LocalDateTime;
  * @description QueryDSL으로 영역 조회를 하기 위한 조건 클래스
  * @author  박찬호
  * @since   2023-03-03
- * @updated 1.클래스 생성
- *          - 2023-03-03 박찬호
+ * @updated 1.생성자 추가
+ *          - 2023-03-05 박찬호
  */
 
 
@@ -30,4 +30,7 @@ public class MatrixCond {
         this.ended = ended;
     }
 
+    public MatrixCond(User user) {
+        this.user = user;
+    }
 }

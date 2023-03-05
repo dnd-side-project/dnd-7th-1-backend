@@ -62,7 +62,6 @@ public class RankQueryRepositoryImpl implements RankQueryRepository {
                         exerciseRecord.user.id.eq(id),
                         exerciseRecord.started.between(start, end)
                 )
-                .where()
                 .fetch();
     }
 

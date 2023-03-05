@@ -25,8 +25,9 @@ import static java.time.DayOfWeek.MONDAY;
  * @description 운동 기록(영역) 관련 QueryDSL 레포지토리 (특정 범위 내 영역 조회)
  * @author  박찬호
  * @since   2023-02-14
- * @updated 1.영역 개수 카운트 쿼리 생성
- *          - 2023-03-03 박찬호
+ * @updated 1.중복을 제외한 영역 조회 쿼리 생성
+ *          2.중복을 제외한 영역 개수 쿼리 생성
+ *          - 2023-03-05 박찬호
  */
 
 
@@ -41,8 +42,23 @@ public class MatrixRepositoryImpl implements MatrixRepositoryQuery {
                 .select(Projections.fields(Location.class,
                         Expressions.stringTemplate("ST_X({0})", matrix.point).castToNum(Double.class).as("latitude"),
                         Expressions.stringTemplate("ST_Y({0})", matrix.point).castToNum(Double.class).as("longitude")
-
                 ))
+                .from(matrix)
+                .where(
+                        recordInPeriod(condition.getUser(), condition.getStarted(), condition.getEnded()),
+                        containMBR(condition.getLocation(), condition.getSpanDelta())
+                )
+                .fetch();
+    }
+
+    @Override
+    public List<Location> findMatrixPointDistinct(MatrixCond condition) {
+        return queryFactory
+                .select(Projections.fields(Location.class,
+                        Expressions.stringTemplate("ST_X({0})", matrix.point).castToNum(Double.class).as("latitude"),
+                        Expressions.stringTemplate("ST_Y({0})", matrix.point).castToNum(Double.class).as("longitude")
+                ))
+                .distinct()
                 .from(matrix)
                 .where(
                         recordInPeriod(condition.getUser(), condition.getStarted(), condition.getEnded()),
@@ -98,17 +114,43 @@ public class MatrixRepositoryImpl implements MatrixRepositoryQuery {
                 .fetchFirst();
     }
 
+    @Override
+    public long matrixCountDistinct(MatrixCond condition) {
+        return queryFactory
+                .select(matrix.countDistinct())
+                .from(matrix)
+                .where(
+                        recordInPeriod(condition.getUser(), condition.getStarted(), condition.getEnded())
+                )
+                .fetchFirst();
+    }
+
     private BooleanExpression recordInPeriod(User user, LocalDateTime start, LocalDateTime end) {
+        if (start == null || end == null) return recordInAllTime(user);
+        else {
+            return matrix.exerciseRecord.in(
+                    JPAExpressions
+                            .select(exerciseRecord)
+                            .from(exerciseRecord)
+                            .where(
+                                    exerciseRecord.user.eq(user),
+                                    exerciseRecord.started.between(start, end)
+                            )
+            );
+        }
+    }
+
+    private BooleanExpression recordInAllTime(User user) {
         return matrix.exerciseRecord.in(
                 JPAExpressions
                         .select(exerciseRecord)
                         .from(exerciseRecord)
                         .where(
-                                exerciseRecord.user.eq(user),
-                                exerciseRecord.started.between(start, end)
+                                exerciseRecord.user.eq(user)
                         )
         );
     }
+
     private BooleanExpression containMBR(Location location, Double spanDelta) {
         if (location == null) return null;
         Location northEast = GeometryUtil.calculate(location, spanDelta, Direction.NORTHEAST);

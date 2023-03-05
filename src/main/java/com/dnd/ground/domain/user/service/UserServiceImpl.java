@@ -9,6 +9,7 @@ import com.dnd.ground.domain.challenge.repository.ChallengeRepository;
 import com.dnd.ground.domain.challenge.service.ChallengeService;
 import com.dnd.ground.domain.exerciseRecord.ExerciseRecord;
 import com.dnd.ground.domain.exerciseRecord.Repository.ExerciseRecordRepository;
+import com.dnd.ground.domain.exerciseRecord.dto.RecordDto;
 import com.dnd.ground.domain.exerciseRecord.dto.RecordRequestDto;
 import com.dnd.ground.domain.exerciseRecord.dto.RecordResponseDto;
 import com.dnd.ground.domain.friend.FriendStatus;
@@ -17,7 +18,6 @@ import com.dnd.ground.domain.friend.dto.FriendResponseDto;
 import com.dnd.ground.domain.friend.repository.FriendRepository;
 import com.dnd.ground.domain.friend.service.FriendService;
 import com.dnd.ground.domain.matrix.dto.MatrixCond;
-import com.dnd.ground.domain.matrix.dto.MatrixDto;
 import com.dnd.ground.domain.matrix.repository.MatrixRepository;
 import com.dnd.ground.domain.matrix.service.RankService;
 import com.dnd.ground.domain.user.User;
@@ -46,6 +46,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static java.time.DayOfWeek.MONDAY;
+import static java.time.DayOfWeek.SUNDAY;
 import static java.time.temporal.TemporalAdjusters.firstDayOfMonth;
 import static java.time.temporal.TemporalAdjusters.lastDayOfMonth;
 
@@ -89,7 +90,7 @@ public class UserServiceImpl implements UserService {
 
         /*회원 영역 조회*/
         LocalDateTime monday = LocalDateTime.now().with(MONDAY).withHour(0).withMinute(0).withSecond(0).withNano(0);
-        List<Location> userMatricesThisWeek = matrixRepository.findMatrixPoint(new MatrixCond(user, location, spanDelta, monday, LocalDateTime.now()));
+        List<Location> userMatricesThisWeek = matrixRepository.findMatrixPointDistinct(new MatrixCond(user, location, spanDelta, monday, LocalDateTime.now()));
 
         UserResponseDto.UserMatrix userMatrix  = UserResponseDto.UserMatrix.builder()
                 .nickname(user.getNickname())
@@ -175,33 +176,22 @@ public class UserServiceImpl implements UserService {
 
     /*회원 정보 조회(마이페이지)*/
     public UserResponseDto.MyPage getUserInfo(String nickname) {
-        User user = userRepository.findByNickname(nickname).orElseThrow(
-                () -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
+        User user = userRepository.findByNickname(nickname)
+                .orElseThrow(() -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
 
-        // 이번주 운동기록
-        List<ExerciseRecord> recordOfThisWeek = exerciseRecordRepository.findRecordOfThisWeek(user.getId());
+        LocalDateTime monday = LocalDateTime.now().with(MONDAY).withHour(0).withMinute(0).withSecond(0).withNano(0);
 
-        // 이번주 채운 칸의 수
-        Long matrixNumber = (long) matrixRepository.findMatrixByRecords(recordOfThisWeek).size();
-
-        // 이번주 걸음수
-        Integer stepCount = exerciseRecordRepository.findUserStepCount(user, recordOfThisWeek).orElse(0);
-
-        // 이번주 거리합
-        Integer distance = exerciseRecordRepository.findUserDistance(user, recordOfThisWeek).orElse(0);
-
-        // 친구 수
-        Integer friendNumber = friendService.getFriends(user).size();
-
-        // 역대 누적 운동기록(가입날짜 ~ 지금)
-        List<ExerciseRecord> record = exerciseRecordRepository.findRecord(user.getId(), user.getCreated(), LocalDateTime.now());
-        // 역대 누적 칸수
-        Long allMatrixNumber = (long) matrixRepository.findMatrixByRecords(record).size();
+        long matrixCount = matrixRepository.matrixCount(new MatrixCond(user, monday, LocalDateTime.now())); // 이번주 채운 칸의 수
+        RecordDto.Stats recordCount = exerciseRecordRepository.getRecordCount(user, monday, LocalDateTime.now());
+        long stepCount = recordCount.getStepCount(); //걸음 수
+        long distance = recordCount.getDistanceCount(); //거리 합
+        int friendNumber = friendService.getFriends(user).size(); // 친구 수
+        long allMatrixNumber = matrixRepository.matrixCount(new MatrixCond(user)); //전체 기간 영역 수
 
         return UserResponseDto.MyPage.builder()
                 .nickname(user.getNickname())
                 .intro(user.getIntro())
-                .matrixNumber(matrixNumber)
+                .matrixNumber(matrixCount)
                 .stepCount(stepCount)
                 .distance(distance)
                 .friendNumber(friendNumber)
@@ -212,41 +202,31 @@ public class UserServiceImpl implements UserService {
 
     /*회원 프로필 조회*/
     public FriendResponseDto.FriendProfile getUserProfile(String userNickname, String friendNickname) {
-        User user = userRepository.findByNickname(userNickname).orElseThrow(
-                () -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
+        User user = userRepository.findByNickname(userNickname)
+                .orElseThrow(() -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
 
-        User friend = userRepository.findByNickname(friendNickname).orElseThrow(
-                () -> new FriendException(ExceptionCodeSet.FRIEND_NOT_FOUND));
+        User friend = userRepository.findByNickname(friendNickname)
+                .orElseThrow(() -> new FriendException(ExceptionCodeSet.FRIEND_NOT_FOUND));
 
         //마지막 활동 시간
-        Optional<LocalDateTime> lastedOpt = exerciseRecordRepository.findLastRecord(friend);
         LocalDateTime lasted = null;
+        Optional<LocalDateTime> lastedOpt = exerciseRecordRepository.findLastRecord(friend);
         if (lastedOpt.isPresent())
             lasted = lastedOpt.get();
 
-
         //친구 관계 확인
-//        FriendStatus isFriend = friendService.getFriendStatus(user, friend);
-        FriendStatus isFriend = FriendStatus.ACCEPT;
+        FriendStatus isFriend = friendService.getFriendStatus(user, friend);
 
         //랭킹 추출 (이번 주 영역, 역대 누적 칸수, 랭킹)
-        Integer rank = -1;
-        Long allMatrixNumber = -1L;
-        Long areas = -1L;
-
-        RankResponseDto.Matrix matrixRanking = matrixService.matrixRankingAllTime(friendNickname);
-
-        //역대 누적 칸수 및 랭킹 정보
-        for (UserResponseDto.Ranking allRankInfo : matrixRanking.getMatrixRankings()) {
-            if (allRankInfo.getNickname().equals(friendNickname)) {
-                rank = allRankInfo.getRank();
-                allMatrixNumber = allRankInfo.getScore();
-            }
-        }
+        UserResponseDto.Ranking rankInfo = matrixService.matrixUserRankingAllTime(friend);
+        int rank = rankInfo.getRank();
+        long allMatrixNumber = rankInfo.getScore();
 
         //이번주 영역 정보
-        areas = (long) matrixRepository.findMatrixSetByRecords(
-                exerciseRecordRepository.findRecordOfThisWeek(friend.getId())).size();
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime start = LocalDateTime.of(now.with(MONDAY).toLocalDate(), LocalTime.MIN);
+        LocalDateTime end = LocalDateTime.of(now.with(SUNDAY).toLocalDate(), LocalTime.MAX).minusNanos(1);
+        long areas = matrixRepository.matrixCountDistinct(new MatrixCond(user, start, end));
 
         //함께 진행하는 챌린지 정보
         List<ChallengeResponseDto.Progress> challenges = challengeService.findProgressChallenge(userNickname, friendNickname);
@@ -271,11 +251,10 @@ public class UserServiceImpl implements UserService {
         LocalDateTime start = requestDto.getStarted();
         LocalDateTime end = requestDto.getEnded();
 
-        User user = userRepository.findByNickname(nickname).orElseThrow(
-                () -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
+        User user = userRepository.findByNickname(nickname)
+                .orElseThrow(() -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
         List<ExerciseRecord> record = exerciseRecordRepository.findRecord(user.getId(), start, end);  // start~end 사이 운동기록 조회
         List<RecordResponseDto.activityRecord> activityRecords = new ArrayList<>();
-
 
         // 활동 내역 정보
         for (ExerciseRecord exerciseRecord : record) {
@@ -314,6 +293,7 @@ public class UserServiceImpl implements UserService {
     public RecordResponseDto.EInfo getExerciseInfo(Long exerciseId) {
         ExerciseRecord exerciseRecord = exerciseRecordRepository.findById(exerciseId).orElseThrow(
                 () -> new ExerciseRecordException(ExceptionCodeSet.RECORD_NOT_FOUND));
+
         // 운동 시작, 끝 시간 formatting
         String date = exerciseRecord.getStarted().format(DateTimeFormatter.ofPattern("MM월 dd일 E요일").withLocale(Locale.forLanguageTag("ko")));
         String started = exerciseRecord.getStarted().format(DateTimeFormatter.ofPattern("HH:mm"));
@@ -346,7 +326,7 @@ public class UserServiceImpl implements UserService {
                 .exerciseTime(time)
                 .stepCount(exerciseRecord.getStepCount())
                 .message(exerciseRecord.getMessage())
-                .matrices(matrixRepository.findMatrixSetByRecord(exerciseRecord))
+                .matrices(matrixRepository.findMatrixPointDistinct(new MatrixCond(exerciseRecord.getUser(), exerciseRecord.getStarted(), exerciseRecord.getEnded())))
                 .challenges(challenges)
                 .build();
     }
@@ -360,10 +340,9 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findByExerciseRecord(exerciseRecord).orElseThrow(
                 () -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
         // 운동기록의 칸 찾기
-        List<MatrixDto> matrices = matrixRepository.findMatrixSetByRecord(exerciseRecord);
+        List<Location> matrices = matrixRepository.findMatrixPointDistinct(new MatrixCond(user, exerciseRecord.getStarted(), exerciseRecord.getEnded()));
 
-        return new UserResponseDto.DetailMap(user.getLatitude(),
-                user.getLongitude(), matrices, user.getPicturePath());
+        return new UserResponseDto.DetailMap(user.getLatitude(), user.getLongitude(), matrices, user.getPicturePath());
     }
 
     /*필터 변경: 나의 기록 보기*/
