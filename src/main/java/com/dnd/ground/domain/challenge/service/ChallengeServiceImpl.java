@@ -426,7 +426,7 @@ public class ChallengeServiceImpl implements ChallengeService {
 
         int i=0;
         for (User member : members) {
-            List<Location> matrices = matrixRepository.findMatrixPoint(new MatrixCond(member, challenge.getStarted(), challenge.getEnded()));
+            List<Location> matrices = matrixRepository.findMatrixList(new MatrixCond(member, challenge.getStarted(), challenge.getEnded()));
             if (member.getNickname().equals(nickname)) {
                 matrixList.add(0,
                         new ChallengeMapResponseDto.UserMapInfo(color[MAX_CHALLENGE_MEMBER_COUNT], member.getLatitude(), member.getLongitude(), matrices, member.getPicturePath())
