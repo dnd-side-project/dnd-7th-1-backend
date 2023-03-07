@@ -1,13 +1,11 @@
 package com.dnd.ground.domain.user.dto;
 
 import com.dnd.ground.domain.matrix.dto.Location;
-import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.annotations.ApiModelProperty;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
+import org.springframework.format.annotation.DateTimeFormat;
 
+import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -17,8 +15,8 @@ import java.util.List;
  * @description 회원 관련 Request Dto
  * @author  박세헌, 박찬호
  * @since   2022-08-18
- * @updated 1.회원 영역 데이터 조회 시 일부 영역 내 데이터만 조회하도록 수정
- *          - 2023-02-14 박찬호
+ * @updated 1.메인 화면 조회 방식 변경에 따른 DTO 수정
+ *          - 2023-03-07 박찬호
  */
 
 @Data
@@ -43,31 +41,44 @@ public class UserRequestDto {
 
     @Getter
     @Setter
+    @ToString
     static public class Home {
-        public Home(String nickname, Double latitude, Double longitude) {
+        public Home(String nickname, Double spanDelta, Double latitude, Double longitude) {
             this.nickname = nickname;
-            this.location = new Location(latitude, longitude);
+            this.center = new Location(latitude, longitude);
+            this.spanDelta = spanDelta;
         }
+
+        @NotBlank
         @ApiModelProperty(name = "유저의 닉네임", example = "NickA", required = true)
         private String nickname;
 
+        @NotBlank
         @ApiModelProperty(name = "현재 위치", required = true)
-        private Location location;
+        private Location center;
+
+        @NotBlank
+        @ApiModelProperty(name = "영역을 조회할 범위(km)", example="0.03", required = true)
+        private Double spanDelta;
     }
 
-    @Data
-    static public class LookUp{
 
+    @Getter
+    @Setter
+    @ToString
+    @AllArgsConstructor
+    @NoArgsConstructor
+    static public class LookUp{
         @ApiModelProperty(name = "유저의 닉네임", example = "NickA", required = true)
         private String nickname;
 
-        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss", timezone = "Asia/Seoul")
-        @ApiModelProperty(name = "조회 하고 싶은 데이터의 시작 날짜", example = "2022-08-15T00:00:00",required = true)
-        private LocalDateTime start;
+        @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+        @ApiModelProperty(name = "조회 하고 싶은 데이터의 시작 날짜", example = "2022-08-15T00:00:00", required = true)
+        private LocalDateTime started;
 
-        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss", timezone = "Asia/Seoul")
+        @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
         @ApiModelProperty(name = "조회 하고 싶은 데이터의 끝 날짜", example = "2022-08-18T23:59:59", required = true)
-        private LocalDateTime end;
+        private LocalDateTime ended;
     }
 
     @Data

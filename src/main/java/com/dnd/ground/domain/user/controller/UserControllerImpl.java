@@ -106,15 +106,14 @@ public class UserControllerImpl implements UserController {
                                                                  @RequestParam(value = "originNickname") String originNickname,
                                                                  @RequestParam(value = "editNickname") String editNickname,
                                                                  @RequestParam(value = "intro") String intro,
-                                                                 @RequestParam(value = "isBasic") Boolean isBasic
-    ){
-        return userService.editUserProfile(picture, new UserRequestDto.Profile(originNickname, editNickname, intro, isBasic));
+                                                                 @RequestParam(value = "isBasic") Boolean isBasic) {
+        return ResponseEntity.ok().body(userService.editUserProfile(picture, new UserRequestDto.Profile(originNickname, editNickname, intro, isBasic)));
     }
 
     @PostMapping("/info/activity/record/edit")
     @Operation(summary = "운동 기록 메시지 수정", description = "운동 기록 메시지 수정")
     public ResponseEntity<Boolean> getDetailMap(@RequestBody RecordRequestDto.Message requestDto){
-        return userService.editRecordMessage(requestDto);
+        return ResponseEntity.ok().body(userService.editRecordMessage(requestDto));
     }
 
     @PostMapping("/event-list")

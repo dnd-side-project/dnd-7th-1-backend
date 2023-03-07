@@ -32,8 +32,6 @@ import lombok.*;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -54,8 +52,8 @@ import static java.time.temporal.TemporalAdjusters.lastDayOfMonth;
  * @description 유저 서비스 클래스
  * @author 박세헌, 박찬호
  * @since 2022-08-01
- * @updated 1.메인 화면 조회 시, 이번 주 영역 수가 일정 범위 내만 카운트 되는 문제 해결
- *          - 2023-03-03 박찬호
+ * @updated 1.컨트롤러와 서비스 레이어 역할 분리를 위한 일부 메소드 반환타입 변경
+ *          - 2023-03-07 박찬호
  */
 
 @Slf4j
@@ -90,7 +88,7 @@ public class UserServiceImpl implements UserService {
 
         /*회원 영역 조회*/
         LocalDateTime monday = LocalDateTime.now().with(MONDAY).withHour(0).withMinute(0).withSecond(0).withNano(0);
-        List<Location> userMatricesThisWeek = matrixRepository.findMatrixPointDistinct(new MatrixCond(user, location, spanDelta, monday, LocalDateTime.now()));
+        List<Location> userMatricesThisWeek = matrixRepository.findMatrixListDistinct(new MatrixCond(user, location, spanDelta, monday, LocalDateTime.now()));
 
         UserResponseDto.UserMatrix userMatrix  = UserResponseDto.UserMatrix.builder()
                 .nickname(user.getNickname())
@@ -117,7 +115,7 @@ public class UserServiceImpl implements UserService {
         Set<User> friendsMembers = new HashSet<>();
         friendsMembers.addAll(challengeMembers);
         friendsMembers.addAll(friends);
-        Map<User, List<Location>> usersMatrix = matrixRepository.findUsersMatrix(friendsMembers, location, spanDelta);
+        Map<User, List<Location>> usersMatrix = matrixRepository.findMatrixMapDistinct(new MatrixCond(friendsMembers, location, spanDelta, monday, LocalDateTime.now()));
         /*----------*/
 
         /*친구 Response 생성*/
@@ -246,13 +244,13 @@ public class UserServiceImpl implements UserService {
 
     /* 나의 활동 기록 조회 */
     public UserResponseDto.ActivityRecordResponseDto getActivityRecord(UserRequestDto.LookUp requestDto) {
-
         String nickname = requestDto.getNickname();
         LocalDateTime start = requestDto.getStarted();
         LocalDateTime end = requestDto.getEnded();
 
         User user = userRepository.findByNickname(nickname)
                 .orElseThrow(() -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
+
         List<ExerciseRecord> record = exerciseRecordRepository.findRecord(user.getId(), start, end);  // start~end 사이 운동기록 조회
         List<RecordResponseDto.activityRecord> activityRecords = new ArrayList<>();
 
@@ -326,7 +324,7 @@ public class UserServiceImpl implements UserService {
                 .exerciseTime(time)
                 .stepCount(exerciseRecord.getStepCount())
                 .message(exerciseRecord.getMessage())
-                .matrices(matrixRepository.findMatrixPointDistinct(new MatrixCond(exerciseRecord.getUser(), exerciseRecord.getStarted(), exerciseRecord.getEnded())))
+                .matrices(matrixRepository.findMatrixListDistinct(new MatrixCond(exerciseRecord.getUser(), exerciseRecord.getStarted(), exerciseRecord.getEnded())))
                 .challenges(challenges)
                 .build();
     }
@@ -340,7 +338,7 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findByExerciseRecord(exerciseRecord).orElseThrow(
                 () -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
         // 운동기록의 칸 찾기
-        List<Location> matrices = matrixRepository.findMatrixPointDistinct(new MatrixCond(user, exerciseRecord.getStarted(), exerciseRecord.getEnded()));
+        List<Location> matrices = matrixRepository.findMatrixListDistinct(new MatrixCond(user, exerciseRecord.getStarted(), exerciseRecord.getEnded()));
 
         return new UserResponseDto.DetailMap(user.getLatitude(), user.getLongitude(), matrices, user.getPicturePath());
     }
@@ -371,19 +369,16 @@ public class UserServiceImpl implements UserService {
 
     /* 운동 기록의 상세 메시지 수정 */
     @Transactional
-    public ResponseEntity<Boolean> editRecordMessage(RecordRequestDto.Message requestDto) {
-        Long recordId = requestDto.getRecordId();
-        String message = requestDto.getMessage();
-
-        ExerciseRecord exerciseRecord = exerciseRecordRepository.findById(recordId).orElseThrow(
-                () -> new ExerciseRecordException(ExceptionCodeSet.RECORD_NOT_FOUND));
-        exerciseRecord.editMessage(message);
-        return new ResponseEntity(true, HttpStatus.OK);
+    public Boolean editRecordMessage(RecordRequestDto.Message requestDto) {
+        ExerciseRecord exerciseRecord = exerciseRecordRepository.findById(requestDto.getRecordId())
+                .orElseThrow(() -> new ExerciseRecordException(ExceptionCodeSet.RECORD_NOT_FOUND));
+        exerciseRecord.editMessage(requestDto.getMessage());
+        return true;
     }
 
     /* 회원 프로필 수정 */
     @Transactional
-    public ResponseEntity<UserResponseDto.UInfo> editUserProfile(MultipartFile file, UserRequestDto.Profile requestDto) {
+    public UserResponseDto.UInfo editUserProfile(MultipartFile file, UserRequestDto.Profile requestDto) {
         String originalNick = requestDto.getOriginNickname();
         String editNick = requestDto.getEditNickname();
 
@@ -414,19 +409,14 @@ public class UserServiceImpl implements UserService {
         }
         user.updateProfile(editNick, intro, pictureName, picturePath);
 
-        return ResponseEntity.ok(new UserResponseDto.UInfo(editNick, picturePath));
+        return new UserResponseDto.UInfo(editNick, picturePath);
     }
 
     public UserResponseDto.dayEventList getDayEventList(UserRequestDto.DayEventList requestDto) {
 
-        LocalDate startDay = requestDto.getYearMonth().with(firstDayOfMonth());
-        LocalDate endDay = requestDto.getYearMonth().with(lastDayOfMonth());
-
-        LocalTime startTime = LocalTime.of(0, 0, 0);
-        LocalTime endTime = LocalTime.of(23, 59, 59);
-
-        LocalDateTime start = LocalDateTime.of(startDay, startTime);
-        LocalDateTime end = LocalDateTime.of(endDay, endTime);
+        LocalDate yearMonth = requestDto.getYearMonth();
+        LocalDateTime start = LocalDateTime.of(yearMonth.with(firstDayOfMonth()), LocalTime.MIN);
+        LocalDateTime end = LocalDateTime.of(yearMonth.with(lastDayOfMonth()), LocalTime.MAX);
 
         User user = userRepository.findByNickname(requestDto.getNickname())
                 .orElseThrow(() -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));

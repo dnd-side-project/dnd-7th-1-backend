@@ -1,7 +1,7 @@
 package com.dnd.ground.domain.matrix.repository;
 
 import com.dnd.ground.domain.matrix.dto.MatrixCond;
-import com.dnd.ground.domain.matrix.dto.MatrixUserSet;
+import com.dnd.ground.domain.matrix.dto.QLocation;
 import com.dnd.ground.domain.user.User;
 import com.dnd.ground.global.util.Direction;
 import com.dnd.ground.global.util.GeometryUtil;
@@ -19,15 +19,15 @@ import java.util.*;
 
 import static com.dnd.ground.domain.exerciseRecord.QExerciseRecord.exerciseRecord;
 import static com.dnd.ground.domain.matrix.QMatrix.matrix;
-import static java.time.DayOfWeek.MONDAY;
+import static com.querydsl.core.group.GroupBy.groupBy;
+import static com.querydsl.core.group.GroupBy.list;
 
 /**
  * @description 운동 기록(영역) 관련 QueryDSL 레포지토리 (특정 범위 내 영역 조회)
  * @author  박찬호
  * @since   2023-02-14
- * @updated 1.중복을 제외한 영역 조회 쿼리 생성
- *          2.중복을 제외한 영역 개수 쿼리 생성
- *          - 2023-03-05 박찬호
+ * @updated 1.중복을 제외한 영역 조회 쿼리 생성(Map)
+ *          - 2023-03-07 박찬호
  */
 
 
@@ -37,7 +37,7 @@ public class MatrixRepositoryImpl implements MatrixRepositoryQuery {
     private final JPAQueryFactory queryFactory;
 
     @Override
-    public List<Location> findMatrixPoint(MatrixCond condition) {
+    public List<Location> findMatrixList(MatrixCond condition) {
         return queryFactory
                 .select(Projections.fields(Location.class,
                         Expressions.stringTemplate("ST_X({0})", matrix.point).castToNum(Double.class).as("latitude"),
@@ -45,14 +45,14 @@ public class MatrixRepositoryImpl implements MatrixRepositoryQuery {
                 ))
                 .from(matrix)
                 .where(
-                        recordInPeriod(condition.getUser(), condition.getStarted(), condition.getEnded()),
+                        recordInPeriodAndUser(condition.getUser(), condition.getStarted(), condition.getEnded()),
                         containMBR(condition.getLocation(), condition.getSpanDelta())
                 )
                 .fetch();
     }
 
     @Override
-    public List<Location> findMatrixPointDistinct(MatrixCond condition) {
+    public List<Location> findMatrixListDistinct(MatrixCond condition) {
         return queryFactory
                 .select(Projections.fields(Location.class,
                         Expressions.stringTemplate("ST_X({0})", matrix.point).castToNum(Double.class).as("latitude"),
@@ -61,46 +61,61 @@ public class MatrixRepositoryImpl implements MatrixRepositoryQuery {
                 .distinct()
                 .from(matrix)
                 .where(
-                        recordInPeriod(condition.getUser(), condition.getStarted(), condition.getEnded()),
+                        recordInPeriodAndUser(condition.getUser(), condition.getStarted(), condition.getEnded()),
                         containMBR(condition.getLocation(), condition.getSpanDelta())
                 )
                 .fetch();
     }
 
-    public Map<User, List<Location>> findUsersMatrix(Set<User> users, Location location, double spanDelta) {
-        LocalDateTime start = LocalDateTime.now().with(MONDAY).withHour(0).withMinute(0).withSecond(0).withNano(0);
-
-        List<MatrixUserSet> queryResult = queryFactory
-                .select(
-                        Projections.constructor(MatrixUserSet.class,
-                        Projections.fields(
-                                Location.class,
-                                Expressions.stringTemplate("ST_X({0})", matrix.point).castToNum(Double.class).as("latitude"),
-                                Expressions.stringTemplate("ST_Y({0})", matrix.point).castToNum(Double.class).as("longitude")
-                        ),
-                        exerciseRecord.user
-                        )
-                )
+    public Map<User, List<Location>> findMatrixMap(MatrixCond condition) {
+        return queryFactory
                 .from(matrix)
                 .innerJoin(exerciseRecord)
                 .on(
-                        exerciseRecord.started.between(start, LocalDateTime.now()),
-                        exerciseRecord.user.in(users),
                         matrix.exerciseRecord.eq(exerciseRecord)
                 )
                 .where(
-                        containMBR(location, spanDelta)
-                ).fetch();
+                        recordInUser(condition.getUser()),
+                        recordInUsers(condition.getUsers()),
+                        recordInPeriod(condition.getStarted(), condition.getEnded()),
+                        containMBR(condition.getLocation(), condition.getSpanDelta())
+                )
+                .transform(
+                        groupBy(exerciseRecord.user).as(
+                                list(new QLocation(
+                                        Expressions.stringTemplate("ST_X({0})", matrix.point).castToNum(Double.class).as("latitude"),
+                                        Expressions.stringTemplate("ST_Y({0})", matrix.point).castToNum(Double.class).as("longitude")
+                                )
+                        )));
+    }
 
-        Map<User, List<Location>> result = new HashMap<>();
-
-        for (MatrixUserSet matrixUserSet : queryResult) {
-            List<Location> l = result.getOrDefault(matrixUserSet.getUser(), new ArrayList<>());
-            l.add(matrixUserSet.getLocation());
-            result.put(matrixUserSet.getUser(), l);
-
-        }
-        return result;
+    @Override
+    public Map<User, List<Location>> findMatrixMapDistinct(MatrixCond condition) {
+        return queryFactory
+                .select(
+                        exerciseRecord.user,
+                        Expressions.stringTemplate("ST_X({0})", matrix.point).castToNum(Double.class).as("latitude"),
+                        Expressions.stringTemplate("ST_Y({0})", matrix.point).castToNum(Double.class).as("longitude")
+                )
+                .distinct()
+                .from(matrix)
+                .innerJoin(exerciseRecord)
+                .on(
+                        matrix.exerciseRecord.eq(exerciseRecord)
+                )
+                .where(
+                        recordInUser(condition.getUser()),
+                        recordInUsers(condition.getUsers()),
+                        recordInPeriod(condition.getStarted(), condition.getEnded()),
+                        containMBR(condition.getLocation(), condition.getSpanDelta())
+                )
+                .transform(
+                        groupBy(exerciseRecord.user).as(
+                                list(new QLocation(
+                                                Expressions.stringTemplate("ST_X({0})", matrix.point).castToNum(Double.class).as("latitude"),
+                                                Expressions.stringTemplate("ST_Y({0})", matrix.point).castToNum(Double.class).as("longitude")
+                                        )
+                                )));
     }
 
     @Override
@@ -109,7 +124,7 @@ public class MatrixRepositoryImpl implements MatrixRepositoryQuery {
                 .select(matrix.count())
                 .from(matrix)
                 .where(
-                        recordInPeriod(condition.getUser(), condition.getStarted(), condition.getEnded())
+                        recordInPeriodAndUser(condition.getUser(), condition.getStarted(), condition.getEnded())
                 )
                 .fetchFirst();
     }
@@ -120,12 +135,16 @@ public class MatrixRepositoryImpl implements MatrixRepositoryQuery {
                 .select(matrix.countDistinct())
                 .from(matrix)
                 .where(
-                        recordInPeriod(condition.getUser(), condition.getStarted(), condition.getEnded())
+                        recordInPeriodAndUser(condition.getUser(), condition.getStarted(), condition.getEnded())
                 )
                 .fetchFirst();
     }
 
-    private BooleanExpression recordInPeriod(User user, LocalDateTime start, LocalDateTime end) {
+    private BooleanExpression recordInPeriod(LocalDateTime start, LocalDateTime end) {
+        return start != null && end != null ? exerciseRecord.ended.between(start, end) : null;
+    }
+
+    private BooleanExpression recordInPeriodAndUser(User user, LocalDateTime start, LocalDateTime end) {
         if (start == null || end == null) return recordInAllTime(user);
         else {
             return matrix.exerciseRecord.in(
@@ -135,8 +154,7 @@ public class MatrixRepositoryImpl implements MatrixRepositoryQuery {
                             .where(
                                     exerciseRecord.user.eq(user),
                                     exerciseRecord.started.between(start, end)
-                            )
-            );
+                            ));
         }
     }
 
@@ -163,5 +181,13 @@ public class MatrixRepositoryImpl implements MatrixRepositoryQuery {
                         ),
                         matrix.point)
                 .eq(true);
+    }
+
+    private BooleanExpression recordInUser(User user) {
+        return user != null ? exerciseRecord.user.eq(user) : null;
+    }
+
+    private BooleanExpression recordInUsers(Set<User> users) {
+        return users != null ? exerciseRecord.user.in(users) : null;
     }
 }
