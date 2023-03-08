@@ -8,12 +8,13 @@
         <Property name="RUN_FILE">run.log</Property>
         <Property name="DEBUG_FILE">debug.log</Property>
         <Property name="ERROR_FILE">error.log</Property>
+        <Property name="AUDIT_FILE">audit.log</Property>
 
         <Property name="DAY_HOUR_PATTERN">${LOG_PATH}/%d{yyyy/MM/dd/HH}</Property>
-        <Property name="RUN_FILE_PATTERN">%i-${DAY_HOUR_PATTERN}/${RUN_FILE}</Property>
-        <Property name="ERROR_FILE_PATTERN">%i-${DAY_HOUR_PATTERN}/${ERROR_FILE}</Property>
-        <Property name="DEBUG_FILE_PATTERN">%i-${DAY_HOUR_PATTERN}/${DEBUG_FILE}</Property>
-
+        <Property name="RUN_FILE_PATTERN">${DAY_HOUR_PATTERN}/%i-${RUN_FILE}</Property>
+        <Property name="ERROR_FILE_PATTERN">${DAY_HOUR_PATTERN}/%i-${ERROR_FILE}</Property>
+        <Property name="DEBUG_FILE_PATTERN">${DAY_HOUR_PATTERN}/%i-${DEBUG_FILE}</Property>
+        <Property name="AUDIT_FILE_PATTERN">${DAY_HOUR_PATTERN}/%i-${AUDIT_FILE}</Property>
     </Properties>
     <Appenders>
         <Console name="CONSOLE" target="SYSTEM_OUT">
@@ -58,6 +59,17 @@
             <DefaultRolloverStrategy max="20" fileIndex="min" />
         </RollingFile>
 
+        <RollingFile name="AUDIT_LOG_FILE"
+                     fileName="${LOG_PATH}/${AUDIT_FILE}"
+                     filePattern="${AUDIT_FILE_PATTERN}">
+            <PatternLayout pattern="${LOG_PATTERN}" charset="UTF-8" />
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" />
+                <SizeBasedTriggeringPolicy size="10000KB" />
+            </Policies>
+            <DefaultRolloverStrategy max="20" fileIndex="min" />
+        </RollingFile>
+
     </Appenders>
     <Loggers>
         <Root level="INFO">
@@ -69,6 +81,9 @@
         </Logger>
         <Logger name="com.dnd.ground" level="DEBUG">
             <AppenderRef ref="DEBUG_LOG_FILE"/>
+        </Logger>
+        <Logger name="com.dnd.ground.global.log.AuditLogger">
+            <AppenderRef ref="AUDIT_LOG_FILE"/>
         </Logger>
     </Loggers>
 </Configuration>
