@@ -23,8 +23,8 @@ import org.springframework.web.multipart.MultipartFile;
  * @description 회원 관련 컨트롤러 구현체
  * @author  박세헌, 박찬호
  * @since   2022-08-02
- * @updated 1.회원 영역 데이터 조회 시 일부 영역 내 데이터만 조회하도록 수정
- *          - 2023-02-14 박찬호
+ * @updated 1.마이페이지 데이터 조회 API의 Http method 변경
+ *          - 2023-03-12 박찬호
  */
 
 @Api(tags = "회원")
@@ -61,12 +61,12 @@ public class UserControllerImpl implements UserController {
         return ResponseEntity.ok().body(userService.getUserProfile(userNickname, friendNickname));
     }
 
-    @PostMapping("/info/activity")
+    @GetMapping("/info/activity")
     @Operation(summary = "나의 활동 기록 조회",
             description = "해당 유저의 start-end(기간) 사이 활동기록 조회\n" +
                     "start: 해당 날짜의 00시 00분 00초\n" +
                     "end: 해당 날짜의 23시 59분 59초")
-    public ResponseEntity<UserResponseDto.ActivityRecordResponseDto> getActivityRecord(@RequestBody UserRequestDto.LookUp requestDto){
+    public ResponseEntity<UserResponseDto.ActivityRecordResponseDto> getActivityRecord(@ModelAttribute UserRequestDto.LookUp requestDto){
         return ResponseEntity.ok().body(userService.getActivityRecord(requestDto));
     }
 
@@ -116,9 +116,9 @@ public class UserControllerImpl implements UserController {
         return ResponseEntity.ok().body(userService.editRecordMessage(requestDto));
     }
 
-    @PostMapping("/event-list")
+    @GetMapping("/event-list")
     @Operation(summary = "기록이 있는 날짜 조회", description = "기록이 있는 날짜 조회")
-    public ResponseEntity<UserResponseDto.dayEventList> getDayEventList(@RequestBody UserRequestDto.DayEventList requestDto){
+    public ResponseEntity<UserResponseDto.dayEventList> getDayEventList(@ModelAttribute UserRequestDto.DayEventList requestDto){
         return ResponseEntity.ok(userService.getDayEventList(requestDto));
     }
 

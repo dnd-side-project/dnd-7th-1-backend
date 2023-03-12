@@ -301,7 +301,7 @@ public class UserServiceImpl implements UserService {
         Integer exerciseTime = exerciseRecord.getExerciseTime();
         int minute = exerciseTime / 60;
         int second = exerciseTime % 60;
-        String time = "";
+        String time;
 
         // 10초 미만이라면 앞에 0하나 붙여주기
         if (Integer.toString(second).length() == 1) {
