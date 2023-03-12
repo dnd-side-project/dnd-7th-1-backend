@@ -1,11 +1,9 @@
 package com.dnd.ground.domain.matrix.repository;
 
-import com.dnd.ground.domain.matrix.dto.MatrixCond;
-import com.dnd.ground.domain.matrix.dto.QLocation;
+import com.dnd.ground.domain.matrix.dto.*;
 import com.dnd.ground.domain.user.User;
 import com.dnd.ground.global.util.Direction;
 import com.dnd.ground.global.util.GeometryUtil;
-import com.dnd.ground.domain.matrix.dto.Location;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.Expressions;
@@ -17,8 +15,11 @@ import lombok.extern.slf4j.Slf4j;
 import java.time.LocalDateTime;
 import java.util.*;
 
+import static com.dnd.ground.domain.challenge.QChallenge.challenge;
+import static com.dnd.ground.domain.challenge.QUserChallenge.userChallenge;
 import static com.dnd.ground.domain.exerciseRecord.QExerciseRecord.exerciseRecord;
 import static com.dnd.ground.domain.matrix.QMatrix.matrix;
+import static com.dnd.ground.domain.user.QUser.user;
 import static com.querydsl.core.group.GroupBy.groupBy;
 import static com.querydsl.core.group.GroupBy.list;
 
@@ -26,8 +27,9 @@ import static com.querydsl.core.group.GroupBy.list;
  * @description 운동 기록(영역) 관련 QueryDSL 레포지토리 (특정 범위 내 영역 조회)
  * @author  박찬호
  * @since   2023-02-14
- * @updated 1.중복을 제외한 영역 조회 쿼리 생성(Map)
- *          - 2023-03-07 박찬호
+ * @updated 1.특정 인원의 영역 조회 쿼리 생성
+ *          2.챌린지 기간동안 생성한 영역 조회 쿼리 생성
+ *          - 2023-03-12 박찬호
  */
 
 
@@ -35,6 +37,90 @@ import static com.querydsl.core.group.GroupBy.list;
 @RequiredArgsConstructor
 public class MatrixRepositoryImpl implements MatrixRepositoryQuery {
     private final JPAQueryFactory queryFactory;
+
+    @Override
+    public List<MatrixResponseDto> findMatrix(MatrixCond condition) {
+        return queryFactory
+                .select(
+                        new QMatrixResponseDto(
+                                user.nickname,
+                                list(
+                                        new QLocation(
+                                                Expressions.stringTemplate("ST_X({0})", matrix.point).castToNum(Double.class).as("latitude"),
+                                                Expressions.stringTemplate("ST_Y({0})", matrix.point).castToNum(Double.class).as("longitude")
+                                        )
+                                )
+                        )
+                )
+                .from(matrix)
+                .innerJoin(exerciseRecord)
+                .on(
+                        matrix.exerciseRecord.eq(exerciseRecord)
+                )
+                .innerJoin(user)
+                .on(exerciseRecord.user.eq(user))
+                .where(
+                        recordInUser(condition.getUser())
+                                .or(recordInUsers(condition.getUsers())),
+                        recordInPeriod(condition.getStarted(), condition.getEnded()),
+                        containMBR(condition.getLocation(), condition.getSpanDelta())
+                )
+                .transform(
+                        groupBy(user.nickname).list(
+                                new QMatrixResponseDto(
+                                        user.nickname,
+                                        list(new QLocation(
+                                                Expressions.stringTemplate("ST_X({0})", matrix.point).castToNum(Double.class).as("latitude"),
+                                                Expressions.stringTemplate("ST_Y({0})", matrix.point).castToNum(Double.class).as("longitude")
+                                        ))
+                                )
+                        )
+                );
+    }
+
+    @Override
+    public List<MatrixResponseDto> findChallengeMatrix(MatrixCond condition) {
+        return queryFactory
+                .select(
+                        new QMatrixResponseDto(
+                                user.nickname,
+                                list(
+                                        new QLocation(
+                                                Expressions.stringTemplate("ST_X({0})", matrix.point).castToNum(Double.class).as("latitude"),
+                                                Expressions.stringTemplate("ST_Y({0})", matrix.point).castToNum(Double.class).as("longitude")
+                                        )
+                                )
+                        )
+                )
+                .from(user)
+                .innerJoin(userChallenge)
+                .on(userChallenge.user.eq(user))
+                .innerJoin(challenge)
+                .on(
+                        userChallenge.challenge.eq(challenge),
+                        challenge.uuid.eq(condition.getTargetChallengeUuid())
+                )
+                .leftJoin(exerciseRecord)
+                .on(
+                        exerciseRecord.user.eq(user),
+                        exerciseRecord.started.goe(challenge.started),
+                        exerciseRecord.ended.loe(challenge.ended)
+                )
+                .leftJoin(matrix)
+                .on(matrix.exerciseRecord.eq(exerciseRecord))
+                .where(containMBR(condition.getLocation(), condition.getSpanDelta()))
+                .transform(
+                        groupBy(user.nickname).list(
+                                new QMatrixResponseDto(
+                                        user.nickname,
+                                        list(new QLocation(
+                                                Expressions.stringTemplate("ST_X({0})", matrix.point).castToNum(Double.class).as("latitude"),
+                                                Expressions.stringTemplate("ST_Y({0})", matrix.point).castToNum(Double.class).as("longitude")
+                                        ))
+                                )
+                        )
+                );
+    }
 
     @Override
     public List<Location> findMatrixList(MatrixCond condition) {
@@ -67,6 +153,7 @@ public class MatrixRepositoryImpl implements MatrixRepositoryQuery {
                 .fetch();
     }
 
+    @Override
     public Map<User, List<Location>> findMatrixMap(MatrixCond condition) {
         return queryFactory
                 .from(matrix)
@@ -75,8 +162,8 @@ public class MatrixRepositoryImpl implements MatrixRepositoryQuery {
                         matrix.exerciseRecord.eq(exerciseRecord)
                 )
                 .where(
-                        recordInUser(condition.getUser()),
-                        recordInUsers(condition.getUsers()),
+                        recordInUser(condition.getUser())
+                                .or(recordInUsers(condition.getUsers())),
                         recordInPeriod(condition.getStarted(), condition.getEnded()),
                         containMBR(condition.getLocation(), condition.getSpanDelta())
                 )
@@ -104,8 +191,8 @@ public class MatrixRepositoryImpl implements MatrixRepositoryQuery {
                         matrix.exerciseRecord.eq(exerciseRecord)
                 )
                 .where(
-                        recordInUser(condition.getUser()),
-                        recordInUsers(condition.getUsers()),
+                        recordInUser(condition.getUser())
+                                .or(recordInUsers(condition.getUsers())),
                         recordInPeriod(condition.getStarted(), condition.getEnded()),
                         containMBR(condition.getLocation(), condition.getSpanDelta())
                 )
@@ -170,7 +257,7 @@ public class MatrixRepositoryImpl implements MatrixRepositoryQuery {
     }
 
     private BooleanExpression containMBR(Location location, Double spanDelta) {
-        if (location == null) return null;
+        if (location == null || spanDelta == null) return null;
         Location northEast = GeometryUtil.calculate(location, spanDelta, Direction.NORTHEAST);
         Location southWest = GeometryUtil.calculate(location, spanDelta, Direction.SOUTHWEST);
 
