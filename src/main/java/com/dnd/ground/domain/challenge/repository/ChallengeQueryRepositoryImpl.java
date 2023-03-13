@@ -30,9 +30,8 @@ import static com.querydsl.core.group.GroupBy.list;
  * @description QueryDSL을 활용한 챌린지 관련 구현체
  * @author 박찬호
  * @since 2023-02-15
- * @updated 1.상태에 따른 챌린지 조회 쿼리를 동적 쿼리를 활용해 챌린지 조회 쿼리로 수정
- *          2.챌린지 색상 조회 쿼리의 파라미터 수정
- *          - 2023.03.03 박찬호
+ * @updated 1.챌린지 개수 조회 쿼리 수정
+ *          - 2023.03.13 박찬호
  */
 @RequiredArgsConstructor
 @Slf4j
@@ -112,13 +111,15 @@ public class ChallengeQueryRepositoryImpl implements ChallengeQueryRepository {
     @Override
     public Map<User, Long> findUsersProgressChallengeCount(Set<String> users) {
         return queryFactory
-                .from(userChallenge)
-                .where(
-                        userChallenge.user.nickname.in(users),
-                        userChallenge.status.in(ChallengeStatus.PROGRESS, ChallengeStatus.MASTER, ChallengeStatus.WAIT)
+                .from(user)
+                .leftJoin(userChallenge)
+                .on(
+                        userChallenge.user.eq(user),
+                        userChallenge.status.in(ChallengeStatus.PROGRESS, ChallengeStatus.MASTER)
                 )
-                .groupBy(userChallenge.user)
-                .transform(groupBy(userChallenge.user).as(userChallenge.count()));
+                .where(user.nickname.in(users))
+                .groupBy(user)
+                .transform(groupBy(user).as(userChallenge.count()));
     }
 
     /*조건에 따른 조회*/
@@ -136,10 +137,6 @@ public class ChallengeQueryRepositoryImpl implements ChallengeQueryRepository {
                 )
                 .orderBy(challenge.created.asc())
                 .fetch();
-    }
-
-    private Predicate inPeriod(LocalDateTime started, LocalDateTime ended) {
-        return started != null && ended != null ? challenge.started.goe(started).and(challenge.ended.loe(ended)) : null;
     }
 
     /*닉네임과 UUID를 기반으로 UC조회*/
@@ -188,6 +185,10 @@ public class ChallengeQueryRepositoryImpl implements ChallengeQueryRepository {
                                 list(new QUCDto_UCInfo(userChallenge.user.picturePath, userChallenge.user.nickname, userChallenge.status))
                         )
                 );
+    }
+
+    private Predicate inPeriod(LocalDateTime started, LocalDateTime ended) {
+        return started != null && ended != null ? challenge.started.goe(started).and(challenge.ended.loe(ended)) : null;
     }
 
     private BooleanExpression containUserInChallenge(User user) {

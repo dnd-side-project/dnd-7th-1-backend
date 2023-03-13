@@ -30,8 +30,8 @@ import java.util.stream.Collectors;
  * @author 박찬호
  * @description 챌린지와 관련된 서비스의 역할을 분리한 구현체
  * @since 2022-08-03
- * @updated 1.챌린지 상세보기(지도) API 개선
- *          - 2023.03.03
+ * @updated 1.랭킹 관련 쿼리 수정에 따른 파라미터 변경
+ *          - 2023.03.13
  */
 
 @Slf4j
@@ -244,7 +244,7 @@ public class ChallengeServiceImpl implements ChallengeService {
         User friend = userRepository.findByNickname(friendNickname).orElseThrow(
                 () -> new FriendException(ExceptionCodeSet.FRIEND_NOT_FOUND));
 
-        Map<Challenge, List<RankDto>> challengesWithFriend = exerciseRecordRepository.findChallengeMatrixRankWithUsers(user, List.of(friend), ChallengeStatus.PROGRESS);
+        Map<Challenge, List<RankDto>> challengesWithFriend = exerciseRecordRepository.findChallengeMatrixRankWithUsers(user, List.of(friend), List.of(ChallengeStatus.PROGRESS));
         Map<Challenge, ChallengeColor> colors = challengeRepository.findChallengesColor(new ChallengeCond(user, ChallengeStatus.PROGRESS));
         List<ChallengeResponseDto.Progress> response = new ArrayList<>();
 
@@ -367,7 +367,7 @@ public class ChallengeServiceImpl implements ChallengeService {
         List<User> members = userChallengeRepository.findChallengeUsers(challenge); //본인 포함 챌린지에 참여하는 인원들
         if (!members.contains(user)) throw new ChallengeException(ExceptionCodeSet.USER_CHALLENGE_NOT_FOUND); //참여하는 챌린지가 아니면 예외처리
 
-        Map<Challenge, List<RankDto>> challengeMatrixRankWithMembers = exerciseRecordRepository.findChallengeMatrixRankWithUsers(user, members, ChallengeStatus.PROGRESS);
+        Map<Challenge, List<RankDto>> challengeMatrixRankWithMembers = exerciseRecordRepository.findChallengeMatrixRankWithUsers(user, members, List.of(ChallengeStatus.PROGRESS, ChallengeStatus.DONE));
         List<UserResponseDto.Ranking> rankings = rankService.calculateUsersRank(challengeMatrixRankWithMembers.get(challenge));
 
         return ChallengeResponseDto.ProgressDetail.builder()

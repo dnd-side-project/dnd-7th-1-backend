@@ -4,6 +4,7 @@ import com.dnd.ground.domain.matrix.dto.*;
 import com.dnd.ground.domain.user.User;
 import com.dnd.ground.global.util.Direction;
 import com.dnd.ground.global.util.GeometryUtil;
+import com.querydsl.core.types.Predicate;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.Expressions;
@@ -27,9 +28,8 @@ import static com.querydsl.core.group.GroupBy.list;
  * @description 운동 기록(영역) 관련 QueryDSL 레포지토리 (특정 범위 내 영역 조회)
  * @author  박찬호
  * @since   2023-02-14
- * @updated 1.특정 인원의 영역 조회 쿼리 생성
- *          2.챌린지 기간동안 생성한 영역 조회 쿼리 생성
- *          - 2023-03-12 박찬호
+ * @updated 1.조회 대상 인원에 대한 조건 메소드 수정(and -> or)
+ *          - 2023-03-13 박찬호
  */
 
 
@@ -60,8 +60,7 @@ public class MatrixRepositoryImpl implements MatrixRepositoryQuery {
                 .innerJoin(user)
                 .on(exerciseRecord.user.eq(user))
                 .where(
-                        recordInUser(condition.getUser())
-                                .or(recordInUsers(condition.getUsers())),
+                        recordInUserOrUsers(condition.getUser(), condition.getUsers()),
                         recordInPeriod(condition.getStarted(), condition.getEnded()),
                         containMBR(condition.getLocation(), condition.getSpanDelta())
                 )
@@ -162,8 +161,7 @@ public class MatrixRepositoryImpl implements MatrixRepositoryQuery {
                         matrix.exerciseRecord.eq(exerciseRecord)
                 )
                 .where(
-                        recordInUser(condition.getUser())
-                                .or(recordInUsers(condition.getUsers())),
+                        recordInUserOrUsers(condition.getUser(), condition.getUsers()),
                         recordInPeriod(condition.getStarted(), condition.getEnded()),
                         containMBR(condition.getLocation(), condition.getSpanDelta())
                 )
@@ -191,8 +189,7 @@ public class MatrixRepositoryImpl implements MatrixRepositoryQuery {
                         matrix.exerciseRecord.eq(exerciseRecord)
                 )
                 .where(
-                        recordInUser(condition.getUser())
-                                .or(recordInUsers(condition.getUsers())),
+                        recordInUserOrUsers(condition.getUser(), condition.getUsers()),
                         recordInPeriod(condition.getStarted(), condition.getEnded()),
                         containMBR(condition.getLocation(), condition.getSpanDelta())
                 )
@@ -270,11 +267,18 @@ public class MatrixRepositoryImpl implements MatrixRepositoryQuery {
                 .eq(true);
     }
 
-    private BooleanExpression recordInUser(User user) {
-        return user != null ? exerciseRecord.user.eq(user) : null;
-    }
+    private Predicate recordInUserOrUsers(User user, Set<User> users) {
+        BooleanExpression userExpression = user != null ? exerciseRecord.user.eq(user) : null;
+        BooleanExpression usersExpression = users != null ? exerciseRecord.user.in(users) : null;
 
-    private BooleanExpression recordInUsers(Set<User> users) {
-        return users != null ? exerciseRecord.user.in(users) : null;
+        if (userExpression == null && usersExpression == null) {
+            return null;
+        } else if (userExpression == null) {
+            return usersExpression;
+        } else if (usersExpression == null) {
+            return userExpression;
+        } else {
+            return userExpression.or(usersExpression);
+        }
     }
 }
