@@ -22,6 +22,7 @@ import com.dnd.ground.domain.matrix.repository.MatrixRepository;
 import com.dnd.ground.domain.matrix.service.RankService;
 import com.dnd.ground.domain.user.User;
 import com.dnd.ground.domain.user.dto.*;
+import com.dnd.ground.domain.user.repository.UserPropertyRepository;
 import com.dnd.ground.domain.user.repository.UserRepository;
 import com.dnd.ground.global.auth.UserClaim;
 import com.dnd.ground.global.auth.service.AuthService;
@@ -52,7 +53,9 @@ import static java.time.temporal.TemporalAdjusters.lastDayOfMonth;
  * @description 유저 서비스 클래스
  * @author 박세헌, 박찬호
  * @since 2022-08-01
- * @updated 1.컨트롤러와 서비스 레이어 역할 분리를 위한 일부 메소드 반환타입 변경
+ * @updated 1.User-UserProperty 분리에 따른 수정
+ *          2.회원정보가 필요한 경우 회원을 조회하는 쿼리 변경(WithProperty)
+ *          3.메인화면 필터 변경 메소드 변경(User -> UserProperty)
  *          - 2023-03-07 박찬호
  */
 
@@ -63,6 +66,7 @@ import static java.time.temporal.TemporalAdjusters.lastDayOfMonth;
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
+    private final UserPropertyRepository userPropertyRepository;
     private final ChallengeService challengeService;
     private final ChallengeRepository challengeRepository;
     private final ExerciseRecordRepository exerciseRecordRepository;
@@ -80,8 +84,8 @@ public class UserServiceImpl implements UserService {
     private String DEFAULT_NAME;
 
     public HomeResponseDto showHome(UserRequestDto.Home request) {
-        User user = userRepository.findByNickname(request.getNickname()).orElseThrow(
-                () -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
+        User user = userRepository.findByNicknameWithProperty(request.getNickname())
+                .orElseThrow(() -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
 
         Location location = Objects.requireNonNull(request.getCenter(), ExceptionCodeSet.EMPTY_LOCATION.getMessage());
         double spanDelta = Objects.requireNonNull(request.getSpanDelta(), ExceptionCodeSet.EMPTY_RANGE.getMessage());
@@ -166,9 +170,9 @@ public class UserServiceImpl implements UserService {
                 .friendMatrices(friendMatrices)
                 .challengeMatrices(challengeMatrices)
                 .challengesNumber(challengesColor.size())
-                .isShowMine(user.getIsShowMine())
-                .isShowFriend(user.getIsShowFriend())
-                .isPublicRecord(user.getIsPublicRecord())
+                .isShowMine(user.getProperty().getIsShowMine())
+                .isShowFriend(user.getProperty().getIsShowFriend())
+                .isPublicRecord(user.getProperty().getIsPublicRecord())
                 .build();
     }
 
@@ -346,7 +350,7 @@ public class UserServiceImpl implements UserService {
     /*필터 변경: 나의 기록 보기*/
     @Transactional
     public Boolean changeFilterMine(String nickname) {
-        return userRepository.findByNickname(nickname)
+        return userPropertyRepository.findByNickname(nickname)
                 .orElseThrow(() -> new UserException(ExceptionCodeSet.USER_NOT_FOUND))
                 .changeFilterMine();
     }
@@ -354,7 +358,7 @@ public class UserServiceImpl implements UserService {
     /*필터 변경: 친구 보기*/
     @Transactional
     public Boolean changeFilterFriend(String nickname) {
-        return userRepository.findByNickname(nickname)
+        return userPropertyRepository.findByNickname(nickname)
                 .orElseThrow(() -> new UserException(ExceptionCodeSet.USER_NOT_FOUND))
                 .changeFilterFriend();
     }
@@ -362,7 +366,7 @@ public class UserServiceImpl implements UserService {
     /*필터 변경: 친구들에게 보이기*/
     @Transactional
     public Boolean changeFilterRecord(String nickname) {
-        return userRepository.findByNickname(nickname)
+        return userPropertyRepository.findByNickname(nickname)
                 .orElseThrow(() -> new UserException(ExceptionCodeSet.USER_NOT_FOUND))
                 .changeFilterRecord();
     }

@@ -102,11 +102,13 @@ public class UserRequestDto {
 
     /* 운동 기록 날짜 조회시 사용하는 dto */
     @Data
+    @AllArgsConstructor
     static public class DayEventList {
         @ApiModelProperty(name = "닉네임", example = "NickA", required = true)
         private String nickname;
 
         @ApiModelProperty(name = "년-월-날짜", example = "2022-09-01", required = true)
+        @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
         private LocalDate yearMonth;
     }
 }

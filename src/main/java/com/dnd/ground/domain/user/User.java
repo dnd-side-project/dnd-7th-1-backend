@@ -14,10 +14,11 @@ import java.util.List;
 
 /**
  * @description 회원 엔티티
- * @author  박찬호, 박세헌
+ * @author  박찬호
  * @since   2022.07.28
- * @updated 1. 도메인 변경
- *           - 2023-01-20 박찬호
+ * @updated 1.User - UserProperty 분리
+ *          2.메인화면 관련 필터 필드 및 메소드 삭제
+ *           - 2023-03-20 박찬호
  */
 
 @Getter
@@ -51,19 +52,6 @@ public class User {
     @Column(nullable = false)
     private LocalDateTime created;
 
-    @Column(name="is_show_mine", nullable = false)
-    private Boolean isShowMine;
-
-    @Column(name="is_show_friend", nullable = false)
-    private Boolean isShowFriend;
-
-    @Column(name="is_public_record", nullable = false)
-    private Boolean isPublicRecord;
-
-    /**
-     * 카카오 프로필 사진 → S3 저장X | 파일 이름: kakao/카카오회원번호
-     * 자체 프로필 사진 → S3 저장 | 파일 이름: user/profile/닉네임-생성시간
-     */
     @Column(name="picture_name", nullable = false)
     private String pictureName;
 
@@ -71,40 +59,26 @@ public class User {
     private String picturePath;
 
     @Enumerated(EnumType.STRING)
-    @Column(name="login_type", nullable = false)
+    @Column(name="login_type")
     private LoginType loginType;
 
-    @OneToMany(mappedBy = "friend")
+    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JoinColumn(name = "property_id")
+    private UserProperty property;
+
+    @OneToMany(mappedBy = "friend", cascade = CascadeType.ALL)
     private List<Friend> friends = new ArrayList<>();
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
     private List<UserChallenge> challenges = new ArrayList<>();
 
-    @OneToMany(mappedBy = "user")
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
     private List<ExerciseRecord> exerciseRecords = new ArrayList<>();
 
     //마지막 위치 최신화
     public void updatePosition(Double latitude, Double longitude) {
         this.latitude = latitude;
         this.longitude = longitude;
-    }
-
-    //"나의 기록 보기" 필터 변경
-    public Boolean changeFilterMine() {
-        this.isShowMine = !this.isShowMine;
-        return this.isShowMine;
-    }
-
-    //"친구 보기" 필터 변경
-    public Boolean changeFilterFriend() {
-        this.isShowFriend = !this.isShowFriend;
-        return this.isShowFriend;
-    }
-
-    //"친구들에게 보이기" 필터 변경
-    public Boolean changeFilterRecord() {
-        this.isPublicRecord = !this.isPublicRecord;
-        return this.isPublicRecord;
     }
 
     //프로필 수정
@@ -115,4 +89,8 @@ public class User {
         this.picturePath = picturePath;
     }
 
+    public void setUserProperty(UserProperty property) {
+        this.property = property;
+        property.setUser(this);
+    }
 }
