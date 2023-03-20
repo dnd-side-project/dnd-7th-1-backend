@@ -5,6 +5,7 @@ import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.dnd.ground.domain.friend.service.FriendService;
 import com.dnd.ground.domain.user.User;
+import com.dnd.ground.domain.user.UserProperty;
 import com.dnd.ground.global.auth.UserClaim;
 import com.dnd.ground.domain.user.repository.UserRepository;
 import com.dnd.ground.global.auth.dto.UserSignDto;
@@ -112,14 +113,30 @@ public class AuthServiceImpl implements AuthService, UserDetailsService {
                     .intro(null)
                     .latitude(null)
                     .longitude(null)
-                    .isShowMine(true)
-                    .isShowFriend(true)
-                    .isPublicRecord(signDto.getIsPublicRecord())
                     .pictureName(signDto.getPictureName())
                     .picturePath(signDto.getPicturePath())
                     .loginType(signDto.getLoginType())
                     .build();
 
+            Boolean isNotification = signDto.getIsNotification();
+            UserProperty property = UserProperty.builder()
+                    .fcmToken(signDto.getFcmToken())
+                    .fcmTokenUpdated(LocalDateTime.now())
+                    .socialId(signDto.getSocialId())
+                    .isShowMine(true)
+                    .isShowFriend(true)
+                    .isPublicRecord(signDto.getIsPublicRecord())
+                    .notiWeekStart(isNotification)
+                    .notiWeekEnd(isNotification)
+                    .notiFriendRequest(isNotification)
+                    .notiFriendAccept(isNotification)
+                    .notiChallengeRequest(isNotification)
+                    .notiChallengeStart(isNotification)
+                    .notiChallengeCancel(isNotification)
+                    .notiChallengeResult(isNotification)
+                    .build();
+
+            user.setUserProperty(property);
             userRepository.save(user);
 
             //친구 신청

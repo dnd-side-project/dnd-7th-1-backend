@@ -59,7 +59,7 @@ public class SignFilter extends UsernamePasswordAuthenticationFilter {
     public Authentication attemptAuthentication(HttpServletRequest request,
                                                 HttpServletResponse response) throws AuthenticationException {
 
-        UsernamePasswordAuthenticationToken authenticationToken = null;
+        UsernamePasswordAuthenticationToken authenticationToken;
         try {
             UserSignDto userSignDto = objectMapper.readValue(request.getInputStream(), UserSignDto.class);
             this.claim = authService.signUp(userSignDto);
