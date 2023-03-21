@@ -35,4 +35,9 @@ picture:
 jwt:
   secret_key: ${jwt.secret_key}
   issuer: ${jwt.issuer}
+fcm:
+  project_id: ${fcm.project_id}
+  key:
+    path: ${fcm.key.path}
+    scope: ${fcm.key.scope}
 ip: ${ip}
