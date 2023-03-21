@@ -10,8 +10,11 @@ import com.dnd.ground.domain.user.repository.UserRepository;
 import com.dnd.ground.global.exception.ExceptionCodeSet;
 import com.dnd.ground.global.exception.FriendException;
 import com.dnd.ground.global.exception.UserException;
+import com.dnd.ground.global.notification.NotificationForm;
+import com.dnd.ground.global.notification.NotificationMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
@@ -39,6 +42,7 @@ public class FriendServiceImpl implements FriendService {
 
     private final FriendRepository friendRepository;
     private final UserRepository userRepository;
+    private final ApplicationEventPublisher pushNotificationPublisher;
 
     private static final Integer FRIEND_LARGE_PAGING_NUMBER = 15; //15개씩 페이징하기 위해 1개 더 가져옴(마지막 여부 판단)
     private static final Integer FRIEND_SMALL_PAGING_NUMBER = 3; //3개씩 페이징 하기 위해 1개 더 가져옴.
@@ -143,6 +147,9 @@ public class FriendServiceImpl implements FriendService {
         else if (userNickname.equals(friendNickname)) throw new FriendException(ExceptionCodeSet.BAD_REQUEST);
 
         friendRepository.save(new Friend(user, friend, WAIT));
+
+        pushNotificationPublisher.publishEvent(new NotificationForm(List.of(friend), List.of(user.getNickname()), null, NotificationMessage.FRIEND_RECEIVED_REQUEST));
+
         return true;
     }
 
@@ -165,11 +172,13 @@ public class FriendServiceImpl implements FriendService {
             friendRelation.updateStatus(ACCEPT);
             friendRepository.save(
                     Friend.builder()
-                            .user(friend)
-                            .friend(user)
+                            .user(user)
+                            .friend(friend)
                             .status(ACCEPT)
                             .build()
             );
+
+            pushNotificationPublisher.publishEvent(new NotificationForm(List.of(friend), List.of(user.getNickname()), null, NotificationMessage.FRIEND_AGREE));
         } else if (status.equals(REJECT)) {
             friendRepository.delete(friendRelation);
         } else throw new FriendException(ExceptionCodeSet.FRIEND_INVALID_STATUS);

@@ -45,7 +45,7 @@ public interface FriendRepository extends JpaRepository<Friend, Long>, FriendQue
     Optional<Friend> findFriendInProgress(@Param("user") User user, @Param("friend") User friend);
 
     //요청 대기중인 친구 관계 조회
-    @Query("select f from Friend f where f.user=:user and f.friend=:friend and f.status='WAIT'")
+    @Query("select f from Friend f where f.user=:friend and f.friend=:user and f.status='WAIT'")
     Optional<Friend> findRequestFriend(@Param("user") User user, @Param("friend") User friend);
 
 }

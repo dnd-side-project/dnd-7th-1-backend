@@ -54,7 +54,7 @@ public enum NotificationMessage {
     }
 
     private String parse(String format, List<String> params) {
-        if (params == null) throw new NullPointerException();
+        if (params == null) return format;
         else if (StringUtils.countOccurrencesOf(format, "%s") != params.size()) throw new MissingFormatArgumentException("파라미터 개수가 올바르지 않습니다.");
 
         for (String param : params) {
