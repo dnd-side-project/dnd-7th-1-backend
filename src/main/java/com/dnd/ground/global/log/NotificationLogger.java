@@ -6,16 +6,16 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 /**
- * @description Audit Log 기록을 위한 Logger 클래스
+ * @description 푸시 알람 Logging을 위한 Logger 클래스
  * @author 박찬호
- * @since 2023-03-08
- * @updated 1.Audit Log 기록을 위한 클래스 생성
- *          - 2023.03.08 박찬호
+ * @since 2023-03-09
+ * @updated 1.푸시알람 Logging을 위한 클래스 생성
+ *          - 2023.03.09 박찬호
  */
 @Component
-@Qualifier("auditLogger")
-public class AuditLogger implements CommonLogger {
-    private final Logger logger = LoggerFactory.getLogger(AuditLogger.class);
+@Qualifier("notificationLogger")
+public class NotificationLogger implements CommonLogger {
+    private final Logger logger = LoggerFactory.getLogger(NotificationLogger.class);
 
     @Override
     public void write(String log) {

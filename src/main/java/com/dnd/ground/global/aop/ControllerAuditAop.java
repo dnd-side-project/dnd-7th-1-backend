@@ -1,12 +1,13 @@
 package com.dnd.ground.global.aop;
 
-import com.dnd.ground.global.log.AuditLogger;
+import com.dnd.ground.global.log.CommonLogger;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.json.simple.JSONObject;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -29,9 +30,9 @@ import java.util.Map;
 @Component
 @Slf4j
 public class ControllerAuditAop {
-    private final AuditLogger logger;
+    private final CommonLogger logger;
 
-    public ControllerAuditAop(AuditLogger logger) {
+    public ControllerAuditAop(@Qualifier("auditLogger") CommonLogger logger) {
         this.logger = logger;
     }
 
