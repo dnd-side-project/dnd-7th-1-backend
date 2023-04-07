@@ -15,9 +15,12 @@ import com.dnd.ground.domain.user.User;
 import com.dnd.ground.domain.user.dto.UserResponseDto;
 import com.dnd.ground.domain.user.repository.UserRepository;
 import com.dnd.ground.global.exception.*;
+import com.dnd.ground.global.notification.NotificationForm;
+import com.dnd.ground.global.notification.NotificationMessage;
 import com.dnd.ground.global.util.UuidUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,8 +33,8 @@ import java.util.stream.Collectors;
  * @author 박찬호
  * @description 챌린지와 관련된 서비스의 역할을 분리한 구현체
  * @since 2022-08-03
- * @updated 1.랭킹 관련 쿼리 수정에 따른 파라미터 변경
- *          - 2023.03.13
+ * @updated 1.진행 대기 중 챌린지 상세조회의 회원 이미지가 경로가 아닌 이름으로 내려가는 것 수정
+ *          - 2023.04.07
  */
 
 @Slf4j
@@ -45,6 +48,7 @@ public class ChallengeServiceImpl implements ChallengeService {
     private final ExerciseRecordRepository exerciseRecordRepository;
     private final RankService rankService;
     private final MatrixRepository matrixRepository;
+    private final ApplicationEventPublisher pushNotificationPublisher;
     private static final int MAX_CHALLENGE_COUNT = 3;
     private static final int MAX_CHALLENGE_MEMBER_COUNT = 3;
     private static final ChallengeColor[] color = ChallengeColor.values();
@@ -95,14 +99,13 @@ public class ChallengeServiceImpl implements ChallengeService {
         challengeCountMap.remove(master);
 
         //멤버 관계 생성
-        for (Map.Entry<User, Long> memberEntry : Set.copyOf(challengeCountMap.entrySet())) {
-            User member = memberEntry.getKey();
-            if (memberEntry.getValue() <= MAX_CHALLENGE_COUNT) {
+        for (Map.Entry<User, Long> entry : challengeCountMap.entrySet()) {
+            User member = entry.getKey();
+            if (entry.getValue() <= MAX_CHALLENGE_COUNT) {
                 colorIdx = (int) (challengeCountMap.get(member)%MAX_CHALLENGE_COUNT);
                 userChallengeRepository.save(new UserChallenge(challenge, member, color[colorIdx], ChallengeStatus.WAIT));
                 membersInfo.add(new UserResponseDto.UInfo(member.getNickname(), member.getPicturePath()));
             } else {
-                challengeCountMap.remove(member);
                 exceptMembers.add(member.getNickname());
                 exceptMemberCount++;
             }
@@ -110,6 +113,11 @@ public class ChallengeServiceImpl implements ChallengeService {
 
         //챌린지는 혼자 진행할 수 없음.
         if (membersInfo.size() == 0) throw new ChallengeException(ExceptionCodeSet.NOT_ALONE_CHALLENGE);
+
+        //푸시 알람 발송
+        pushNotificationPublisher.publishEvent(
+                new NotificationForm(List.copyOf(challengeCountMap.keySet()), List.of(master.getNickname()), List.of(challenge.getName()), NotificationMessage.CHALLENGE_RECEIVED_REQUEST)
+        );
 
         return ChallengeCreateResponseDto.builder()
                 .members(membersInfo)
@@ -133,6 +141,16 @@ public class ChallengeServiceImpl implements ChallengeService {
 
         //상태 변경
         userChallenge.changeStatus(status);
+
+        //푸시 알람 발송
+        if (status.equals(ChallengeStatus.PROGRESS)) {
+            User master = userChallengeRepository.findMasterInChallenge(UuidUtil.hexToBytes(requestDto.getUuid()));
+            User user = userChallenge.getUser();
+            pushNotificationPublisher.publishEvent(
+                    new NotificationForm(List.of(master), List.of(user.getNickname()), List.of(user.getNickname()), NotificationMessage.CHALLENGE_ACCEPTED)
+            );
+        }
+
         return new ChallengeResponseDto.Status(status);
     }
 
@@ -314,7 +332,7 @@ public class ChallengeServiceImpl implements ChallengeService {
         List<UCDto.UCInfo> infos = new ArrayList<>();
         for (UserChallenge uc : ucList) {
             User userInUC = uc.getUser();
-            UCDto.UCInfo ucInfo = new UCDto.UCInfo(userInUC.getPictureName(), userInUC.getNickname(), uc.getStatus());
+            UCDto.UCInfo ucInfo = new UCDto.UCInfo(userInUC.getPicturePath(), userInUC.getNickname(), uc.getStatus());
 
             if (uc.getStatus() == ChallengeStatus.MASTER) {
                 infos.add(0, ucInfo);

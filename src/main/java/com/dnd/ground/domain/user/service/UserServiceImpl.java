@@ -53,10 +53,8 @@ import static java.time.temporal.TemporalAdjusters.lastDayOfMonth;
  * @description 유저 서비스 클래스
  * @author 박세헌, 박찬호
  * @since 2022-08-01
- * @updated 1.User-UserProperty 분리에 따른 수정
- *          2.회원정보가 필요한 경우 회원을 조회하는 쿼리 변경(WithProperty)
- *          3.메인화면 필터 변경 메소드 변경(User -> UserProperty)
- *          - 2023-03-07 박찬호
+ * @updated 1.회원 정보 수정 메소드 수정 (프로필 변경 시 기본 이미지 삭제하는 문제, 파일이 없을 경우 예외처리)
+ *          - 2023-04-07 박찬호
  */
 
 @Slf4j
@@ -390,8 +388,8 @@ public class UserServiceImpl implements UserService {
         if (!editNick.equals(originalNick) && !authService.validateNickname(editNick))
             throw new UserException(ExceptionCodeSet.DUPLICATE_NICKNAME);
 
-        User user = userRepository.findByNickname(originalNick).orElseThrow(
-                () -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
+        User user = userRepository.findByNickname(originalNick)
+                .orElseThrow(() -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
 
         String intro = requestDto.getIntro();
         String pictureName = user.getPictureName();
@@ -405,11 +403,11 @@ public class UserServiceImpl implements UserService {
         } else {
             // 기본 이미지가 아닌 유저의 사진으로 변경 (프로필 사진 이름: 닉네임+카카오ID (Ex. NickA18345)
             if (!file.isEmpty()) {
-                amazonS3Service.deleteFile(user.getPictureName());
+                if (!user.getPictureName().equals(DEFAULT_NAME)) amazonS3Service.deleteFile(user.getPictureName());
                 Map<String, String> fileInfo = amazonS3Service.uploadToS3(file, "user/profile", user.getEmail() + UserClaim.changeCreatedToLong(user.getCreated()));
                 pictureName = fileInfo.get("fileName");
                 picturePath = fileInfo.get("filePath");
-            }
+            } else throw new UserException(ExceptionCodeSet.EMPTY_FILE);
         }
         user.updateProfile(editNick, intro, pictureName, picturePath);
 
