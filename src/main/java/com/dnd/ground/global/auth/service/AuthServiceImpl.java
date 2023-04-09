@@ -10,8 +10,10 @@ import com.dnd.ground.global.auth.UserClaim;
 import com.dnd.ground.domain.user.repository.UserRepository;
 import com.dnd.ground.global.auth.dto.UserSignDto;
 import com.dnd.ground.global.exception.*;
+import com.dnd.ground.global.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.http.HttpHeaders;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -19,6 +21,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.servlet.http.HttpServletResponse;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.regex.Pattern;
@@ -27,8 +30,8 @@ import java.util.regex.Pattern;
  * @description 회원의 인증/인가 및 회원 정보 관련 서비스 구현체
  * @author  박찬호
  * @since   2022-09-07
- * @updated 1.회원가입 intro 제거
- *          - 2022.01-31 박찬호
+ * @updated 1. 회원가입 이관 (SignFilter -> AuthService)
+ *          - 2023.04.09 박찬호
  */
 
 @Slf4j
@@ -97,7 +100,7 @@ public class AuthServiceImpl implements AuthService, UserDetailsService {
 //    }
 
     @Transactional
-    public UserClaim signUp(UserSignDto signDto) {
+    public UserSignDto.Response signUp(UserSignDto signDto, HttpServletResponse response) {
         //닉네임 중복 확인
         String nickname = signDto.getNickname();
         if (userRepository.findByNickname(nickname).isPresent())
@@ -145,7 +148,9 @@ public class AuthServiceImpl implements AuthService, UserDetailsService {
                 if (!result) throw new FriendException(ExceptionCodeSet.FRIEND_NOT_FOUND);
             }
 
-            return new UserClaim(signDto.getEmail(), nickname, user.getCreated(), user.getLoginType());
+            response.setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + JwtUtil.createAccessToken(user.getEmail(), user.getCreated()));
+            response.setHeader("Refresh-Token", "Bearer " + JwtUtil.createRefreshToken(user.getEmail(), user.getCreated()));
+            return new UserSignDto.Response(nickname);
 
         } else throw new AuthException(ExceptionCodeSet.SIGN_DUPLICATED);
     }
