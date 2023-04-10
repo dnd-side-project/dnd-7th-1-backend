@@ -34,6 +34,7 @@ import java.util.stream.Collectors;
  * @description 챌린지와 관련된 서비스의 역할을 분리한 구현체
  * @since 2022-08-03
  * @updated 1.푸시 알람의 화면 네비게이팅을 위한 챌린지 UUID 추가
+ *          2.챌린지 상세보기: 지도 API의 응답을 회원의 순서에 맞춰 정렬
  *          - 2023.04.10
  */
 
@@ -451,6 +452,9 @@ public class ChallengeServiceImpl implements ChallengeService {
         //랭킹 계산
         List<RankDto> rankByChallenge = exerciseRecordRepository.findRankByChallenge(challenge);
         List<UserResponseDto.Ranking> rankings = rankService.calculateUsersRank(rankByChallenge);
+
+        members.sort(Comparator.comparing(User::getNickname));
+        rankings.sort(Comparator.comparing(UserResponseDto.Ranking::getNickname));
 
         //영역 조회
         List<ChallengeMapResponseDto.UserMapInfo> matrixList = new ArrayList<>();
