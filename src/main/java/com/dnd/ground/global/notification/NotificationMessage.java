@@ -12,9 +12,8 @@ import java.util.MissingFormatArgumentException;
  * @description 푸시 알람 메시지 목록
  * @author  박찬호
  * @since   2023-03-20
- * @updated 1.푸시 알람 메시지 정리
- *          2.파라미터 파싱 메소드 생성
- *          - 2023-03-20 박찬호
+ * @updated 1.메시지 속 파라미터를 파싱하는 방식 변경
+ *          -2023-04-10 박찬호
  */
 
 
@@ -48,9 +47,12 @@ public enum NotificationMessage {
     private String title;
     private String content;
 
-    public void setMessageParams(List<String> titleParams, List<String> contentParams) {
-        this.title = parse(this.title, titleParams);
-        this.content = parse(this.content, contentParams);
+    public String getTitle(List<String> titleParams) {
+        return parse(this.title, titleParams);
+    }
+
+    public String getContent(List<String> contentParams) {
+        return parse(this.content, contentParams);
     }
 
     private String parse(String format, List<String> params) {

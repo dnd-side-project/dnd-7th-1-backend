@@ -1,6 +1,8 @@
 package com.dnd.ground.global.notification;
 
 import com.dnd.ground.domain.user.User;
+import com.dnd.ground.domain.user.UserProperty;
+import com.dnd.ground.domain.user.repository.UserPropertyRepository;
 import com.dnd.ground.global.log.CommonLogger;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.firebase.FirebaseApp;
@@ -13,6 +15,7 @@ import org.springframework.context.event.EventListener;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.PostConstruct;
@@ -25,10 +28,8 @@ import java.util.stream.Collectors;
  * @description 푸시 알람 서비스 클래스
  * @author  박찬호
  * @since   2023-03-17
- * @updated 1.FCM 앱 초기화
- *          2.메시지 구성 및 전송
- *          3.Exponential Backoff + Jitter 기반 재요청 3회 처리
- *          - 2023-03-22 박찬호
+ * @updated 1.화면 네비게이팅을 위한 데이터 추가
+ *          2.비동기 처리로 인해 영속성 컨텍스트가 분리됨에 따라, 회원의 속성을 조회(NotificationMessage와 연계)
  */
 
 
@@ -38,10 +39,14 @@ import java.util.stream.Collectors;
 public class NotificationService {
     private final CommonLogger logger;
     private final NotificationRepository notificationRepository;
+    private final UserPropertyRepository userPropertyRepository;
     private final Random random = new Random();
 
-    public NotificationService(NotificationRepository notificationRepository, @Qualifier("notificationLogger") CommonLogger logger) {
+    public NotificationService(NotificationRepository notificationRepository,
+                               UserPropertyRepository userPropertyRepository,
+                               @Qualifier("notificationLogger") CommonLogger logger) {
         this.notificationRepository = notificationRepository;
+        this.userPropertyRepository = userPropertyRepository;
         this.logger = logger;
     }
 
@@ -65,36 +70,53 @@ public class NotificationService {
                 .setCredentials(GoogleCredentials
                         .fromStream(new ClassPathResource(FCM_PRIVATE_KEY_PATH).getInputStream())
                         .createScoped(List.of(FIREBASE_SCOPE))
-                )
-                .setProjectId(PROJECT_ID)
+            )
+            .setProjectId(PROJECT_ID)
                 .build();
         if (FirebaseApp.getApps().isEmpty()) {
-            FirebaseApp.initializeApp(options);
-            logger.write("FirebaseApp init");
-        }
+        FirebaseApp.initializeApp(options);
+        logger.write("FirebaseApp init");
     }
+}
 
     @EventListener
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void send(NotificationForm form) {
         LocalDateTime created = LocalDateTime.now();
         LocalDateTime reservedTime = LocalDateTime.now();
         NotificationMessage message = form.getMessage();
+        Map<String, String> data = form.getData() != null ? form.getData() : new HashMap<>();
         List<User> users = form.getUsers();
+        String title;
+        String content;
+
+        /*트랜잭션 분리에 따른 UserProperty 프록시 확인*/
+        for (User user : users) {
+            if (user.getProperty() == null) {
+                Optional<UserProperty> userPropertyOpt = userPropertyRepository.findByNickname(user.getNickname());
+                if (userPropertyOpt.isPresent()) {
+                    user.setUserProperty(userPropertyOpt.get());
+                } else {
+                    logger.errorWrite(String.format("회원 정보 조회에 실패했습니다. | 닉네임:%s", user.getNickname()));
+                }
+            }
+        }
 
         /*메시지 구성*/
         try {
-            message.setMessageParams(form.getTitleParams(), form.getContentParams());
+            title = message.getTitle(form.getTitleParams());
+            content = message.getContent(form.getContentParams());
         } catch (NullPointerException | MissingFormatArgumentException e) {
             logger.errorWrite(String.format("푸시 알람 메시지 구성에 실패했습니다. | 메시지:%s | 제목 파라미터:%s | 내용 파라미터:%s", message, form.getTitleParams().toString(), form.getContentParams().toString()));
             return;
         }
 
-        Notification notification = new Notification(message.getTitle(), message.getContent());
+        Notification notification = new Notification(title, content);
         List<Message> messages = users.stream()
                 .map(user -> Message.builder()
                         .setNotification(notification)
                         .setToken(user.getProperty().getFcmToken())
+                        .putAllData(data)
                         .build())
                 .collect(Collectors.toList());
 
@@ -106,18 +128,15 @@ public class NotificationService {
             String exceptionHandleResult = handleException(e);
             if (exceptionHandleResult.equals(RETRY)) {
                 List<UserMsgDto> retryMessages = new ArrayList<>();
-                for (int i=0; i<users.size(); i++) {
-                    retryMessages.add(new UserMsgDto(users.get(i), messages.get(i)));
-                }
-
-                retry(retryMessages, message, created);
+                users.forEach(user -> retryMessages.add(new UserMsgDto(user, messages.get(users.indexOf(user)))));
+                retry(retryMessages, title, content, created);
             } else if (exceptionHandleResult.equals(REISSUE)) {
                 logger.errorWrite("FCM 토큰 재발급이 필요합니다.");
             } else {
                 List<String> targets = users.stream()
                         .map(User::getNickname)
                         .collect(Collectors.toList());
-                logger.errorWrite(String.format("푸시 알람 전송에 실패했습니다. 대상:%s | 메시지:%s, %s | 에러코드:%s", targets, message.getTitle(), message.getContent(), e.getErrorCode()));
+                logger.errorWrite(String.format("푸시 알람 전송에 실패했습니다. 대상:%s | 메시지:%s, %s | 에러코드:%s", targets, title, content, e.getErrorCode()));
             }
             return;
         }
@@ -138,23 +157,23 @@ public class NotificationService {
                     retryMessages.add(new UserMsgDto(user, msg));
                 } else {
                     notificationRepository.save(
-                            new PushNotification(responses.get(i).getMessageId(), message.getTitle(), message.getContent(), created, reservedTime, NotificationStatus.SEND, users.get(i).getNickname())
+                            new PushNotification(responses.get(i).getMessageId(), title, content, created, reservedTime, NotificationStatus.SEND, users.get(i).getNickname())
                     );
                 }
             }
 
-            retry(retryMessages, message, created);
+            retry(retryMessages, title, content, created);
         } else {
             for (int i = 0; i < responses.size(); i++) {
                 notificationRepository.save(
-                        new PushNotification(responses.get(i).getMessageId(), message.getTitle(), message.getContent(), created, reservedTime, NotificationStatus.SEND, users.get(i).getNickname())
+                        new PushNotification(responses.get(i).getMessageId(), title, content, created, reservedTime, NotificationStatus.SEND, users.get(i).getNickname())
                 );
             }
         }
     }
 
     //exponential backoff + Jitter
-    private void retry(List<UserMsgDto> retryMessages, NotificationMessage message, LocalDateTime created) {
+    private void retry(List<UserMsgDto> retryMessages, String title, String content, LocalDateTime created) {
         int retries = 0;
         int waitTime;
         BatchResponse batchResponse = null;
@@ -166,7 +185,7 @@ public class NotificationService {
                     .collect(Collectors.toList());
 
             try {
-                waitTime = BASE_SLEEP_TIME * ((1 << retries) + random.nextInt(4000) - 2000); //jitter range: -2~2sec
+                waitTime = BASE_SLEEP_TIME + ((1 << retries) * Math.max(1, random.nextInt(4000) - 2000)); //jitter range: -2~2sec
                 Thread.sleep(waitTime);
                 batchResponse = FirebaseMessaging.getInstance().sendAll(retryMsg);
             } catch (FirebaseMessagingException e) {
@@ -179,9 +198,9 @@ public class NotificationService {
                         User user = retryMessage.getUser();
                         String messageId = "ERROR_" + user.getNickname() + LocalDateTime.now() + random.nextInt(100);
                         notificationRepository.save(
-                                new PushNotification(messageId, message.getTitle(), message.getContent(), created, LocalDateTime.now(), NotificationStatus.FAIL, user.getNickname())
+                                new PushNotification(messageId, title, content, created, LocalDateTime.now(), NotificationStatus.FAIL, user.getNickname())
                         );
-                        logger.errorWrite(String.format("푸시 알람 재전송에 실패했습니다. 대상:%s | 메시지:%s, %s | 에러코드:%s", user.getNickname(), message.getTitle(), message.getContent(), e.getErrorCode()));
+                        logger.errorWrite(String.format("푸시 알람 재전송에 실패했습니다. 대상:%s | 메시지:%s, %s | 에러코드:%s", user.getNickname(), title, content, e.getErrorCode()));
                     }
                     return;
                 }
@@ -203,7 +222,7 @@ public class NotificationService {
 
                     if (sendResponse.isSuccessful()) {
                         notificationRepository.save(
-                                new PushNotification(sendResponse.getMessageId(), message.getTitle(), message.getContent(), created, LocalDateTime.now(), NotificationStatus.SEND, userMsgDto.getUser().getNickname())
+                                new PushNotification(sendResponse.getMessageId(), title, content, created, LocalDateTime.now(), NotificationStatus.SEND, userMsgDto.getUser().getNickname())
                         );
                         successMessages.add(userMsgDto);
                     }
@@ -216,7 +235,7 @@ public class NotificationService {
                     User user = retryMessages.get(i).getUser();
                     SendResponse response = responses.get(i);
                     notificationRepository.save(
-                            new PushNotification(response.getMessageId(), message.getTitle(), message.getContent(), created, LocalDateTime.now(), NotificationStatus.SEND, user.getNickname())
+                            new PushNotification(response.getMessageId(), title, content, created, LocalDateTime.now(), NotificationStatus.SEND, user.getNickname())
                     );
                 }
                 break;
@@ -227,10 +246,10 @@ public class NotificationService {
             User user = retryMessages.get(i).getUser();
             String messageId = "ERROR_" + user.getNickname() + LocalDateTime.now() + random.nextInt(100);
             notificationRepository.save(
-                    new PushNotification(messageId, message.getTitle(), message.getContent(), created, LocalDateTime.now(), NotificationStatus.FAIL, user.getNickname())
+                    new PushNotification(messageId, title, content, created, LocalDateTime.now(), NotificationStatus.FAIL, user.getNickname())
             );
             String errorCode = batchResponse == null ? "에러 코드를 알 수 없습니다." : batchResponse.getResponses().get(i).getException().getErrorCode();
-            logger.errorWrite(String.format("푸시 알람 재전송에 실패했습니다. 대상:%s | 메시지:%s, %s | 에러코드:%s", user.getNickname(), message.getTitle(), message.getContent(), errorCode));
+            logger.errorWrite(String.format("푸시 알람 재전송에 실패했습니다. 대상:%s | 메시지:%s, %s | 에러코드:%s", user.getNickname(), title, content, errorCode));
         }
     }
 

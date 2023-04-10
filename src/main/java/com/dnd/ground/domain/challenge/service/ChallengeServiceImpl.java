@@ -33,8 +33,8 @@ import java.util.stream.Collectors;
  * @author 박찬호
  * @description 챌린지와 관련된 서비스의 역할을 분리한 구현체
  * @since 2022-08-03
- * @updated 1.진행 대기 중 챌린지 상세조회의 회원 이미지가 경로가 아닌 이름으로 내려가는 것 수정
- *          - 2023.04.07
+ * @updated 1.푸시 알람의 화면 네비게이팅을 위한 챌린지 UUID 추가
+ *          - 2023.04.10
  */
 
 @Slf4j
@@ -52,6 +52,7 @@ public class ChallengeServiceImpl implements ChallengeService {
     private static final int MAX_CHALLENGE_COUNT = 3;
     private static final int MAX_CHALLENGE_MEMBER_COUNT = 3;
     private static final ChallengeColor[] color = ChallengeColor.values();
+    private static final String NOTI_PARAM_CHALLENGE_UUID = "challenge_uuid";
 
     /*챌린지 생성*/
     @Transactional
@@ -116,7 +117,13 @@ public class ChallengeServiceImpl implements ChallengeService {
 
         //푸시 알람 발송
         pushNotificationPublisher.publishEvent(
-                new NotificationForm(List.copyOf(challengeCountMap.keySet()), List.of(master.getNickname()), List.of(challenge.getName()), NotificationMessage.CHALLENGE_RECEIVED_REQUEST)
+                new NotificationForm(
+                        List.copyOf(challengeCountMap.keySet()),
+                        List.of(master.getNickname()),
+                        List.of(challenge.getName()),
+                        NotificationMessage.CHALLENGE_RECEIVED_REQUEST,
+                        Map.of(NOTI_PARAM_CHALLENGE_UUID, UuidUtil.bytesToHex(challenge.getUuid()))
+                )
         );
 
         return ChallengeCreateResponseDto.builder()
@@ -147,7 +154,13 @@ public class ChallengeServiceImpl implements ChallengeService {
             User master = userChallengeRepository.findMasterInChallenge(UuidUtil.hexToBytes(requestDto.getUuid()));
             User user = userChallenge.getUser();
             pushNotificationPublisher.publishEvent(
-                    new NotificationForm(List.of(master), List.of(user.getNickname()), List.of(user.getNickname()), NotificationMessage.CHALLENGE_ACCEPTED)
+                    new NotificationForm(
+                            List.of(master),
+                            List.of(user.getNickname()),
+                            List.of(user.getNickname()),
+                            NotificationMessage.CHALLENGE_ACCEPTED,
+                            Map.of(NOTI_PARAM_CHALLENGE_UUID, requestDto.getUuid())
+                            )
             );
         }
 
