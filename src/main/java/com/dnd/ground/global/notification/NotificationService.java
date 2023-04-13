@@ -30,6 +30,7 @@ import java.util.stream.Collectors;
  * @since   2023-03-17
  * @updated 1.화면 네비게이팅을 위한 데이터 추가
  *          2.비동기 처리로 인해 영속성 컨텍스트가 분리됨에 따라, 회원의 속성을 조회(NotificationMessage와 연계)
+ *          - 2023-04-13 박찬호
  */
 
 
@@ -84,8 +85,15 @@ public class NotificationService {
     public void send(NotificationForm form) {
         LocalDateTime created = LocalDateTime.now();
         LocalDateTime reservedTime = LocalDateTime.now();
+
         NotificationMessage message = form.getMessage();
+        if (message == null) {
+            logger.errorWrite("메시지가 존재하지 않습니다.");
+            return;
+        }
+
         Map<String, String> data = form.getData() != null ? form.getData() : new HashMap<>();
+        data.put("action", message.name());
         List<User> users = form.getUsers();
         String title;
         String content;

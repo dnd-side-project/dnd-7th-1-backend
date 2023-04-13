@@ -32,7 +32,7 @@ public enum NotificationMessage {
      * 친구
      */
     FRIEND_RECEIVED_REQUEST("%s님의 친구 요청 ", "회원님의 친구 수락을 기다리고 있어요."),
-    FRIEND_AGREE("%s님과 친구가 되었어요.", "이제 메인 화면에서 친구를 확인할 수 있어요."),
+    FRIEND_ACCEPT("%s님과 친구가 되었어요.", "이제 메인 화면에서 친구를 확인할 수 있어요."),
 
     /**
      * 챌린지

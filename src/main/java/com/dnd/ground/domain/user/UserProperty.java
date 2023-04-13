@@ -128,7 +128,7 @@ public class UserProperty {
             case CHALLENGE_RESULT:
                 return this.notiChallengeResult = !this.notiChallengeResult;
             default:
-                throw new UserException(ExceptionCodeSet.PARSE_EXCEPTION);
+                throw new UserException(ExceptionCodeSet.NOTI_INVALID_MSG);
         }
     }
 }
