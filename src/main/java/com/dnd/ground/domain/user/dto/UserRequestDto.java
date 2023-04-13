@@ -1,6 +1,7 @@
 package com.dnd.ground.domain.user.dto;
 
 import com.dnd.ground.domain.matrix.dto.Location;
+import com.dnd.ground.global.notification.NotificationMessage;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.*;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -9,35 +10,19 @@ import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
 
 /**
  * @description 회원 관련 Request Dto
  * @author  박세헌, 박찬호
  * @since   2022-08-18
- * @updated 1.메인 화면 조회 방식 변경에 따른 DTO 수정
- *          - 2023-03-07 박찬호
+ * @updated 1.푸시 알람 필터 변경을 위한 DTO 추가
+ *          2.미사용 SignUp 클래스 삭제
+ *          3.@Data 어노테이션 삭제
+ *          - 2023-04-13 박찬호
  */
 
 @Data
 public class UserRequestDto {
-
-    /*회원가입시 사용하는 DTO*/
-    @Data
-    static public class SignUp {
-        @ApiModelProperty(name = "유저의 닉네임", example = "NickA", required = true)
-        private String nickname;
-
-        @ApiModelProperty(name = "친구 리스트(닉네임)", example = "[NickA]", required = true)
-        private List<String> friends;
-
-        @ApiModelProperty(name = "카카오 리프레시 토큰", example = "2LqQd2jnW50rHbOyGyyKu_xNRv4p2Jri7wWsso7RCj11mgAAAYLKLqJq", required = true)
-        private String kakaoRefreshToken;
-
-        @ApiModelProperty(name = "내 위치 공개", example = "true", required = true)
-        private Boolean isPublicRecord;
-        //..필터 추가 예정
-    }
 
     @Getter
     @Setter
@@ -81,9 +66,9 @@ public class UserRequestDto {
         private LocalDateTime ended;
     }
 
-    @Data
+    @Getter
     @AllArgsConstructor
-    static public class Profile{
+    static public class Profile {
 
         @NotNull
         @ApiModelProperty(name = "유저의 원래 닉네임", example = "NickA", required = true)
@@ -101,7 +86,7 @@ public class UserRequestDto {
     }
 
     /* 운동 기록 날짜 조회시 사용하는 dto */
-    @Data
+    @Getter
     @AllArgsConstructor
     static public class DayEventList {
         @ApiModelProperty(name = "닉네임", example = "NickA", required = true)
@@ -110,5 +95,12 @@ public class UserRequestDto {
         @ApiModelProperty(name = "년-월-날짜", example = "2022-09-01", required = true)
         @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
         private LocalDate yearMonth;
+    }
+
+    @AllArgsConstructor
+    @Getter
+    static public class NotificationFilter {
+        private String nickname;
+        private NotificationMessage notification;
     }
 }

@@ -53,8 +53,8 @@ import static java.time.temporal.TemporalAdjusters.lastDayOfMonth;
  * @description 유저 서비스 클래스
  * @author 박세헌, 박찬호
  * @since 2022-08-01
- * @updated 1.회원 정보 수정 메소드 수정 (프로필 변경 시 기본 이미지 삭제하는 문제, 파일이 없을 경우 예외처리)
- *          - 2023-04-07 박찬호
+ * @updated 1.회원의 푸시 알람 관련 필터 변경을 위한 API 구현
+ *          - 2023-04-13 박찬호
  */
 
 @Slf4j
@@ -367,6 +367,13 @@ public class UserServiceImpl implements UserService {
         return userPropertyRepository.findByNickname(nickname)
                 .orElseThrow(() -> new UserException(ExceptionCodeSet.USER_NOT_FOUND))
                 .changeFilterRecord();
+    }
+
+    @Transactional
+    public Boolean changeFilterNotification(UserRequestDto.NotificationFilter request) {
+        return userPropertyRepository.findByNickname(request.getNickname())
+                .orElseThrow(() -> new UserException(ExceptionCodeSet.USER_NOT_FOUND))
+                .changeFilterNotification(request.getNotification());
     }
 
     /* 운동 기록의 상세 메시지 수정 */

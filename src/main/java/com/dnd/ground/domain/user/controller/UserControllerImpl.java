@@ -23,8 +23,8 @@ import org.springframework.web.multipart.MultipartFile;
  * @description 회원 관련 컨트롤러 구현체
  * @author  박세헌, 박찬호
  * @since   2022-08-02
- * @updated 1.마이페이지 데이터 조회 API의 Http method 변경
- *          - 2023-03-12 박찬호
+ * @updated 1.회원의 푸시 알람 관련 필터 변경을 위한 API 구현
+ *          - 2023-04-13 박찬호
  */
 
 @Api(tags = "회원")
@@ -82,22 +82,27 @@ public class UserControllerImpl implements UserController {
         return ResponseEntity.ok().body(userService.getDetailMap(recordId));
     }
 
-    @PostMapping("filter/mine")
+    @PostMapping("/filter/mine")
     @Operation(summary = "필터 변경: 나의 기록 보기", description = "'나의 기록 보기' 옵션이 변경됩니다.(True<->False)")
     public ResponseEntity<Boolean> changeFilterMine(@RequestParam("nickname") String nickname) {
         return ResponseEntity.ok().body(userService.changeFilterMine(nickname));
     }
 
-    @PostMapping("filter/friend")
+    @PostMapping("/filter/friend")
     @Operation(summary = "필터 변경: 친구 보기", description = "'친구 보기' 옵션이 변경됩니다.(True<->False)")
     public ResponseEntity<Boolean> changeFilterFriend(@RequestParam("nickname") String nickname) {
         return ResponseEntity.ok().body(userService.changeFilterFriend(nickname));
     }
 
-    @PostMapping("filter/record")
+    @PostMapping("/filter/record")
     @Operation(summary = "필터 변경: 친구들에게 보이기", description = "'친구들에게 보이기' 옵션이 변경됩니다.(True<->False)")
     public ResponseEntity<Boolean> changeFilterRecord(@RequestParam("nickname") String nickname) {
         return ResponseEntity.ok().body(userService.changeFilterRecord(nickname));
+    }
+
+    @PostMapping("/filter/notification")
+    public ResponseEntity<Boolean> changeFilterNotification(@RequestBody UserRequestDto.NotificationFilter request) {
+        return ResponseEntity.ok(userService.changeFilterNotification(request));
     }
 
     @PostMapping(value = "/info/profile/edit", consumes =  {MediaType.MULTIPART_FORM_DATA_VALUE})

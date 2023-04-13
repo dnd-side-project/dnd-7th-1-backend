@@ -1,5 +1,8 @@
 package com.dnd.ground.domain.user;
 
+import com.dnd.ground.global.exception.ExceptionCodeSet;
+import com.dnd.ground.global.exception.UserException;
+import com.dnd.ground.global.notification.NotificationMessage;
 import lombok.*;
 
 import javax.persistence.*;
@@ -9,9 +12,9 @@ import java.time.LocalDateTime;
  * @description 회원 정보 엔티티
  * @author  박찬호
  * @since   2023.03.20
- * @updated 1.User - UserProperty 분리
- *          2.필터, 동의 여부, 토큰 정보 등 부가적인 회원 정보 저장
- *           - 2023-03-20 박찬호
+ * @updated 1.챌린지 수락 알람 관련 필드 생성
+ *          2.푸시 알람 관련 필드 변경 메소드 생성
+ *           - 2023-04-13 박찬호
  */
 
 @Entity
@@ -70,6 +73,9 @@ public class UserProperty {
     @Column(name="noti_challenge_request", nullable = false)
     private Boolean notiChallengeRequest;
 
+    @Column(name="noti_challenge_accept", nullable = false)
+    private Boolean notiChallengeAccept;
+
     @Column(name="noti_challenge_start", nullable = false)
     private Boolean notiChallengeStart;
 
@@ -99,5 +105,30 @@ public class UserProperty {
     public Boolean changeFilterRecord() {
         this.isPublicRecord = !this.isPublicRecord;
         return this.isPublicRecord;
+    }
+
+    public Boolean changeFilterNotification(NotificationMessage message) {
+        switch (message) {
+            case COMMON_WEEK_START:
+                return this.notiWeekStart = !this.notiWeekStart;
+            case COMMON_WEEK_END:
+                return this.notiWeekEnd = !this.notiWeekEnd;
+            case FRIEND_RECEIVED_REQUEST:
+                return this.notiFriendRequest = !this.notiFriendRequest;
+            case FRIEND_ACCEPT:
+                return this.notiFriendAccept = !this.notiFriendAccept;
+            case CHALLENGE_RECEIVED_REQUEST:
+                return this.notiChallengeRequest = !this.notiChallengeRequest;
+            case CHALLENGE_ACCEPTED:
+                return this.notiChallengeAccept = !this.notiChallengeAccept;
+            case CHALLENGE_START_SOON:
+                return this.notiChallengeStart = !this.notiChallengeStart;
+            case CHALLENGE_CANCELED:
+                return this.notiChallengeCancel = !this.notiChallengeCancel;
+            case CHALLENGE_RESULT:
+                return this.notiChallengeResult = !this.notiChallengeResult;
+            default:
+                throw new UserException(ExceptionCodeSet.PARSE_EXCEPTION);
+        }
     }
 }
