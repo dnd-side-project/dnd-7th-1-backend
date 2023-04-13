@@ -2,6 +2,7 @@ package com.dnd.ground.domain.friend.service;
 
 import com.dnd.ground.domain.friend.Friend;
 import com.dnd.ground.domain.friend.FriendStatus;
+import com.dnd.ground.domain.friend.dto.FriendCondition;
 import com.dnd.ground.domain.friend.dto.FriendResponseDto;
 import com.dnd.ground.domain.friend.repository.FriendRepository;
 import com.dnd.ground.domain.user.User;
@@ -9,8 +10,11 @@ import com.dnd.ground.domain.user.repository.UserRepository;
 import com.dnd.ground.global.exception.ExceptionCodeSet;
 import com.dnd.ground.global.exception.FriendException;
 import com.dnd.ground.global.exception.UserException;
+import com.dnd.ground.global.notification.NotificationForm;
+import com.dnd.ground.global.notification.NotificationMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
@@ -18,14 +22,17 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
+
+import static com.dnd.ground.domain.friend.FriendStatus.*;
 
 /**
- * @author 박찬호
  * @description 친구와 관련된 서비스 구현체
+ * @author 박찬호
  * @since 2022-08-01
- * @updated 1.페이징 수정
- *          - 2022.11.27 박찬호
+ * @updated 1. 요청을 보낸 경우 user에 요청한 사람, friend에 받은 사람을 WAIT 상태로 저장.
+ *          2. 친구 요청 수락한 경우, ACCEPT 상태의 친구 데이터를 2개 저장.
+ *          3. 이에 따른 메소드 수정
+ *         2023-03-06
  */
 
 @Slf4j
@@ -35,12 +42,12 @@ public class FriendServiceImpl implements FriendService {
 
     private final FriendRepository friendRepository;
     private final UserRepository userRepository;
+    private final ApplicationEventPublisher pushNotificationPublisher;
 
-    private final Integer FRIEND_LARGE_PAGING_NUMBER = 15; //15개씩 페이징하기 위해 1개 더 가져옴(마지막 여부 판단)
-    private final Integer FRIEND_SMALL_PAGING_NUMBER = 3; //3개씩 페이징 하기 위해 1개 더 가져옴.
+    private static final Integer FRIEND_LARGE_PAGING_NUMBER = 15; //15개씩 페이징하기 위해 1개 더 가져옴(마지막 여부 판단)
+    private static final Integer FRIEND_SMALL_PAGING_NUMBER = 3; //3개씩 페이징 하기 위해 1개 더 가져옴.
 
     //친구 목록과 추가 정보를 함께 반환
-    @Transactional
     public FriendResponseDto getFriends(String nickname, Integer offset) {
 
         //유저 및 친구 조회
@@ -53,23 +60,16 @@ public class FriendServiceImpl implements FriendService {
         PageRequest pageRequest = PageRequest.of(offset, FRIEND_LARGE_PAGING_NUMBER);
 
         try {
-            Slice<Friend> findFriendSlice = friendRepository.findFriendsByUserWithPaging(user, user, pageRequest);
+            Slice<Friend> findFriendSlice = friendRepository.findFriendsByUserWithPaging(user, pageRequest);
             isLast = findFriendSlice.isLast();
 
             List<Friend> findFriends = findFriendSlice.getContent();
 
             for (Friend findFriend : findFriends) {
-                if (findFriend.getUser() == user) {
-                    infos.add(FriendResponseDto.FInfo.of()
-                            .nickname(findFriend.getFriend().getNickname())
-                            .picturePath(findFriend.getFriend().getPicturePath())
-                            .build());
-                } else if (findFriend.getFriend() == user) {
-                    infos.add(FriendResponseDto.FInfo.of()
-                            .nickname(findFriend.getUser().getNickname())
-                            .picturePath(findFriend.getFriend().getPicturePath())
-                            .build());
-                }
+                infos.add(FriendResponseDto.FInfo.of()
+                        .nickname(findFriend.getFriend().getNickname())
+                        .picturePath(findFriend.getFriend().getPicturePath())
+                        .build());
             }
             return FriendResponseDto.builder()
                     .infos(infos)
@@ -116,48 +116,41 @@ public class FriendServiceImpl implements FriendService {
 
     //List<User> 형태의 친구 목록 반환
     public List<User> getFriends(User user) {
-        List<Friend> findFriends = friendRepository.findFriendsByUser(user);
-        List<User> friends = new ArrayList<>();
+        FriendCondition condition = FriendCondition.builder()
+                .user(user)
+                .status(ACCEPT)
+                .build();
 
-        for (Friend findFriend : findFriends) {
-            if (findFriend.getUser() == user) {
-                friends.add(findFriend.getFriend());
-            } else if (findFriend.getFriend() == user) {
-                friends.add(findFriend.getUser());
-            }
-        }
-
-        return friends;
+        return friendRepository.findFriends(condition);
     }
 
     /**
      * 단건 친구 요청 *
      * 누가 요청을 보냈는지 알기 위해 다음과 같은 명확한 기준을 세운다.
      * 추후 친구 요청 수락을 위해 요청을 보내는 쪽이 user, 받는 쪽이 friend에 저장한다.
-     * 단, 한 친구 관계는 DB에 1번만 저장하도록 한다.
+     * 요청한 경우 1건만 저장되지만, 수락하게 되면 양 측에 저장되어 2건이 저장된다.
      *
      * @param userNickname
      * @param friendNickname
-     * @return
+     * @return boolean
      */
     @Transactional
     public Boolean requestFriend(String userNickname, String friendNickname) {
-        User user = userRepository.findByNickname(userNickname).orElseThrow(
-                () -> new UserException(ExceptionCodeSet.USER_NOT_FOUND)
-        );
+        User user = userRepository.findByNickname(userNickname)
+                .orElseThrow(() -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
 
-        User friend = userRepository.findByNickname(friendNickname).orElseThrow(
-                () -> new FriendException(ExceptionCodeSet.FRIEND_NOT_FOUND)
-        );
+        User friend = userRepository.findByNickname(friendNickname)
+                .orElseThrow(() -> new FriendException(ExceptionCodeSet.FRIEND_NOT_FOUND));
 
-        if (friendRepository.findFriendInProgress(user, friend).isPresent() || userNickname.equals(friendNickname)) {
-            return false;
-        }
-        {
-            Friend friendRelation = new Friend(user, friend, FriendStatus.Wait);
-            friendRepository.save(friendRelation);
-            return true;
-        }
+        if (friendRepository.findFriendInProgress(user, friend).isPresent())
+            throw new FriendException(ExceptionCodeSet.FRIEND_DUPL);
+        else if (userNickname.equals(friendNickname)) throw new FriendException(ExceptionCodeSet.BAD_REQUEST);
+
+        friendRepository.save(new Friend(user, friend, WAIT));
+
+        pushNotificationPublisher.publishEvent(new NotificationForm(List.of(friend), List.of(user.getNickname()), null, NotificationMessage.FRIEND_RECEIVED_REQUEST));
+
+        return true;
     }
 
     /*친구 요청 수락, 거절 등에 대한 처리*/
@@ -175,50 +168,62 @@ public class FriendServiceImpl implements FriendService {
                 () -> new FriendException(ExceptionCodeSet.FRIEND_NOT_FOUND_REQ)
         );
 
-        friendRelation.updateStatus(status);
+        if (status.equals(ACCEPT)) {
+            friendRelation.updateStatus(ACCEPT);
+            friendRepository.save(
+                    Friend.builder()
+                            .user(user)
+                            .friend(friend)
+                            .status(ACCEPT)
+                            .build()
+            );
+
+            pushNotificationPublisher.publishEvent(new NotificationForm(List.of(friend), List.of(user.getNickname()), null, NotificationMessage.FRIEND_AGREE));
+        } else if (status.equals(REJECT)) {
+            friendRepository.delete(friendRelation);
+        } else throw new FriendException(ExceptionCodeSet.FRIEND_INVALID_STATUS);
+
         return new FriendResponseDto.ResponseResult(user.getNickname(), friend.getNickname(), friendRelation.getStatus());
     }
 
     /*친구 삭제*/
     @Transactional
     public Boolean deleteFriend(String userNickname, String friendNickname) {
-        User user = userRepository.findByNickname(userNickname).orElseThrow(
-                () -> new UserException(ExceptionCodeSet.USER_NOT_FOUND)
-        );
+        User user = userRepository.findByNickname(userNickname)
+                .orElseThrow(() -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
 
-        User friend = userRepository.findByNickname(friendNickname).orElseThrow(
-                () -> new FriendException(ExceptionCodeSet.FRIEND_NOT_FOUND)
-        );
+        User friend = userRepository.findByNickname(friendNickname)
+                .orElseThrow(() -> new FriendException(ExceptionCodeSet.FRIEND_NOT_FOUND));
 
-        Optional<Friend> friendRelation = friendRepository.findFriendRelation(user, friend);
-
-        if (friendRelation.isPresent()) {
-            friendRepository.delete(friendRelation.get());
+        List<Friend> friendRelation = friendRepository.findFriendRelation(user, friend);
+        if (friendRelation.isEmpty()) throw new FriendException(ExceptionCodeSet.FRIEND_NOT_FOUND);
+        else {
+            friendRepository.deleteAll(friendRelation);
             return true;
-        } else {
-            return false;
         }
     }
 
     /*회원과 친구가 어떤 관계인지 나타내는 메소드*/
     public FriendStatus getFriendStatus(User user, User friend) {
-        Optional<Friend> friendRelationOpt = friendRepository.findFriendRelation(user, friend);
-        FriendStatus isFriend = null;
+        List<Friend> friendRelation = friendRepository.findFriendRelation(user, friend);
+        FriendStatus isFriend = NO_FRIEND;
 
-        if (friendRelationOpt.isPresent()) {
-            Friend friendRelation = friendRelationOpt.get();
-
-            if (friendRelation.getStatus() == FriendStatus.Accept) {
-                isFriend = FriendStatus.Accept;
-            } else if (friendRelation.getStatus() == FriendStatus.Wait) {
-                if (friendRelation.getUser() == user)
-                    isFriend = FriendStatus.Requesting;
-                else
-                    isFriend = FriendStatus.ResponseWait;
+        if (friendRelation.size() == 2) {
+            for (Friend f : friendRelation) {
+                if (!f.getStatus().equals(ACCEPT))
+                    return NO_FRIEND;
             }
-        } else {
-            isFriend = FriendStatus.NoFriend;
+            isFriend = ACCEPT;
         }
+        else if (friendRelation.size() == 1) {
+            Friend f = friendRelation.get(0);
+            FriendStatus status = f.getStatus();
+            if (status.equals(WAIT)) {
+                if (f.getUser().equals(user)) isFriend = REQUESTING;
+                else isFriend = RESPONSE_WAIT;
+            }
+        }
+
         return isFriend;
     }
 }

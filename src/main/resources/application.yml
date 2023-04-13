@@ -15,31 +15,29 @@ spring:
         highlight_sql: ${hibernate.highlight_sql}
     defer-datasource-initialization: true
     open-in-view: true
+    database-platform: com.dnd.ground.global.config.MySQL8Dialect
   mvc:
     pathmatch:
       matching-strategy: ant_path_matcher
-  sql:
-    init:
-      mode: ${db.sql.init}
 logging:
+  config: classpath:log4j2.xml
   level:
     org.hibernate.SQL: debug
-    org.hibernate.type: trace
-
 kakao:
   REST_KEY: ${kakao.REST_KEY}
   REDIRECT_URI: ${kakao.REDIRECT_URI}
-
 apple:
   ISS: ${apple.ISS}
   AUD: ${apple.AUD}
-
 picture:
   path: ${picture.path}
   name: ${picture.name}
-
 jwt:
   secret_key: ${jwt.secret_key}
   issuer: ${jwt.issuer}
-
+fcm:
+  project_id: ${fcm.project_id}
+  key:
+    path: ${fcm.key.path}
+    scope: ${fcm.key.scope}
 ip: ${ip}

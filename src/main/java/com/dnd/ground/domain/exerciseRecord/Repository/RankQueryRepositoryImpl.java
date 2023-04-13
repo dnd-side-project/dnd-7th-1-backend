@@ -37,8 +37,8 @@ import static com.querydsl.core.group.GroupBy.list;
  * @description 운동 기록(영역) 관련 QueryDSL 레포지토리
  * @author  박찬호
  * @since   2022-08-01
- * @updated 1.특정 챌린지의 랭킹 정보 조회 쿼리 추가
- *          2023-03-03 박찬호
+ * @updated 1.챌린지 관련 랭킹 조회 쿼리 수정
+ *          2023-03-13 박찬호
  */
 
 @Repository
@@ -62,7 +62,6 @@ public class RankQueryRepositoryImpl implements RankQueryRepository {
                         exerciseRecord.user.id.eq(id),
                         exerciseRecord.started.between(start, end)
                 )
-                .where()
                 .fetch();
     }
 
@@ -201,7 +200,7 @@ public class RankQueryRepositoryImpl implements RankQueryRepository {
     }
 
     @Override
-    public Map<Challenge, List<RankDto>> findChallengeMatrixRankWithUsers(User targetUser, List<User> friend, ChallengeStatus status) {
+    public Map<Challenge, List<RankDto>> findChallengeMatrixRankWithUsers(User targetUser, List<User> friend, List<ChallengeStatus> status) {
         QChallenge subChallenge = new QChallenge("subChallenge");
         QUserChallenge subUC = new QUserChallenge("subUC");
         QUserChallenge subUC2 = new QUserChallenge("subUC2");
@@ -223,7 +222,7 @@ public class RankQueryRepositoryImpl implements RankQueryRepository {
                 .innerJoin(challenge)
                 .on(
                         userChallenge.challenge.eq(challenge),
-                        challenge.status.eq(status),
+                        challenge.status.in(status),
                         challenge.in(
                                 JPAExpressions
                                         .selectFrom(subChallenge)

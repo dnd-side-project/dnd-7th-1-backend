@@ -23,8 +23,8 @@ import org.springframework.web.multipart.MultipartFile;
  * @description 회원 관련 컨트롤러 구현체
  * @author  박세헌, 박찬호
  * @since   2022-08-02
- * @updated 1.회원 영역 데이터 조회 시 일부 영역 내 데이터만 조회하도록 수정
- *          - 2023-02-14 박찬호
+ * @updated 1.회원의 푸시 알람 관련 필터 변경을 위한 API 구현
+ *          - 2023-04-13 박찬호
  */
 
 @Api(tags = "회원")
@@ -61,12 +61,12 @@ public class UserControllerImpl implements UserController {
         return ResponseEntity.ok().body(userService.getUserProfile(userNickname, friendNickname));
     }
 
-    @PostMapping("/info/activity")
+    @GetMapping("/info/activity")
     @Operation(summary = "나의 활동 기록 조회",
             description = "해당 유저의 start-end(기간) 사이 활동기록 조회\n" +
                     "start: 해당 날짜의 00시 00분 00초\n" +
                     "end: 해당 날짜의 23시 59분 59초")
-    public ResponseEntity<UserResponseDto.ActivityRecordResponseDto> getActivityRecord(@RequestBody UserRequestDto.LookUp requestDto){
+    public ResponseEntity<UserResponseDto.ActivityRecordResponseDto> getActivityRecord(@ModelAttribute UserRequestDto.LookUp requestDto){
         return ResponseEntity.ok().body(userService.getActivityRecord(requestDto));
     }
 
@@ -82,22 +82,27 @@ public class UserControllerImpl implements UserController {
         return ResponseEntity.ok().body(userService.getDetailMap(recordId));
     }
 
-    @PostMapping("filter/mine")
+    @PostMapping("/filter/mine")
     @Operation(summary = "필터 변경: 나의 기록 보기", description = "'나의 기록 보기' 옵션이 변경됩니다.(True<->False)")
     public ResponseEntity<Boolean> changeFilterMine(@RequestParam("nickname") String nickname) {
         return ResponseEntity.ok().body(userService.changeFilterMine(nickname));
     }
 
-    @PostMapping("filter/friend")
+    @PostMapping("/filter/friend")
     @Operation(summary = "필터 변경: 친구 보기", description = "'친구 보기' 옵션이 변경됩니다.(True<->False)")
     public ResponseEntity<Boolean> changeFilterFriend(@RequestParam("nickname") String nickname) {
         return ResponseEntity.ok().body(userService.changeFilterFriend(nickname));
     }
 
-    @PostMapping("filter/record")
+    @PostMapping("/filter/record")
     @Operation(summary = "필터 변경: 친구들에게 보이기", description = "'친구들에게 보이기' 옵션이 변경됩니다.(True<->False)")
     public ResponseEntity<Boolean> changeFilterRecord(@RequestParam("nickname") String nickname) {
         return ResponseEntity.ok().body(userService.changeFilterRecord(nickname));
+    }
+
+    @PostMapping("/filter/notification")
+    public ResponseEntity<Boolean> changeFilterNotification(@RequestBody UserRequestDto.NotificationFilter request) {
+        return ResponseEntity.ok(userService.changeFilterNotification(request));
     }
 
     @PostMapping(value = "/info/profile/edit", consumes =  {MediaType.MULTIPART_FORM_DATA_VALUE})
@@ -106,20 +111,19 @@ public class UserControllerImpl implements UserController {
                                                                  @RequestParam(value = "originNickname") String originNickname,
                                                                  @RequestParam(value = "editNickname") String editNickname,
                                                                  @RequestParam(value = "intro") String intro,
-                                                                 @RequestParam(value = "isBasic") Boolean isBasic
-    ){
-        return userService.editUserProfile(picture, new UserRequestDto.Profile(originNickname, editNickname, intro, isBasic));
+                                                                 @RequestParam(value = "isBasic") Boolean isBasic) {
+        return ResponseEntity.ok().body(userService.editUserProfile(picture, new UserRequestDto.Profile(originNickname, editNickname, intro, isBasic)));
     }
 
     @PostMapping("/info/activity/record/edit")
     @Operation(summary = "운동 기록 메시지 수정", description = "운동 기록 메시지 수정")
     public ResponseEntity<Boolean> getDetailMap(@RequestBody RecordRequestDto.Message requestDto){
-        return userService.editRecordMessage(requestDto);
+        return ResponseEntity.ok().body(userService.editRecordMessage(requestDto));
     }
 
-    @PostMapping("/event-list")
+    @GetMapping("/event-list")
     @Operation(summary = "기록이 있는 날짜 조회", description = "기록이 있는 날짜 조회")
-    public ResponseEntity<UserResponseDto.dayEventList> getDayEventList(@RequestBody UserRequestDto.DayEventList requestDto){
+    public ResponseEntity<UserResponseDto.dayEventList> getDayEventList(@ModelAttribute UserRequestDto.DayEventList requestDto){
         return ResponseEntity.ok(userService.getDayEventList(requestDto));
     }
 

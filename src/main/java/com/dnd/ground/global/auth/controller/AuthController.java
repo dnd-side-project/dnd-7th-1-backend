@@ -19,12 +19,14 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletResponse;
+
 /**
  * @author 박찬호
  * @description 회원의 인증/인가 및 로그인 관련 컨트롤러
  * @since 2022-08-23
- * @updated 1. 미사용 API 삭제(온보딩, 회원가입V1)
- *          - 2023.01.23 박찬호
+ * @updated 1. 회원가입 이관 (SignFilter -> AuthService)
+ *          - 2023.04.09 박찬호
  */
 
 @Slf4j
@@ -38,10 +40,10 @@ public class AuthController {
     private final AuthService authService;
     private final AppleService appleService;
 
-    @PostMapping("/signup-example")
-    @Operation(summary = "회원 가입 V2", description = "모델 참고용으로, 실제 URL은 \"/sign\"임.")
-    public UserClaim signUp2(@RequestBody UserSignDto request) {
-        return authService.signUp(request);
+    @PostMapping("/sign")
+    @Operation(summary = "회원 가입 V2", description = "변경된 회원가입")
+    public ResponseEntity<UserSignDto.Response> signUp(@RequestBody UserSignDto request, HttpServletResponse response) {
+        return ResponseEntity.ok().body(authService.signUp(request, response));
     }
 
     @GetMapping("/check/nickname")
@@ -70,6 +72,13 @@ public class AuthController {
         else throw new AuthException(ExceptionCodeSet.LOGIN_TYPE_INVALID);
     }
 
+    /**
+     * 카카오 토큰만 들어올 떄 필터 어떻게 할 지 생각해봐야함.
+     * @param token
+     * @param offset
+     * @return
+     * @throws ParseException
+     */
     @GetMapping("/kakao/friend")
     @Operation(summary = "카카오 엑세스 토큰으로 카카오 친구 불러오기", description = "검수 전이라 팀 멤버들만 친구로 조회할 수 있음.\n15명씩 페이징하도록 했음. 카카오 친구목록 조회의 경우 최초 offset=0, 이후 서버로부터 받은 offset으로 요청해야 함.")
     public ResponseEntity<KakaoDto.kakaoFriendResponse> getKakaoFriends(@RequestHeader("Kakao-Access-Token") String token,

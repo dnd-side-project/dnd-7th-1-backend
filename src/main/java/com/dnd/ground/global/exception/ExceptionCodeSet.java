@@ -8,8 +8,8 @@ import org.springframework.http.HttpStatus;
  * @description 에러 코드 구현체
  * @author  박찬호
  * @since   2022-08-24
- * @updated 1.NOT_FOUND_UC 생성
- *          -2023.02.28 박찬호
+ * @updated 1.푸시 알람 관련 에러 코드 추가
+ *          -2023.04.13 박찬호
  */
 
 @RequiredArgsConstructor
@@ -20,6 +20,8 @@ public enum ExceptionCodeSet {
     DUPLICATE_NICKNAME(HttpStatus.BAD_REQUEST, "1001", "중복된 닉네임입니다."),
     EMPTY_LOCATION(HttpStatus.BAD_REQUEST, "1002", "현재 위치 정보가 필요합니다."),
     EMPTY_RANGE(HttpStatus.BAD_REQUEST, "1003", "조회할 영역 범위가 필요합니다."),
+    EMPTY_FILE(HttpStatus.BAD_REQUEST, "1004", "파일이 존재하지 않습니다."),
+    NOTI_INVALID_MSG(HttpStatus.BAD_REQUEST, "1005", "푸시 알람이 올바르지 않습니다."),
 
     //인증,인가
     USER_NOT_SIGNUP(HttpStatus.UNAUTHORIZED, "2000", "카카오 로그인만 진행하고, 회원가입은 하지 않은 유저입니다."),
@@ -51,10 +53,14 @@ public enum ExceptionCodeSet {
     FRIEND_RES_FAIL(HttpStatus.INTERNAL_SERVER_ERROR, "3003", "친구 요청에 대한 응답을 실패했습니다."),
     FRIEND_FAIL_DELETE(HttpStatus.INTERNAL_SERVER_ERROR, "3004", "친구 삭제를 실패했습니다."),
     FRIEND_DUPL(HttpStatus.BAD_REQUEST, "3005", "이미 친구입니다."),
+    FRIEND_INVALID_STATUS(HttpStatus.BAD_REQUEST, "3006", "친구 상태가 올바르지 않습니다."),
 
     //챌린지
     CHALLENGE_NOT_FOUND(HttpStatus.BAD_REQUEST, "4000", "챌린지가 존재하지 않습니다."),
     CHALLENGE_DATE_INVALID(HttpStatus.BAD_REQUEST, "4001", "챌린지 시작 날짜는 오늘 이후부터 가능합니다."),
+    CHALLENGE_INVALID(HttpStatus.BAD_REQUEST, "4002", "챌린지 정보가 올바르지 않습니다."),
+    CHALLENGE_TYPE_INVALID(HttpStatus.BAD_REQUEST, "4003", "챌린지 종류가 올바르지 않습니다."),
+    CHALLENGE_UUID_INVALID(HttpStatus.BAD_REQUEST, "4004", "챌린지 UUID가 올바르지 않습니다."),
 
     //회원-챌린지
     USER_CHALLENGE_NOT_FOUND(HttpStatus.BAD_REQUEST, "4500", "챌린지에 참가하는 회원이 아닙니다."),
@@ -69,6 +75,17 @@ public enum ExceptionCodeSet {
     RECORD_NOT_FOUND(HttpStatus.BAD_REQUEST, "5000", "운동 기록이 존재하지 않습니다."),
     RANKING_CAL_FAIL(HttpStatus.INTERNAL_SERVER_ERROR, "5001", "랭킹 계산 과정에서 에러가 발생했습니다"),
     INVALID_TIME(HttpStatus.BAD_REQUEST, "5002", "시간이 올바르지 않습니다."),
+    MATRIX_TYPE_INVALID(HttpStatus.BAD_REQUEST, "5003", "조회하는 영역의 회원 종류가 올바르지 않습니다."),
+
+    //Firebase
+    UNSPECIFIED_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "6000", "예상치 못한 에러가 발생했습니다."),
+    INVALID_ARGUMENT(HttpStatus.BAD_REQUEST, "6001", "메시지가 유효하지 않습니다."),
+    UNREGISTERED(HttpStatus.NOT_FOUND, "6002", "토큰이 유효하지 않습니다."),
+    SENDER_ID_MISMATCH(HttpStatus.FORBIDDEN, "6003", "FCM 권한이 유효하지 않습니다."),
+    QUOTA_EXCEEDED(HttpStatus.TOO_MANY_REQUESTS, "6004", "너무 많은 알림을 요청했습니다."),
+    UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "6005", "FCM 서버가 불안정합니다."),
+    INTERNAL(HttpStatus.INTERNAL_SERVER_ERROR, "6006", "FCM 서버에서 오류가 발생했습니다."),
+    THIRD_PARTY_AUTH_ERROR(HttpStatus.UNAUTHORIZED, "6007", "메시지 전송 권한이 유효하지 않습니다."),
 
     //ETC
     OK(HttpStatus.OK, "0000", "성공적으로 동작하였습니다."),

@@ -15,9 +15,12 @@ import com.dnd.ground.domain.user.User;
 import com.dnd.ground.domain.user.dto.UserResponseDto;
 import com.dnd.ground.domain.user.repository.UserRepository;
 import com.dnd.ground.global.exception.*;
+import com.dnd.ground.global.notification.NotificationForm;
+import com.dnd.ground.global.notification.NotificationMessage;
 import com.dnd.ground.global.util.UuidUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,8 +33,9 @@ import java.util.stream.Collectors;
  * @author 박찬호
  * @description 챌린지와 관련된 서비스의 역할을 분리한 구현체
  * @since 2022-08-03
- * @updated 1.챌린지 상세보기(지도) API 개선
- *          - 2023.03.03
+ * @updated 1.푸시 알람의 화면 네비게이팅을 위한 챌린지 UUID 추가
+ *          2.챌린지 상세보기: 지도 API의 응답을 회원의 순서에 맞춰 정렬
+ *          - 2023.04.10
  */
 
 @Slf4j
@@ -45,9 +49,11 @@ public class ChallengeServiceImpl implements ChallengeService {
     private final ExerciseRecordRepository exerciseRecordRepository;
     private final RankService rankService;
     private final MatrixRepository matrixRepository;
+    private final ApplicationEventPublisher pushNotificationPublisher;
     private static final int MAX_CHALLENGE_COUNT = 3;
     private static final int MAX_CHALLENGE_MEMBER_COUNT = 3;
     private static final ChallengeColor[] color = ChallengeColor.values();
+    private static final String NOTI_PARAM_CHALLENGE_UUID = "challenge_uuid";
 
     /*챌린지 생성*/
     @Transactional
@@ -95,14 +101,13 @@ public class ChallengeServiceImpl implements ChallengeService {
         challengeCountMap.remove(master);
 
         //멤버 관계 생성
-        for (Map.Entry<User, Long> memberEntry : Set.copyOf(challengeCountMap.entrySet())) {
-            User member = memberEntry.getKey();
-            if (memberEntry.getValue() <= MAX_CHALLENGE_COUNT) {
+        for (Map.Entry<User, Long> entry : challengeCountMap.entrySet()) {
+            User member = entry.getKey();
+            if (entry.getValue() <= MAX_CHALLENGE_COUNT) {
                 colorIdx = (int) (challengeCountMap.get(member)%MAX_CHALLENGE_COUNT);
                 userChallengeRepository.save(new UserChallenge(challenge, member, color[colorIdx], ChallengeStatus.WAIT));
                 membersInfo.add(new UserResponseDto.UInfo(member.getNickname(), member.getPicturePath()));
             } else {
-                challengeCountMap.remove(member);
                 exceptMembers.add(member.getNickname());
                 exceptMemberCount++;
             }
@@ -110,6 +115,17 @@ public class ChallengeServiceImpl implements ChallengeService {
 
         //챌린지는 혼자 진행할 수 없음.
         if (membersInfo.size() == 0) throw new ChallengeException(ExceptionCodeSet.NOT_ALONE_CHALLENGE);
+
+        //푸시 알람 발송
+        pushNotificationPublisher.publishEvent(
+                new NotificationForm(
+                        List.copyOf(challengeCountMap.keySet()),
+                        List.of(master.getNickname()),
+                        List.of(challenge.getName()),
+                        NotificationMessage.CHALLENGE_RECEIVED_REQUEST,
+                        Map.of(NOTI_PARAM_CHALLENGE_UUID, UuidUtil.bytesToHex(challenge.getUuid()))
+                )
+        );
 
         return ChallengeCreateResponseDto.builder()
                 .members(membersInfo)
@@ -133,6 +149,22 @@ public class ChallengeServiceImpl implements ChallengeService {
 
         //상태 변경
         userChallenge.changeStatus(status);
+
+        //푸시 알람 발송
+        if (status.equals(ChallengeStatus.PROGRESS)) {
+            User master = userChallengeRepository.findMasterInChallenge(UuidUtil.hexToBytes(requestDto.getUuid()));
+            User user = userChallenge.getUser();
+            pushNotificationPublisher.publishEvent(
+                    new NotificationForm(
+                            List.of(master),
+                            List.of(user.getNickname()),
+                            List.of(user.getNickname()),
+                            NotificationMessage.CHALLENGE_ACCEPTED,
+                            Map.of(NOTI_PARAM_CHALLENGE_UUID, requestDto.getUuid())
+                            )
+            );
+        }
+
         return new ChallengeResponseDto.Status(status);
     }
 
@@ -244,7 +276,7 @@ public class ChallengeServiceImpl implements ChallengeService {
         User friend = userRepository.findByNickname(friendNickname).orElseThrow(
                 () -> new FriendException(ExceptionCodeSet.FRIEND_NOT_FOUND));
 
-        Map<Challenge, List<RankDto>> challengesWithFriend = exerciseRecordRepository.findChallengeMatrixRankWithUsers(user, List.of(friend), ChallengeStatus.PROGRESS);
+        Map<Challenge, List<RankDto>> challengesWithFriend = exerciseRecordRepository.findChallengeMatrixRankWithUsers(user, List.of(friend), List.of(ChallengeStatus.PROGRESS));
         Map<Challenge, ChallengeColor> colors = challengeRepository.findChallengesColor(new ChallengeCond(user, ChallengeStatus.PROGRESS));
         List<ChallengeResponseDto.Progress> response = new ArrayList<>();
 
@@ -314,7 +346,7 @@ public class ChallengeServiceImpl implements ChallengeService {
         List<UCDto.UCInfo> infos = new ArrayList<>();
         for (UserChallenge uc : ucList) {
             User userInUC = uc.getUser();
-            UCDto.UCInfo ucInfo = new UCDto.UCInfo(userInUC.getPictureName(), userInUC.getNickname(), uc.getStatus());
+            UCDto.UCInfo ucInfo = new UCDto.UCInfo(userInUC.getPicturePath(), userInUC.getNickname(), uc.getStatus());
 
             if (uc.getStatus() == ChallengeStatus.MASTER) {
                 infos.add(0, ucInfo);
@@ -367,7 +399,7 @@ public class ChallengeServiceImpl implements ChallengeService {
         List<User> members = userChallengeRepository.findChallengeUsers(challenge); //본인 포함 챌린지에 참여하는 인원들
         if (!members.contains(user)) throw new ChallengeException(ExceptionCodeSet.USER_CHALLENGE_NOT_FOUND); //참여하는 챌린지가 아니면 예외처리
 
-        Map<Challenge, List<RankDto>> challengeMatrixRankWithMembers = exerciseRecordRepository.findChallengeMatrixRankWithUsers(user, members, ChallengeStatus.PROGRESS);
+        Map<Challenge, List<RankDto>> challengeMatrixRankWithMembers = exerciseRecordRepository.findChallengeMatrixRankWithUsers(user, members, List.of(ChallengeStatus.PROGRESS, ChallengeStatus.DONE));
         List<UserResponseDto.Ranking> rankings = rankService.calculateUsersRank(challengeMatrixRankWithMembers.get(challenge));
 
         return ChallengeResponseDto.ProgressDetail.builder()
@@ -421,12 +453,15 @@ public class ChallengeServiceImpl implements ChallengeService {
         List<RankDto> rankByChallenge = exerciseRecordRepository.findRankByChallenge(challenge);
         List<UserResponseDto.Ranking> rankings = rankService.calculateUsersRank(rankByChallenge);
 
+        members.sort(Comparator.comparing(User::getNickname));
+        rankings.sort(Comparator.comparing(UserResponseDto.Ranking::getNickname));
+
         //영역 조회
         List<ChallengeMapResponseDto.UserMapInfo> matrixList = new ArrayList<>();
 
         int i=0;
         for (User member : members) {
-            List<Location> matrices = matrixRepository.findMatrixPoint(new MatrixCond(member, challenge.getStarted(), challenge.getEnded()));
+            List<Location> matrices = matrixRepository.findMatrixList(new MatrixCond(member, challenge.getStarted(), challenge.getEnded()));
             if (member.getNickname().equals(nickname)) {
                 matrixList.add(0,
                         new ChallengeMapResponseDto.UserMapInfo(color[MAX_CHALLENGE_MEMBER_COUNT], member.getLatitude(), member.getLongitude(), matrices, member.getPicturePath())

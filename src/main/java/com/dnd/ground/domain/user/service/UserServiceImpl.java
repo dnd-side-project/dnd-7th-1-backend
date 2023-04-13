@@ -2,13 +2,14 @@ package com.dnd.ground.domain.user.service;
 
 import com.dnd.ground.domain.challenge.Challenge;
 import com.dnd.ground.domain.challenge.ChallengeColor;
-import com.dnd.ground.domain.challenge.dto.ChallengeColorDto;
+import com.dnd.ground.domain.challenge.ChallengeStatus;
+import com.dnd.ground.domain.challenge.dto.ChallengeCond;
 import com.dnd.ground.domain.challenge.dto.ChallengeResponseDto;
 import com.dnd.ground.domain.challenge.repository.ChallengeRepository;
-import com.dnd.ground.domain.challenge.repository.UserChallengeRepository;
 import com.dnd.ground.domain.challenge.service.ChallengeService;
 import com.dnd.ground.domain.exerciseRecord.ExerciseRecord;
 import com.dnd.ground.domain.exerciseRecord.Repository.ExerciseRecordRepository;
+import com.dnd.ground.domain.exerciseRecord.dto.RecordDto;
 import com.dnd.ground.domain.exerciseRecord.dto.RecordRequestDto;
 import com.dnd.ground.domain.exerciseRecord.dto.RecordResponseDto;
 import com.dnd.ground.domain.friend.FriendStatus;
@@ -16,11 +17,12 @@ import com.dnd.ground.domain.friend.dto.FriendCondition;
 import com.dnd.ground.domain.friend.dto.FriendResponseDto;
 import com.dnd.ground.domain.friend.repository.FriendRepository;
 import com.dnd.ground.domain.friend.service.FriendService;
-import com.dnd.ground.domain.matrix.dto.MatrixDto;
-import com.dnd.ground.domain.matrix.matrixRepository.MatrixRepository;
-import com.dnd.ground.domain.matrix.matrixService.MatrixService;
+import com.dnd.ground.domain.matrix.dto.MatrixCond;
+import com.dnd.ground.domain.matrix.repository.MatrixRepository;
+import com.dnd.ground.domain.matrix.service.RankService;
 import com.dnd.ground.domain.user.User;
 import com.dnd.ground.domain.user.dto.*;
+import com.dnd.ground.domain.user.repository.UserPropertyRepository;
 import com.dnd.ground.domain.user.repository.UserRepository;
 import com.dnd.ground.global.auth.UserClaim;
 import com.dnd.ground.global.auth.service.AuthService;
@@ -31,8 +33,6 @@ import lombok.*;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -44,6 +44,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static java.time.DayOfWeek.MONDAY;
+import static java.time.DayOfWeek.SUNDAY;
 import static java.time.temporal.TemporalAdjusters.firstDayOfMonth;
 import static java.time.temporal.TemporalAdjusters.lastDayOfMonth;
 
@@ -51,8 +53,8 @@ import static java.time.temporal.TemporalAdjusters.lastDayOfMonth;
  * @description 유저 서비스 클래스
  * @author 박세헌, 박찬호
  * @since 2022-08-01
- * @updated 1.메인 화면 조회 시, 범위 내 영역 조회하도록 수정 및 DB 쿼리 요청 수 최소화
- *          - 2023-02-15 박찬호
+ * @updated 1.회원의 푸시 알람 관련 필터 변경을 위한 API 구현
+ *          - 2023-04-13 박찬호
  */
 
 @Slf4j
@@ -62,13 +64,14 @@ import static java.time.temporal.TemporalAdjusters.lastDayOfMonth;
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
+    private final UserPropertyRepository userPropertyRepository;
     private final ChallengeService challengeService;
     private final ChallengeRepository challengeRepository;
     private final ExerciseRecordRepository exerciseRecordRepository;
     private final FriendService friendService;
     private final FriendRepository friendRepository;
     private final MatrixRepository matrixRepository;
-    private final MatrixService matrixService;
+    private final RankService matrixService;
     private final AmazonS3Service amazonS3Service;
     private final AuthService authService;
 
@@ -79,17 +82,19 @@ public class UserServiceImpl implements UserService {
     private String DEFAULT_NAME;
 
     public HomeResponseDto showHome(UserRequestDto.Home request) {
-        User user = userRepository.findByNickname(request.getNickname()).orElseThrow(
-                () -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
+        User user = userRepository.findByNicknameWithProperty(request.getNickname())
+                .orElseThrow(() -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
 
-        Location location = request.getLocation();
+        Location location = Objects.requireNonNull(request.getCenter(), ExceptionCodeSet.EMPTY_LOCATION.getMessage());
+        double spanDelta = Objects.requireNonNull(request.getSpanDelta(), ExceptionCodeSet.EMPTY_RANGE.getMessage());
 
         /*회원 영역 조회*/
-        List<Location> userMatricesThisWeek = matrixRepository.findMatrixPoint(user, location);
+        LocalDateTime monday = LocalDateTime.now().with(MONDAY).withHour(0).withMinute(0).withSecond(0).withNano(0);
+        List<Location> userMatricesThisWeek = matrixRepository.findMatrixListDistinct(new MatrixCond(user, location, spanDelta, monday, LocalDateTime.now()));
 
         UserResponseDto.UserMatrix userMatrix  = UserResponseDto.UserMatrix.builder()
                 .nickname(user.getNickname())
-                .matricesNumber((long) userMatricesThisWeek.size())
+                .matricesNumber(matrixRepository.matrixCount(new MatrixCond(user, monday, LocalDateTime.now())))
                 .latitude(user.getLatitude())
                 .longitude(user.getLongitude())
                 .matrices(userMatricesThisWeek)
@@ -103,7 +108,7 @@ public class UserServiceImpl implements UserService {
         //친구 목록 조회
         FriendCondition friendCond = FriendCondition.builder()
                 .user(user)
-                .status(FriendStatus.Accept)
+                .status(FriendStatus.ACCEPT)
                 .build();
         List<User> friends = friendRepository.findFriends(friendCond);
         friends.removeAll(challengeMembers); // 챌린지를 함께하는 친구 제외
@@ -112,7 +117,7 @@ public class UserServiceImpl implements UserService {
         Set<User> friendsMembers = new HashSet<>();
         friendsMembers.addAll(challengeMembers);
         friendsMembers.addAll(friends);
-        Map<User, List<Location>> usersMatrix = matrixRepository.findUsersMatrix(friendsMembers, location);
+        Map<User, List<Location>> usersMatrix = matrixRepository.findMatrixMapDistinct(new MatrixCond(friendsMembers, location, spanDelta, monday, LocalDateTime.now()));
         /*----------*/
 
         /*친구 Response 생성*/
@@ -135,21 +140,15 @@ public class UserServiceImpl implements UserService {
         List<UserResponseDto.ChallengeMatrix> challengeMatrices = new ArrayList<>();
 
         //함께하는 챌린지 개수 조회
-        Map<User, Long> challengeCount = challengeRepository.findProgressChallengeCount(user);
+        Map<User, Long> challengeCount = challengeRepository.findUsersProgressChallengeCount(user);
 
         //챌린지 진행 정보 조회
         Map<User, Challenge> challengeInfo = challengeRepository.findProgressChallengesInfo(user);
 
         //챌린지 색깔 조회
-        List<ChallengeColorDto> challengesColor = challengeRepository.findProgressChallengesColor(user);
+        Map<Challenge, ChallengeColor>  challengesColor = challengeRepository.findChallengesColor(new ChallengeCond(user, ChallengeStatus.PROGRESS));
 
         for (User member : challengeMembers) {
-            //챌린지 색깔 탐색
-            ChallengeColor color = null;
-            for (ChallengeColorDto challengeColorDto : challengesColor) {
-                color = challengeColorDto.findColor(challengeInfo.get(member));
-                if (color != null) break;
-            }
 
             challengeMatrices.add(
                     UserResponseDto.ChallengeMatrix.builder()
@@ -158,7 +157,7 @@ public class UserServiceImpl implements UserService {
                             .longitude(member.getLongitude())
                             .picturePath(member.getPicturePath())
                             .challengeNumber(challengeCount.get(member))
-                            .challengeColor(color)
+                            .challengeColor(challengesColor.get(challengeInfo.get(member)))
                             .matrices(usersMatrix.get(member))
                             .build()
             );
@@ -169,41 +168,30 @@ public class UserServiceImpl implements UserService {
                 .friendMatrices(friendMatrices)
                 .challengeMatrices(challengeMatrices)
                 .challengesNumber(challengesColor.size())
-                .isShowMine(user.getIsShowMine())
-                .isShowFriend(user.getIsShowFriend())
-                .isPublicRecord(user.getIsPublicRecord())
+                .isShowMine(user.getProperty().getIsShowMine())
+                .isShowFriend(user.getProperty().getIsShowFriend())
+                .isPublicRecord(user.getProperty().getIsPublicRecord())
                 .build();
     }
 
     /*회원 정보 조회(마이페이지)*/
     public UserResponseDto.MyPage getUserInfo(String nickname) {
-        User user = userRepository.findByNickname(nickname).orElseThrow(
-                () -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
+        User user = userRepository.findByNickname(nickname)
+                .orElseThrow(() -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
 
-        // 이번주 운동기록
-        List<ExerciseRecord> recordOfThisWeek = exerciseRecordRepository.findRecordOfThisWeek(user.getId());
+        LocalDateTime monday = LocalDateTime.now().with(MONDAY).withHour(0).withMinute(0).withSecond(0).withNano(0);
 
-        // 이번주 채운 칸의 수
-        Long matrixNumber = (long) matrixRepository.findMatrixByRecords(recordOfThisWeek).size();
-
-        // 이번주 걸음수
-        Integer stepCount = exerciseRecordRepository.findUserStepCount(user, recordOfThisWeek).orElse(0);
-
-        // 이번주 거리합
-        Integer distance = exerciseRecordRepository.findUserDistance(user, recordOfThisWeek).orElse(0);
-
-        // 친구 수
-        Integer friendNumber = friendService.getFriends(user).size();
-
-        // 역대 누적 운동기록(가입날짜 ~ 지금)
-        List<ExerciseRecord> record = exerciseRecordRepository.findRecord(user.getId(), user.getCreated(), LocalDateTime.now());
-        // 역대 누적 칸수
-        Long allMatrixNumber = (long) matrixRepository.findMatrixByRecords(record).size();
+        long matrixCount = matrixRepository.matrixCount(new MatrixCond(user, monday, LocalDateTime.now())); // 이번주 채운 칸의 수
+        RecordDto.Stats recordCount = exerciseRecordRepository.getRecordCount(user, monday, LocalDateTime.now());
+        long stepCount = recordCount.getStepCount(); //걸음 수
+        long distance = recordCount.getDistanceCount(); //거리 합
+        int friendNumber = friendService.getFriends(user).size(); // 친구 수
+        long allMatrixNumber = matrixRepository.matrixCount(new MatrixCond(user)); //전체 기간 영역 수
 
         return UserResponseDto.MyPage.builder()
                 .nickname(user.getNickname())
                 .intro(user.getIntro())
-                .matrixNumber(matrixNumber)
+                .matrixNumber(matrixCount)
                 .stepCount(stepCount)
                 .distance(distance)
                 .friendNumber(friendNumber)
@@ -214,40 +202,31 @@ public class UserServiceImpl implements UserService {
 
     /*회원 프로필 조회*/
     public FriendResponseDto.FriendProfile getUserProfile(String userNickname, String friendNickname) {
-        User user = userRepository.findByNickname(userNickname).orElseThrow(
-                () -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
+        User user = userRepository.findByNickname(userNickname)
+                .orElseThrow(() -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
 
-        User friend = userRepository.findByNickname(friendNickname).orElseThrow(
-                () -> new FriendException(ExceptionCodeSet.FRIEND_NOT_FOUND));
+        User friend = userRepository.findByNickname(friendNickname)
+                .orElseThrow(() -> new FriendException(ExceptionCodeSet.FRIEND_NOT_FOUND));
 
         //마지막 활동 시간
-        Optional<LocalDateTime> lastedOpt = exerciseRecordRepository.findLastRecord(friend);
         LocalDateTime lasted = null;
+        Optional<LocalDateTime> lastedOpt = exerciseRecordRepository.findLastRecord(friend);
         if (lastedOpt.isPresent())
             lasted = lastedOpt.get();
-
 
         //친구 관계 확인
         FriendStatus isFriend = friendService.getFriendStatus(user, friend);
 
         //랭킹 추출 (이번 주 영역, 역대 누적 칸수, 랭킹)
-        Integer rank = -1;
-        Long allMatrixNumber = -1L;
-        Long areas = -1L;
-
-        RankResponseDto.Matrix matrixRanking = matrixService.matrixRanking(friendNickname);
-
-        //역대 누적 칸수 및 랭킹 정보
-        for (UserResponseDto.Ranking allRankInfo : matrixRanking.getMatrixRankings()) {
-            if (allRankInfo.getNickname().equals(friendNickname)) {
-                rank = allRankInfo.getRank();
-                allMatrixNumber = allRankInfo.getScore();
-            }
-        }
+        UserResponseDto.Ranking rankInfo = matrixService.matrixUserRankingAllTime(friend);
+        int rank = rankInfo.getRank();
+        long allMatrixNumber = rankInfo.getScore();
 
         //이번주 영역 정보
-        areas = (long) matrixRepository.findMatrixSetByRecords(
-                exerciseRecordRepository.findRecordOfThisWeek(friend.getId())).size();
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime start = LocalDateTime.of(now.with(MONDAY).toLocalDate(), LocalTime.MIN);
+        LocalDateTime end = LocalDateTime.of(now.with(SUNDAY).toLocalDate(), LocalTime.MAX).minusNanos(1);
+        long areas = matrixRepository.matrixCountDistinct(new MatrixCond(user, start, end));
 
         //함께 진행하는 챌린지 정보
         List<ChallengeResponseDto.Progress> challenges = challengeService.findProgressChallenge(userNickname, friendNickname);
@@ -267,16 +246,15 @@ public class UserServiceImpl implements UserService {
 
     /* 나의 활동 기록 조회 */
     public UserResponseDto.ActivityRecordResponseDto getActivityRecord(UserRequestDto.LookUp requestDto) {
-
         String nickname = requestDto.getNickname();
-        LocalDateTime start = requestDto.getStart();
-        LocalDateTime end = requestDto.getEnd();
+        LocalDateTime start = requestDto.getStarted();
+        LocalDateTime end = requestDto.getEnded();
 
-        User user = userRepository.findByNickname(nickname).orElseThrow(
-                () -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
+        User user = userRepository.findByNickname(nickname)
+                .orElseThrow(() -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
+
         List<ExerciseRecord> record = exerciseRecordRepository.findRecord(user.getId(), start, end);  // start~end 사이 운동기록 조회
         List<RecordResponseDto.activityRecord> activityRecords = new ArrayList<>();
-
 
         // 활동 내역 정보
         for (ExerciseRecord exerciseRecord : record) {
@@ -315,6 +293,7 @@ public class UserServiceImpl implements UserService {
     public RecordResponseDto.EInfo getExerciseInfo(Long exerciseId) {
         ExerciseRecord exerciseRecord = exerciseRecordRepository.findById(exerciseId).orElseThrow(
                 () -> new ExerciseRecordException(ExceptionCodeSet.RECORD_NOT_FOUND));
+
         // 운동 시작, 끝 시간 formatting
         String date = exerciseRecord.getStarted().format(DateTimeFormatter.ofPattern("MM월 dd일 E요일").withLocale(Locale.forLanguageTag("ko")));
         String started = exerciseRecord.getStarted().format(DateTimeFormatter.ofPattern("HH:mm"));
@@ -324,7 +303,7 @@ public class UserServiceImpl implements UserService {
         Integer exerciseTime = exerciseRecord.getExerciseTime();
         int minute = exerciseTime / 60;
         int second = exerciseTime % 60;
-        String time = "";
+        String time;
 
         // 10초 미만이라면 앞에 0하나 붙여주기
         if (Integer.toString(second).length() == 1) {
@@ -347,7 +326,7 @@ public class UserServiceImpl implements UserService {
                 .exerciseTime(time)
                 .stepCount(exerciseRecord.getStepCount())
                 .message(exerciseRecord.getMessage())
-                .matrices(matrixRepository.findMatrixSetByRecord(exerciseRecord))
+                .matrices(matrixRepository.findMatrixListDistinct(new MatrixCond(exerciseRecord.getUser(), exerciseRecord.getStarted(), exerciseRecord.getEnded())))
                 .challenges(challenges)
                 .build();
     }
@@ -361,16 +340,15 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findByExerciseRecord(exerciseRecord).orElseThrow(
                 () -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
         // 운동기록의 칸 찾기
-        List<MatrixDto> matrices = matrixRepository.findMatrixSetByRecord(exerciseRecord);
+        List<Location> matrices = matrixRepository.findMatrixListDistinct(new MatrixCond(user, exerciseRecord.getStarted(), exerciseRecord.getEnded()));
 
-        return new UserResponseDto.DetailMap(user.getLatitude(),
-                user.getLongitude(), matrices, user.getPicturePath());
+        return new UserResponseDto.DetailMap(user.getLatitude(), user.getLongitude(), matrices, user.getPicturePath());
     }
 
     /*필터 변경: 나의 기록 보기*/
     @Transactional
     public Boolean changeFilterMine(String nickname) {
-        return userRepository.findByNickname(nickname)
+        return userPropertyRepository.findByNickname(nickname)
                 .orElseThrow(() -> new UserException(ExceptionCodeSet.USER_NOT_FOUND))
                 .changeFilterMine();
     }
@@ -378,7 +356,7 @@ public class UserServiceImpl implements UserService {
     /*필터 변경: 친구 보기*/
     @Transactional
     public Boolean changeFilterFriend(String nickname) {
-        return userRepository.findByNickname(nickname)
+        return userPropertyRepository.findByNickname(nickname)
                 .orElseThrow(() -> new UserException(ExceptionCodeSet.USER_NOT_FOUND))
                 .changeFilterFriend();
     }
@@ -386,26 +364,30 @@ public class UserServiceImpl implements UserService {
     /*필터 변경: 친구들에게 보이기*/
     @Transactional
     public Boolean changeFilterRecord(String nickname) {
-        return userRepository.findByNickname(nickname)
+        return userPropertyRepository.findByNickname(nickname)
                 .orElseThrow(() -> new UserException(ExceptionCodeSet.USER_NOT_FOUND))
                 .changeFilterRecord();
     }
 
+    @Transactional
+    public Boolean changeFilterNotification(UserRequestDto.NotificationFilter request) {
+        return userPropertyRepository.findByNickname(request.getNickname())
+                .orElseThrow(() -> new UserException(ExceptionCodeSet.USER_NOT_FOUND))
+                .changeFilterNotification(request.getNotification());
+    }
+
     /* 운동 기록의 상세 메시지 수정 */
     @Transactional
-    public ResponseEntity<Boolean> editRecordMessage(RecordRequestDto.Message requestDto) {
-        Long recordId = requestDto.getRecordId();
-        String message = requestDto.getMessage();
-
-        ExerciseRecord exerciseRecord = exerciseRecordRepository.findById(recordId).orElseThrow(
-                () -> new ExerciseRecordException(ExceptionCodeSet.RECORD_NOT_FOUND));
-        exerciseRecord.editMessage(message);
-        return new ResponseEntity(true, HttpStatus.OK);
+    public Boolean editRecordMessage(RecordRequestDto.Message requestDto) {
+        ExerciseRecord exerciseRecord = exerciseRecordRepository.findById(requestDto.getRecordId())
+                .orElseThrow(() -> new ExerciseRecordException(ExceptionCodeSet.RECORD_NOT_FOUND));
+        exerciseRecord.editMessage(requestDto.getMessage());
+        return true;
     }
 
     /* 회원 프로필 수정 */
     @Transactional
-    public ResponseEntity<UserResponseDto.UInfo> editUserProfile(MultipartFile file, UserRequestDto.Profile requestDto) {
+    public UserResponseDto.UInfo editUserProfile(MultipartFile file, UserRequestDto.Profile requestDto) {
         String originalNick = requestDto.getOriginNickname();
         String editNick = requestDto.getEditNickname();
 
@@ -413,8 +395,8 @@ public class UserServiceImpl implements UserService {
         if (!editNick.equals(originalNick) && !authService.validateNickname(editNick))
             throw new UserException(ExceptionCodeSet.DUPLICATE_NICKNAME);
 
-        User user = userRepository.findByNickname(originalNick).orElseThrow(
-                () -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
+        User user = userRepository.findByNickname(originalNick)
+                .orElseThrow(() -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
 
         String intro = requestDto.getIntro();
         String pictureName = user.getPictureName();
@@ -428,27 +410,22 @@ public class UserServiceImpl implements UserService {
         } else {
             // 기본 이미지가 아닌 유저의 사진으로 변경 (프로필 사진 이름: 닉네임+카카오ID (Ex. NickA18345)
             if (!file.isEmpty()) {
-                amazonS3Service.deleteFile(user.getPictureName());
+                if (!user.getPictureName().equals(DEFAULT_NAME)) amazonS3Service.deleteFile(user.getPictureName());
                 Map<String, String> fileInfo = amazonS3Service.uploadToS3(file, "user/profile", user.getEmail() + UserClaim.changeCreatedToLong(user.getCreated()));
                 pictureName = fileInfo.get("fileName");
                 picturePath = fileInfo.get("filePath");
-            }
+            } else throw new UserException(ExceptionCodeSet.EMPTY_FILE);
         }
         user.updateProfile(editNick, intro, pictureName, picturePath);
 
-        return ResponseEntity.ok(new UserResponseDto.UInfo(editNick, picturePath));
+        return new UserResponseDto.UInfo(editNick, picturePath);
     }
 
     public UserResponseDto.dayEventList getDayEventList(UserRequestDto.DayEventList requestDto) {
 
-        LocalDate startDay = requestDto.getYearMonth().with(firstDayOfMonth());
-        LocalDate endDay = requestDto.getYearMonth().with(lastDayOfMonth());
-
-        LocalTime startTime = LocalTime.of(0, 0, 0);
-        LocalTime endTime = LocalTime.of(23, 59, 59);
-
-        LocalDateTime start = LocalDateTime.of(startDay, startTime);
-        LocalDateTime end = LocalDateTime.of(endDay, endTime);
+        LocalDate yearMonth = requestDto.getYearMonth();
+        LocalDateTime start = LocalDateTime.of(yearMonth.with(firstDayOfMonth()), LocalTime.MIN);
+        LocalDateTime end = LocalDateTime.of(yearMonth.with(lastDayOfMonth()), LocalTime.MAX);
 
         User user = userRepository.findByNickname(requestDto.getNickname())
                 .orElseThrow(() -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));

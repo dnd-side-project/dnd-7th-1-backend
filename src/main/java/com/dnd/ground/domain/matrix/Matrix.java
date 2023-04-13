@@ -26,12 +26,6 @@ public class Matrix {
     @Column(name = "matrix_id")
     private Long id;
 
-    @Column(nullable = false)
-    private Double latitude;
-
-    @Column(nullable = false)
-    private Double longitude;
-
     @Column
     private Point point;
 
@@ -40,8 +34,6 @@ public class Matrix {
     private ExerciseRecord exerciseRecord;
 
     public Matrix(double latitude, double longitude) {
-        this.latitude = latitude;
-        this.longitude = longitude;
         this.point = GeometryUtil.coordinateToPoint(latitude, longitude);
     }
 
