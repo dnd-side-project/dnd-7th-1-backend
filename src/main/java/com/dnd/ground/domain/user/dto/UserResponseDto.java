@@ -2,15 +2,12 @@ package com.dnd.ground.domain.user.dto;
 
 import com.dnd.ground.domain.challenge.ChallengeColor;
 import com.dnd.ground.domain.exerciseRecord.dto.RecordResponseDto;
-import com.dnd.ground.domain.matrix.dto.MatrixDto;
-import com.dnd.ground.domain.user.User;
 
 import com.dnd.ground.domain.matrix.dto.Location;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.*;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -21,8 +18,8 @@ import java.util.List;
  *              4. 랭킹 정보
  * @author  박세헌, 박찬호
  * @since   2022-08-08
- * @updated 1.회원 영역 데이터 조회 시 일부 영역 내 데이터만 조회하도록 수정
- *          - 2023-02-14 박찬호
+ * @updated 1.MatrixDto 의존성 제거 및 일부 필드 데이터 타입 변경
+ *          - 2023-03-07 박찬호
  */
 
 @Data
@@ -51,10 +48,10 @@ public class UserResponseDto {
         private Long matrixNumber;
 
         @ApiModelProperty(value = "이번주 총 걸음 수", example = "1030")
-        private Integer stepCount;
+        private Long stepCount;
 
         @ApiModelProperty(value = "이번주 총 거리", example = "200")
-        private Integer distance;
+        private Long distance;
 
         @ApiModelProperty(value = "친구 수", example = "2")
         private Integer friendNumber;
@@ -105,28 +102,12 @@ public class UserResponseDto {
 
         @ApiModelProperty(value="프로필 사진 URI(카카오 프로필 사용 시 kakao/카카오회원번호)", example="http:\\/\\/k.kakaocdn.net\\/dn\\/uQVeo\\/btrLgESJyjg\\/Pff3k36lRWkQ98ebAlexv1\\/img_640x640.jpg")
         private String picturePath;
-
-        //생성자
-        public UserMatrix(User user) {
-            this.nickname = user.getNickname();
-            this.matricesNumber = 0L;
-
-            this.latitude = 0.0;
-            this.longitude = 0.0;
-        }
-
-        //수정자 모음 (프로필 사진 x)
-        public void setProperties(String nickname, long matricesNumber, List<Location> matrices, Double lat, Double lon) {
-            this.setNickname(nickname);
-            this.setMatricesNumber(matricesNumber);
-            this.setMatrices(matrices);
-            this.setLatitude(lat);
-            this.setLongitude(lon);
-        }
     }
 
     /*친구의 영역 관련 DTO*/
-    @Data @AllArgsConstructor
+    @Data
+    @Builder
+    @AllArgsConstructor
     static public class FriendMatrix{
         @ApiModelProperty(value = "닉네임", example = "NickB", required = true)
         private String nickname;
@@ -138,7 +119,7 @@ public class UserResponseDto {
         private Double longitude;
 
         @ApiModelProperty(value = "칸 꼭지점 위도, 경도 리스트", required = true)
-        private List<MatrixDto> matrices;
+        private List<Location> matrices;
 
         @ApiModelProperty(value="프로필 사진 URI(카카오 프로필 사용 시 kakao/카카오회원번호)", example="http:\\/\\/k.kakaocdn.net\\/dn\\/uQVeo\\/btrLgESJyjg\\/Pff3k36lRWkQ98ebAlexv1\\/img_640x640.jpg")
         private String picturePath;
@@ -146,13 +127,14 @@ public class UserResponseDto {
 
     /*챌린지 영역 정보 관련 DTO*/
     @Data
+    @Builder
     @AllArgsConstructor
     static public class ChallengeMatrix{
         @ApiModelProperty(value = "닉네임", example = "NickC", required = true)
         private String nickname;
 
         @ApiModelProperty(value = "나와 같이 하는 챌린지 개수", example = "1", required = true)
-        private Integer challengeNumber;
+        private Long challengeNumber;
 
         @ApiModelProperty(value = "지도에 나타나는 챌린지 대표 색깔", example = "Pink", required = true)
         private ChallengeColor challengeColor;
@@ -164,7 +146,7 @@ public class UserResponseDto {
         private Double longitude;
 
         @ApiModelProperty(value = "칸 꼭지점 위도, 경도 리스트", example = "[{\"latitude\": 37.330436, \"longitude\": -122.030216}]",  required = true)
-        private List<MatrixDto> matrices;
+        private List<Location> matrices;
 
         @ApiModelProperty(value="프로필 사진 URI(카카오 프로필 사용 시 kakao/카카오회원번호)", example="http:\\/\\/k.kakaocdn.net\\/dn\\/uQVeo\\/btrLgESJyjg\\/Pff3k36lRWkQ98ebAlexv1\\/img_640x640.jpg")
         private String picturePath;
@@ -198,7 +180,7 @@ public class UserResponseDto {
         private Double longitude;
 
         @ApiModelProperty(value = "칸 꼭지점 위도, 경도 리스트", example = "[{\"latitude\": 37.330436, \"longitude\": -122.030216}]",required = true)
-        private List<MatrixDto> matrices;
+        private List<Location> matrices;
 
         @ApiModelProperty(value="프로필 사진 URI(카카오 프로필 사용 시 kakao/카카오회원번호)", example="http:\\/\\/k.kakaocdn.net\\/dn\\/uQVeo\\/btrLgESJyjg\\/Pff3k36lRWkQ98ebAlexv1\\/img_640x640.jpg")
         private String picturePath;

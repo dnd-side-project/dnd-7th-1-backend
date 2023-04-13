@@ -12,9 +12,7 @@ import org.locationtech.jts.io.WKTReader;
  * @description 위치 정보 관련 Geometry Util
  * @author 박찬호
  * @since 2023-02-18
- * @updated 1. MBR 계산을 위한 calculate 메소드 생성
- *          2. Matrix 엔티티에서 Point 자료형으로 데이터를 받기 위한 메소드 생성
- *          - 2023.02.18 박찬호
+ * @updated 1.화면의 SpanDelta 값에 따라 MBR 계산하도록 변경
  */
 public class GeometryUtil {
     private static final WKTReader wktReader = new WKTReader();
@@ -29,38 +27,31 @@ public class GeometryUtil {
         return read.getInteriorPoint();
     }
 
-    public static Location calculate(Double baseLatitude, Double baseLongitude, Double distance,
-                                     Direction direction) {
-        Double radianLatitude = toRadian(baseLatitude);
-        Double radianLongitude = toRadian(baseLongitude);
-        Double radianAngle = toRadian(direction.getBearing());
-        Double distanceRadius = distance / 6371.01;
+    public static Location calculate(Location center, Double spanDelta, Direction direction) {
+        Double centerLatitude = center.getLatitude();
+        Double centerLongitude = center.getLongitude();
 
-        Double latitude = Math.asin(sin(radianLatitude) * cos(distanceRadius) +
-                cos(radianLatitude) * sin(distanceRadius) * cos(radianAngle));
-        Double longitude = radianLongitude + Math.atan2(sin(radianAngle) * sin(distanceRadius) *
-                cos(radianLatitude), cos(distanceRadius) - sin(radianLatitude) * sin(latitude));
+        Double latitude = null;
+        Double longitude = null;
 
-        longitude = normalizeLongitude(longitude);
-        return new Location(toDegree(latitude), toDegree(longitude));
-    }
-    private static Double toRadian(Double coordinate) {
-        return coordinate * Math.PI / 180.0;
-    }
-
-    private static Double toDegree(Double coordinate) {
-        return coordinate * 180.0 / Math.PI;
-    }
-
-    private static Double sin(Double coordinate) {
-        return Math.sin(coordinate);
-    }
-
-    private static Double cos(Double coordinate) {
-        return Math.cos(coordinate);
-    }
-
-    private static Double normalizeLongitude(Double longitude) {
-        return (longitude + 540) % 360 - 180;
+        switch(direction) {
+            case NORTHWEST:
+                latitude = centerLatitude + spanDelta * 0.5;
+                longitude = centerLongitude - spanDelta * 0.5;
+                break;
+            case NORTHEAST:
+                latitude = centerLatitude + spanDelta * 0.5;
+                longitude = centerLongitude + spanDelta * 0.5;
+                break;
+            case SOUTHEAST:
+                latitude = centerLatitude - spanDelta * 0.5;
+                longitude = centerLongitude + spanDelta * 0.5;
+                break;
+            case SOUTHWEST:
+                latitude = centerLatitude - spanDelta * 0.5;
+                longitude = centerLongitude - spanDelta * 0.5;
+                break;
+        }
+        return new Location(latitude, longitude);
     }
 }

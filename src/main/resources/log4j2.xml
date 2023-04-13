@@ -1,15 +1,30 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <Configuration status="INFO">
     <Properties>
-        <Property name="LOG_PATTERN">%d{HH:mm:ss.SSSZ} [%t] %-5level %logger{36} - %msg%n</Property>
+        <Property name="LOG_PATTERN">[%d{yyyy-MM-dd HH:mm:ss.SSSZ}] [%t] %-5level %logger{36} - %msg%n</Property>
+        <Property name="CONSOLE_LOG_FORMAT">%style{%d{yyyy-MM-dd HH:mm:ss.SSSZ}}{cyan} %highlight{[%p]}{FATAL=bg_red, ERROR=red,x INFO=green, DEBUG=blue} [%C{1.}] %style{[%t]}{yellow} %m%n</Property>
+
+        <Property name="LOG_PATH">./logs</Property>
+        <Property name="RUN_FILE">run.log</Property>
+        <Property name="DEBUG_FILE">debug.log</Property>
+        <Property name="ERROR_FILE">error.log</Property>
+        <Property name="AUDIT_FILE">audit.log</Property>
+        <Property name="PUSH_NOTI_FILE">notification.log</Property>
+
+        <Property name="DAY_HOUR_PATTERN">${LOG_PATH}/%d{yyyy/MM/dd/HH}</Property>
+        <Property name="RUN_FILE_PATTERN">${DAY_HOUR_PATTERN}/%i-${RUN_FILE}</Property>
+        <Property name="ERROR_FILE_PATTERN">${DAY_HOUR_PATTERN}/%i-${ERROR_FILE}</Property>
+        <Property name="DEBUG_FILE_PATTERN">${DAY_HOUR_PATTERN}/%i-${DEBUG_FILE}</Property>
+        <Property name="AUDIT_FILE_PATTERN">${DAY_HOUR_PATTERN}/%i-${AUDIT_FILE}</Property>
+        <Property name="PUSH_NOTI_FILE_PATTERN">${DAY_HOUR_PATTERN}/%i-${PUSH_NOTI_FILE}</Property>
     </Properties>
     <Appenders>
-        <Console name="ConsoleLog" target="SYSTEM_OUT">
-            <PatternLayout pattern="${LOG_PATTERN}" charset="UTF-8"/>
+        <Console name="CONSOLE" target="SYSTEM_OUT">
+            <PatternLayout pattern="${CONSOLE_LOG_FORMAT}" charset="UTF-8"/>
         </Console>
-        <RollingFile name="FileLog"
-                     fileName="./logs/spring.log"
-                     filePattern="./logs/spring-%d{yyyy-MM-dd}-%i.log">
+        <RollingFile name="RUN_LOG_FILE"
+                     fileName="${LOG_PATH}/${RUN_FILE}"
+                     filePattern="${RUN_FILE_PATTERN}">
             <PatternLayout pattern="${LOG_PATTERN}" charset="UTF-8" />
             <Policies>
                 <TimeBasedTriggeringPolicy interval="1" />
@@ -17,14 +32,74 @@
             </Policies>
             <DefaultRolloverStrategy max="20" fileIndex="min" />
         </RollingFile>
+
+        <RollingFile name="DEBUG_LOG_FILE"
+                     fileName="${LOG_PATH}/${DEBUG_FILE}"
+                     filePattern="${DEBUG_FILE_PATTERN}">
+            <Filters>
+                <ThresholdFilter level="DEBUG" onMatch="ACCEPT" onMismatch="DENY" />
+            </Filters>
+            <PatternLayout pattern="${LOG_PATTERN}" charset="UTF-8" />
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" />
+                <SizeBasedTriggeringPolicy size="10000KB" />
+            </Policies>
+            <DefaultRolloverStrategy max="20" fileIndex="min" />
+        </RollingFile>
+
+        <RollingFile name="ERROR_LOG_FILE"
+                     fileName="${LOG_PATH}/${ERROR_FILE}"
+                     filePattern="${ERROR_FILE_PATTERN}">
+            <Filters>
+                <ThresholdFilter level="ERROR" onMatch="ACCEPT" onMismatch="DENY" />
+            </Filters>
+            <PatternLayout pattern="${LOG_PATTERN}" charset="UTF-8" />
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" />
+                <SizeBasedTriggeringPolicy size="10000KB" />
+            </Policies>
+            <DefaultRolloverStrategy max="20" fileIndex="min" />
+        </RollingFile>
+
+        <RollingFile name="AUDIT_LOG_FILE"
+                     fileName="${LOG_PATH}/${AUDIT_FILE}"
+                     filePattern="${AUDIT_FILE_PATTERN}">
+            <PatternLayout pattern="${LOG_PATTERN}" charset="UTF-8" />
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" />
+                <SizeBasedTriggeringPolicy size="10000KB" />
+            </Policies>
+            <DefaultRolloverStrategy max="20" fileIndex="min" />
+        </RollingFile>
+
+        <RollingFile name="PUSH_NOTI_LOG_FILE"
+                     fileName="${LOG_PATH}/${PUSH_NOTI_FILE}"
+                     filePattern="${PUSH_NOTI_FILE_PATTERN}">
+            <PatternLayout pattern="${LOG_PATTERN}" charset="UTF-8" />
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" />
+                <SizeBasedTriggeringPolicy size="10000KB" />
+            </Policies>
+            <DefaultRolloverStrategy max="20" fileIndex="min" />
+        </RollingFile>
+
     </Appenders>
     <Loggers>
-        <Root level="info">
-            <AppenderRef ref="ConsoleLog" />
-            <AppenderRef ref="FileLog" />
+        <Root level="INFO">
+            <AppenderRef ref="CONSOLE" />
+            <AppenderRef ref="RUN_LOG_FILE" />
         </Root>
-        <Logger name="./logs/exam.log" level="debug">
-            <AppenderRef ref="ConsoleLog"/>
+        <Logger name="com.dnd">
+            <AppenderRef ref="ERROR_LOG_FILE"/>
+        </Logger>
+        <Logger name="com.dnd.ground" level="DEBUG">
+            <AppenderRef ref="DEBUG_LOG_FILE"/>
+        </Logger>
+        <Logger name="com.dnd.ground.global.log.AuditLogger">
+            <AppenderRef ref="AUDIT_LOG_FILE"/>
+        </Logger>
+        <Logger name="com.dnd.ground.global.log.NotificationLogger">
+            <AppenderRef ref="PUSH_NOTI_LOG_FILE"/>
         </Logger>
     </Loggers>
 </Configuration>

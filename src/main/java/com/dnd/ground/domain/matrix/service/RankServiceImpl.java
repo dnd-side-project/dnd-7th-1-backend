@@ -3,9 +3,7 @@ package com.dnd.ground.domain.matrix.service;
 import com.dnd.ground.domain.exerciseRecord.Repository.ExerciseRecordRepository;
 import com.dnd.ground.domain.exerciseRecord.dto.RankDto;
 import com.dnd.ground.domain.friend.service.FriendService;
-import com.dnd.ground.domain.matrix.Matrix;
 import com.dnd.ground.domain.exerciseRecord.dto.RankCond;
-import com.dnd.ground.domain.matrix.repository.MatrixRepository;
 import com.dnd.ground.domain.user.User;
 import com.dnd.ground.domain.user.dto.RankResponseDto;
 import com.dnd.ground.domain.user.dto.UserRequestDto;
@@ -28,7 +26,7 @@ import java.util.List;
  * @description 운동 영역 서비스 클래스
  * @author  박찬호
  * @since   2022-08-01
- * @updated 1. 미사용 메소드 제거
+ * @updated 1. 특정 회원의 누적 랭킹 조회 추가
  *          - 2023.03.03
  */
 
@@ -50,6 +48,15 @@ public class RankServiceImpl implements RankService {
 
         List<RankDto> matrixRank = exerciseRecordRepository.findRankMatrixRankAllTime(new RankCond(userAndFriends));
         return new RankResponseDto.Matrix(calculateUsersRank(matrixRank));
+    }
+
+    //특정 유저의 역대 누적 랭킹 조회
+    public UserResponseDto.Ranking matrixUserRankingAllTime(User user) {
+        List<User> userAndFriends = friendService.getFriends(user);
+        userAndFriends.add(user);
+
+        List<RankDto> matrixRank = exerciseRecordRepository.findRankMatrixRankAllTime(new RankCond(userAndFriends));
+        return calculateUserRank(matrixRank, user);
     }
 
     //영역 랭킹 조회

@@ -25,20 +25,11 @@ public interface UserChallengeRepository extends JpaRepository<UserChallenge, Lo
     @Query("select uc.user from UserChallenge uc where uc.challenge=:challenge")
     List<User> findChallengeUsers(@Param("challenge") Challenge challenge);
 
-    //챌린지에 포함된 회원 수 조회
-    @Query("select count(uc) from UserChallenge uc where uc.challenge=:challenge")
-    int findUCCount(@Param("challenge") Challenge challenge);
-
-    //Progress 상태의 회원 수 조회
-    @Query("select count(uc) from UserChallenge uc where uc.challenge=:challenge and (uc.status='Progress' or uc.status='Master')")
-    int findUCReadyCount(Challenge challenge);
-
     //유저와 챌린지를 통해 UserChallenge 조회
     Optional<UserChallenge> findByUserAndChallenge(User user, Challenge challenge);
 
     //해당 챌린지의 UC 조회
-    @Query("select uc from UserChallenge uc where uc.challenge=:challenge")
-    List<UserChallenge> findUCByChallenge(@Param("challenge") Challenge challenge);
+    List<UserChallenge> findByChallenge(@Param("challenge") Challenge challenge);
 
     //대기 중, 거절 상태의 UC 삭제
     @Modifying(clearAutomatically = true)
@@ -56,6 +47,5 @@ public interface UserChallengeRepository extends JpaRepository<UserChallenge, Lo
     //챌린지-회원 관계 테이블에 데이터가 있는 회원 조회
     @Query("select uc from UserChallenge uc where uc.user=:user")
     List<UserChallenge> findUCs(@Param("user") User user);
-
 
 }
