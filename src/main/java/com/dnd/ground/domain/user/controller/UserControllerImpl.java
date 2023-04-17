@@ -3,11 +3,9 @@ package com.dnd.ground.domain.user.controller;
 import com.dnd.ground.domain.exerciseRecord.dto.RecordRequestDto;
 import com.dnd.ground.domain.exerciseRecord.dto.RecordResponseDto;
 import com.dnd.ground.domain.friend.dto.FriendResponseDto;
-import com.dnd.ground.domain.user.User;
 import com.dnd.ground.domain.user.dto.HomeResponseDto;
 import com.dnd.ground.domain.user.dto.UserRequestDto;
 import com.dnd.ground.domain.user.dto.UserResponseDto;
-import com.dnd.ground.domain.user.repository.UserRepository;
 import com.dnd.ground.domain.user.service.UserService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiParam;
@@ -23,8 +21,8 @@ import org.springframework.web.multipart.MultipartFile;
  * @description 회원 관련 컨트롤러 구현체
  * @author  박세헌, 박찬호
  * @since   2022-08-02
- * @updated 1.회원의 푸시 알람 관련 필터 변경을 위한 API 구현
- *          - 2023-04-13 박찬호
+ * @updated 1.회원의 알람 필터 조회 API 구현
+ *          - 2023-04-17 박찬호
  */
 
 @Api(tags = "회원")
@@ -35,7 +33,6 @@ import org.springframework.web.multipart.MultipartFile;
 public class UserControllerImpl implements UserController {
 
     private final UserService userService;
-    private final UserRepository userRepository;
 
     @GetMapping("/home")
     @Operation(summary = "홈 화면 조회",
@@ -101,8 +98,15 @@ public class UserControllerImpl implements UserController {
     }
 
     @PostMapping("/filter/notification")
+    @Operation(summary = "필터 변경: 알람 옵션 변경", description = "알람 종류에 따라 옵션이 ON/OFF됩니다.")
     public ResponseEntity<Boolean> changeFilterNotification(@RequestBody UserRequestDto.NotificationFilter request) {
-        return ResponseEntity.ok(userService.changeFilterNotification(request));
+        return ResponseEntity.ok().body(userService.changeFilterNotification(request));
+    }
+
+    @GetMapping("/filter/notification")
+    @Operation(summary = "회원의 알람 옵션 조회", description = "회원의 현재 옵션 정보를 반환합니다.")
+    public ResponseEntity<UserResponseDto.NotificationFilters> getNotificationFilters(@RequestParam("nickname") String nickname) {
+        return ResponseEntity.ok().body(userService.getNotificationFilters(nickname));
     }
 
     @PostMapping(value = "/info/profile/edit", consumes =  {MediaType.MULTIPART_FORM_DATA_VALUE})
@@ -130,7 +134,6 @@ public class UserControllerImpl implements UserController {
     @GetMapping("/info/profile")
     @Operation(summary = "내 프로필 조회(마이페이지)", description = "내 프로필 조회\n변경된 닉네임 중복 시 DUPLICATE_NICKNAME 예외 전달")
     public ResponseEntity<UserResponseDto.Profile> getMyProfile(@RequestParam String nickname){
-        User user = userRepository.findByNickname(nickname).orElseThrow();
         return ResponseEntity.ok(userService.getUserProfile(nickname));
     }
 }

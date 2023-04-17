@@ -10,8 +10,8 @@ import org.springframework.web.multipart.MultipartFile;
  * @description 회원 서비스 인터페이스
  * @author  박세헌, 박찬호
  * @since   2022-08-01
- * @updated 1.회원의 푸시 알람 관련 필터 변경을 위한 API 구현
- *          - 2023-04-13 박찬호
+ * @updated 1.회원의 알람 필터 조회 API 구현
+ *          - 2023-04-17 박찬호
  */
 
 public interface UserService {
@@ -23,6 +23,7 @@ public interface UserService {
     RecordResponseDto.EInfo getExerciseInfo(Long exerciseId);
     UserResponseDto.DetailMap getDetailMap(Long recordId);
 
+    UserResponseDto.NotificationFilters getNotificationFilters(String nickname);
     Boolean changeFilterMine(String nickname);
     Boolean changeFilterFriend(String nickname);
     Boolean changeFilterRecord(String nickname);
@@ -32,6 +33,5 @@ public interface UserService {
     UserResponseDto.UInfo editUserProfile(MultipartFile multipartFile, UserRequestDto.Profile requestDto);
 
     UserResponseDto.dayEventList getDayEventList(UserRequestDto.DayEventList requestDto);
-
     UserResponseDto.Profile getUserProfile(String nickname);
 }

@@ -12,20 +12,16 @@ import java.util.List;
 
 /**
  * @description 유저 Response Dto
- *              1. 유저(나) 매트릭스 및 정보
- *              2. 나와 챌린지 안하는 친구들 매트릭스
- *              3. 나와 챌린지 하는 친구들 매트릭스 및 정보
- *              4. 랭킹 정보
  * @author  박세헌, 박찬호
  * @since   2022-08-08
- * @updated 1.MatrixDto 의존성 제거 및 일부 필드 데이터 타입 변경
+ * @updated 1. @Data 제거
+ *          2. 회원의 알람 필터 조회 DTO 생성
  *          - 2023-03-07 박찬호
  */
 
-@Data
+@Getter
 public class UserResponseDto {
-
-    @Data
+    @Getter
     @AllArgsConstructor
     public static class UInfo {
         @ApiModelProperty(value = "닉네임", example = "NickA")
@@ -36,7 +32,7 @@ public class UserResponseDto {
     }
     
     /*마이페이지 관련 DTO*/
-    @Data @Builder
+    @Getter @Builder
     static public class MyPage {
         @ApiModelProperty(value = "닉네임", example = "NickA")
         private String nickname;
@@ -64,7 +60,7 @@ public class UserResponseDto {
     }
 
     /*유저의 프로필 관련 DTO*/
-    @Data @Builder
+    @Getter @Builder
     static public class Profile {
         @ApiModelProperty(value = "닉네임", example = "NickA")
         private String nickname;
@@ -84,6 +80,7 @@ public class UserResponseDto {
     @Getter
     @Setter
     @Builder
+    @ToString
     static public class UserMatrix {
         @ApiModelProperty(value = "닉네임", example = "NickA")
         private String nickname;
@@ -105,7 +102,7 @@ public class UserResponseDto {
     }
 
     /*친구의 영역 관련 DTO*/
-    @Data
+    @Getter
     @Builder
     @AllArgsConstructor
     static public class FriendMatrix{
@@ -126,7 +123,7 @@ public class UserResponseDto {
     }
 
     /*챌린지 영역 정보 관련 DTO*/
-    @Data
+    @Getter
     @Builder
     @AllArgsConstructor
     static public class ChallengeMatrix{
@@ -153,7 +150,7 @@ public class UserResponseDto {
     }
 
     /*랭킹과 관련된 DTO (추후 프로필 사진 필드 추가해야됨)*/
-    @Data
+    @Getter
     @AllArgsConstructor
     public static class Ranking {
         @ApiModelProperty(value = "랭크", example = "1", required = true)
@@ -170,7 +167,7 @@ public class UserResponseDto {
     }
 
     /*상세 지도 DTO*/
-    @Data
+    @Getter
     @AllArgsConstructor
     public static class DetailMap {
         @ApiModelProperty(value = "사용자의 마지막 위치(위도)", example = "37.123123", required = true)
@@ -187,17 +184,52 @@ public class UserResponseDto {
     }
 
     /* 나의 활동 기록에서 기록이 있는 날짜 리스트 */
-    @Data
     @AllArgsConstructor
+    @Getter
     static public class dayEventList{
         @ApiModelProperty(name = "기록이 있는 날짜 리스트", example = "[2022-09-01, 2022-09-02]", dataType = "list")
         private List<LocalDate> eventList;
     }
 
     /* 나의 활동 기록 조회 */
-    @Data @Builder
+    @Builder
+    @AllArgsConstructor
+    @Getter
     static public class ActivityRecordResponseDto {
         @ApiModelProperty(value = "해당 날짜에 존재하는 활동 내역 정보(운동 기록 정보)")
         List<RecordResponseDto.activityRecord> activityRecords;
+    }
+
+    @AllArgsConstructor
+    @NoArgsConstructor
+    @Getter
+    @Setter
+    static public class NotificationFilters {
+        @ApiModelProperty(name = "회원 알람 필터: 새로운 주차 시작 알림", example = "true")
+        private Boolean notiWeekStart;
+
+        @ApiModelProperty(name = "회원 알람 필터: 주차 종료 알림", example = "false")
+        private Boolean notiWeekEnd;
+
+        @ApiModelProperty(name = "회원 알람 필터: 친구 요청 알림", example = "true")
+        private Boolean notiFriendRequest;
+
+        @ApiModelProperty(name = "회원 알람 필터: 친구 요청 수락 알림", example = "false")
+        private Boolean notiFriendAccept;
+
+        @ApiModelProperty(name = "회원 알람 필터: 챌린지 초대 알림", example = "true")
+        private Boolean notiChallengeRequest;
+
+        @ApiModelProperty(name = "회원 알람 필터: 챌린지 수락 알림", example = "false")
+        private Boolean notiChallengeAccept;
+
+        @ApiModelProperty(name = "회원 알람 필터: 챌린지 진행 알림", example = "true")
+        private Boolean notiChallengeStart;
+
+        @ApiModelProperty(name = "회원 알람 필터: 챌린지 취소 알림", example = "true")
+        private Boolean notiChallengeCancel;
+
+        @ApiModelProperty(name = "회원 알람 필터: 챌린지 결과 알림", example = "true")
+        private Boolean notiChallengeResult;
     }
 }
