@@ -7,10 +7,7 @@ import org.springframework.batch.item.database.AbstractPagingItemReader;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.dao.DataAccessResourceFailureException;
 
-import javax.persistence.EntityManager;
-import javax.persistence.EntityManagerFactory;
-import javax.persistence.EntityTransaction;
-import javax.persistence.TypedQuery;
+import javax.persistence.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -24,7 +21,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
  *              결과적으로, 챌린지를 기준으로 페이징이 적용된다.
  * @author  박찬호
  * @since   2023-04-14
- * @updated 1. ItemReader 구현 완료
+ * @updated 1. 조회 시, 비관적 락(배타 락)을 걸도록 수정
+ *          2. UC 조회 쿼리 수정
  *          - 2023-04-26 박찬호
  */
 public class ChallengeWithUCItemReader extends AbstractPagingItemReader<ChallengeWithUCDto> {
@@ -72,6 +70,7 @@ public class ChallengeWithUCItemReader extends AbstractPagingItemReader<Challeng
      */
     @Override
     protected void doReadPage() {
+        System.out.println("---- READER START ----");
         //결과 배열 및 트랜잭션, em 초기화
         if (results == null) results = new CopyOnWriteArrayList<>();
         else results.clear();
@@ -103,7 +102,7 @@ public class ChallengeWithUCItemReader extends AbstractPagingItemReader<Challeng
                 em.createQuery(
                         "SELECT c " +
                                 "FROM Challenge c " +
-                                "WHERE c.created <= :jobParam AND c.status = :status",
+                                "WHERE c.started <= :jobParam AND c.status = :status",
                         Challenge.class);
 
         if (challengeParamMap != null) {
@@ -116,14 +115,22 @@ public class ChallengeWithUCItemReader extends AbstractPagingItemReader<Challeng
         List<Challenge> challenges = challengeTypedQuery
                 .setFirstResult(page * pageSize)
                 .setMaxResults(pageSize)
+                .setLockMode(LockModeType.PESSIMISTIC_WRITE)
                 .getResultList();
 
         for (Challenge challenge : challenges) {
             List<UserChallenge> ucs = em.createQuery(
                             "SELECT uc " +
                                     "FROM UserChallenge uc " +
+                                    "INNER JOIN FETCH Challenge c " +
+                                    "ON uc.challenge = c " +
+                                    "INNER JOIN FETCH User u " +
+                                    "ON uc.user = u " +
+                                    "INNER JOIN FETCH UserProperty up " +
+                                    "ON u.property = up " +
                                     "WHERE uc.challenge = :challenge", UserChallenge.class)
                     .setParameter("challenge", challenge)
+                    .setLockMode(LockModeType.PESSIMISTIC_WRITE)
                     .getResultList();
 
             response.add(new ChallengeWithUCDto(challenge, ucs));
