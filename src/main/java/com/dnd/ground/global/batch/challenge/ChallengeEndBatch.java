@@ -5,6 +5,7 @@ import com.dnd.ground.domain.challenge.ChallengeStatus;
 import com.dnd.ground.domain.challenge.UserChallenge;
 import com.dnd.ground.domain.challenge.repository.ChallengeRepository;
 import com.dnd.ground.domain.challenge.repository.UserChallengeRepository;
+import com.dnd.ground.global.batch.JobLoggerListener;
 import com.dnd.ground.global.batch.JobParamDateTimeConverter;
 import com.dnd.ground.global.log.CommonLogger;
 import com.dnd.ground.global.util.UuidUtil;
@@ -30,8 +31,8 @@ import java.util.Map;
  * @description 주간 챌린지 종료 배치
  * @author  박찬호
  * @since   2023-04-28
- * @updated 1.배치 작업 정의
- *          - 2023-04-28 박찬호
+ * @updated 1.Job 전/후 로그 리스너 추가
+ *          - 2023-05-02 박찬호
  */
 
 @Configuration
@@ -39,6 +40,7 @@ public class ChallengeEndBatch {
     public ChallengeEndBatch(JobBuilderFactory jobBuilderFactory,
                              StepBuilderFactory stepBuilderFactory,
                              JobParamDateTimeConverter challenge_end_job_param_converter,
+                             JobLoggerListener jobLoggerListener,
                              EntityManagerFactory entityManagerFactory,
                              @Qualifier("batchLogger") CommonLogger logger,
                              ChallengeRepository challengeRepository,
@@ -46,6 +48,7 @@ public class ChallengeEndBatch {
         this.jobBuilderFactory = jobBuilderFactory;
         this.stepBuilderFactory = stepBuilderFactory;
         this.dateTimeConverter = challenge_end_job_param_converter;
+        this.jobLoggerListener = jobLoggerListener;
         this.emf = entityManagerFactory;
         this.logger = logger;
         this.challengeRepository = challengeRepository;
@@ -55,6 +58,8 @@ public class ChallengeEndBatch {
     private final JobBuilderFactory jobBuilderFactory;
     private final StepBuilderFactory stepBuilderFactory;
     private final JobParamDateTimeConverter dateTimeConverter;
+    private final JobLoggerListener jobLoggerListener;
+
     private final EntityManagerFactory emf;
     private final CommonLogger logger;
     private final ChallengeRepository challengeRepository;
@@ -67,6 +72,7 @@ public class ChallengeEndBatch {
     public Job challengeEndJob(Step challenge_end_step) {
         return jobBuilderFactory.get(JOB_NAME + "_job")
                 .start(challenge_end_step)
+                .listener(jobLoggerListener)
                 .build();
     }
 

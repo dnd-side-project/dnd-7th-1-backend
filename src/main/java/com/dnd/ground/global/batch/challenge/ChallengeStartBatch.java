@@ -30,15 +30,16 @@ import java.util.*;
  * @description 주간 챌린지 시작 배치
  * @author  박찬호
  * @since   2023-04-20
- * @updated 1.배치 작업 정의
- *          - 2023-04-27 박찬호
+ * @updated 1.Job 전/후 로그 리스너 추가
+ *          - 2023-05-02 박찬호
  */
 
 @Configuration
 public class ChallengeStartBatch {
     public ChallengeStartBatch(JobBuilderFactory jobBuilderFactory,
                                StepBuilderFactory stepBuilderFactory,
-                               JobParamDateTimeConverter dateTimeConverter,
+                               JobParamDateTimeConverter challenge_start_job_param_converter,
+                               JobLoggerListener jobLoggerListener,
                                ChallengeRepository challengeRepository,
                                UserChallengeRepository userChallengeRepository,
                                ApplicationEventPublisher applicationEventPublisher,
@@ -46,7 +47,8 @@ public class ChallengeStartBatch {
                                @Qualifier("batchLogger") CommonLogger logger) {
         this.jobBuilderFactory = jobBuilderFactory;
         this.stepBuilderFactory = stepBuilderFactory;
-        this.dateTimeConverter = dateTimeConverter;
+        this.dateTimeConverter = challenge_start_job_param_converter;
+        this.jobLoggerListener = jobLoggerListener;
         this.challengeRepository = challengeRepository;
         this.userChallengeRepository = userChallengeRepository;
         this.pushNotificationPublisher = applicationEventPublisher;
@@ -57,6 +59,7 @@ public class ChallengeStartBatch {
     private final JobBuilderFactory jobBuilderFactory;
     private final StepBuilderFactory stepBuilderFactory;
     private final JobParamDateTimeConverter dateTimeConverter;
+    private final JobLoggerListener jobLoggerListener;
     private final ChallengeRepository challengeRepository;
     private final UserChallengeRepository userChallengeRepository;
     private final ApplicationEventPublisher pushNotificationPublisher;
@@ -65,9 +68,11 @@ public class ChallengeStartBatch {
     private static final String JOB_NAME = "challenge_start";
 
     @Bean(name = JOB_NAME + "_job")
-    public Job challengeStartJob(Step challengeStartStep) {
+    @Qualifier("challenge_start_job")
+    public Job challengeStartJob(Step challenge_start_step) {
         return jobBuilderFactory.get(JOB_NAME + "_job")
-                .start(challengeStartStep)
+                .start(challenge_start_step)
+                .listener(jobLoggerListener)
                 .build();
     }
 
@@ -79,7 +84,7 @@ public class ChallengeStartBatch {
 
     @JobScope
     @Bean(name = JOB_NAME + "_step")
-    public Step challengeStartStep(ItemProcessor<ChallengeWithUCDto, ChallengeWithUCDto> challengeStartProcessor,
+    public Step challengeStartStep(ItemProcessor<ChallengeWithUCDto, ChallengeWithUCDto> challenge_start_processor,
                                    ChallengeWithUCItemWriter itemWriter) {
         //ItemReader 객체 생성
         Map<String, Object> challengeParam = new HashMap<>();
@@ -87,11 +92,12 @@ public class ChallengeStartBatch {
         challengeParam.put("status", ChallengeStatus.WAIT);
 
         ChallengeWithUCItemReader reader = new ChallengeWithUCItemReader(challengeParam, emf, logger);
+        itemWriter.setDateTimeConverter(dateTimeConverter);
 
         return stepBuilderFactory.get(JOB_NAME + "_step")
                 .<ChallengeWithUCDto, ChallengeWithUCDto>chunk(10)
                 .reader(reader)
-                .processor(challengeStartProcessor)
+                .processor(challenge_start_processor)
                 .writer(itemWriter)
                 .build();
     }
