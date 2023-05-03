@@ -74,6 +74,9 @@ dependencies {
 	//FCM
 	implementation group: 'com.google.firebase', name: 'firebase-admin', version: '6.8.1'
 
+	//Redis
+	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+
 	//Prometheus
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
 
