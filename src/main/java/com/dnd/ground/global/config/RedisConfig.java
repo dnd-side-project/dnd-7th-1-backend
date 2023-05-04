@@ -1,13 +1,18 @@
 package com.dnd.ground.global.config;
 
+import com.dnd.ground.global.redis.RedisEventListener;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.listener.PatternTopic;
+import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
@@ -18,11 +23,12 @@ import java.time.Duration;
  * @description Redis 설정 정보
  * @author  박찬호
  * @since   2023-05-03
- * @updated 1. RedisTemplate 및 CacheManager 설정
- *          - 2023-05-03 박찬호
+ * @updated 1. Expire Event를 수신하기 위한 Container 정의
+ *          - 2023-05-04 박찬호
  */
 
 @Configuration
+@Slf4j
 public class RedisConfig {
     @Value("${spring.redis.host}")
     private String host;
@@ -33,16 +39,30 @@ public class RedisConfig {
     @Value("${spring.redis.timeout}")
     private int timeout;
 
+
     @Bean
     public RedisConnectionFactory redisConnectionFactory() {
-        return new LettuceConnectionFactory(host, port);
+        RedisStandaloneConfiguration redisStandaloneConfiguration = new RedisStandaloneConfiguration(host, port);
+        return new LettuceConnectionFactory(redisStandaloneConfiguration);
     }
 
     @Bean
-    public RedisTemplate<String, Object> redisTemplate() {
-        RedisTemplate<String, Object> redisTemplate = new RedisTemplate<>();
+    public RedisMessageListenerContainer redisMessageListenerContainer(RedisConnectionFactory redisConnectionFactory, RedisEventListener eventListener) {
+        final String PATTERN = "__keyevent@*__:expired";
+
+        RedisMessageListenerContainer redisMessageListenerContainer = new RedisMessageListenerContainer();
+        redisMessageListenerContainer.setConnectionFactory(redisConnectionFactory);
+        redisMessageListenerContainer.addMessageListener(eventListener, new PatternTopic(PATTERN));
+        redisMessageListenerContainer.setErrorHandler(e -> log.error("레디스 Expire Event Container에서 에러가 발생했습니다.", e));
+        return redisMessageListenerContainer;
+    }
+
+    @Bean
+    public RedisTemplate<?, ?> redisTemplate() {
+        RedisTemplate<?, ?> redisTemplate = new RedisTemplate<>();
         redisTemplate.setConnectionFactory(redisConnectionFactory());
         redisTemplate.afterPropertiesSet();
+        redisTemplate.setHashValueSerializer(new GenericJackson2JsonRedisSerializer());
         return redisTemplate;
     }
 
