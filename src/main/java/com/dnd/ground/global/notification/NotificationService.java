@@ -36,6 +36,7 @@ import java.util.stream.Collectors;
  *                                                              비슷한 파라미터가 많고, 똑같은 DTO를 생성하는 것도 복잡도만 올라간다고 판단.
  *                                                              예약 알람까지 개발 후 개선 예정
  *          2.메시지 전처리, 전송, 재전송 메소드 개선
+ *          3.FCM 토큰 재발급 요청 메소드 추가
  *          - 2023-05-05 박찬호
  */
 
@@ -336,6 +337,32 @@ public class NotificationService {
                 notification.updateStatus(NotificationStatus.FAIL);
                 notificationRepository.save(notification);
             }
+        }
+    }
+
+    /*FCM 토큰 재발급 요청 (Silent Message)*/
+    public static void requestReissueFCMToken(User user) {
+        Message msg = Message.builder()
+                .setToken(user.getProperty().getFcmToken())
+                .putData(DATA_PARAM_ACTION, NotificationMessage.COMMON_REISSUE_FCM_TOKEN.name())
+                .setApnsConfig(
+                        ApnsConfig.builder()
+                                .putHeader("apns-priority", "5")
+                                .putHeader("apns-push-type", "background")
+                                .setAps(
+                                        Aps.builder()
+                                                .setCategory("REISSUE")
+                                                .setContentAvailable(true)
+                                                .build()
+                                )
+                                .build()
+                )
+                .build();
+
+        try {
+            FirebaseMessaging.getInstance().send(msg);
+        } catch (FirebaseMessagingException e) {
+            log.warn("토큰 재발급 요청에 실패했습니다. user:{}", user.getNickname());
         }
     }
 
