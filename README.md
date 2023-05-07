@@ -1,9 +1,8 @@
 # 🏃 땅따먹기 기반 운동 장려 애플리케이션 NEMODU
-- DND 7기 프로젝트(2022.08~)  
-- <a href="https://www.youtube.com/watch?v=gFkrgJt2ttQ">📺 시연 영상</a>  
+>DND 7기 프로젝트 (2022.08~)  
 
 <details>
-    <summary><b>프로젝트 설명</b></summary>
+    <summary><b><h2>프로젝트 설명</h2> <a href="https://www.youtube.com/watch?v=gFkrgJt2ttQ">시연 영상 📺</a></b></summary>
 <div markdown="1">
 
 ![image](https://user-images.githubusercontent.com/77626299/214999568-443dee1f-1ee5-44b4-9197-7faf89205946.png)  
@@ -22,7 +21,7 @@
     </div>
 </details>
 
-## 기능 리스트
+## :page_with_curl: 기능 리스트
 - <b>회원</b>
   - 프로필 조회 및 수정
   - 마이 페이지 조회(운동 기록 정보, 회원 정보 등)
@@ -61,14 +60,14 @@
   - 특정 상황에서 푸시 알람 요청 및 알람 관리
 - <b>HTTPS 지원</b>
 
-## Architecture
+## :large_blue_diamond: Architecture
 ![image](https://user-images.githubusercontent.com/77626299/236676188-26c76529-39ed-4eec-ad7b-0925ed10a1c9.png)
 
-## ER-MODEL
+## :large_orange_diamond: ER-MODEL
 ![image](https://user-images.githubusercontent.com/77626299/236677094-100ff30a-f513-4617-9b73-b0cdea754d5d.png)
 
-## 기술 스택
-### SERVER
+## ⚔️ 기술 스택
+### 🔥 SERVER
 - <b>Java 11 (OpenJDK 11)</b>
 - <b>Spring boot 2.7.1</b>  
   - 의존성 관리
@@ -87,15 +86,15 @@
   - 체계적인 배치 작업: Chunk 단위로 트랜잭션을 관리해 메모리에 한 번에 적재하지 않도록 해 서버의 부담 최소화
   - Challenge의 상태 변경 시 배타 락 설정 -> Chunk 단위 작업 필요
   - AbstractPagingItemReader, JpaItemWrtier를 상속받아 네모두의 엔티티 구성에 맞게 구성
-### DB
+### 🎁 DB
 - <b>MySQL 8.0.30</b>  
   - 테이블의 성격을 고려한 객체 중심의 엔티티 설계
   - N:M 관계를 조인 테이블을 활용해 1:N, M:1로 풀어내 개발 복잡도 저하
-### Infra
+### 🌉 Infra
 - <b>Nginx</b>
   - SSL 인증서를 활용한 암호화/복호화
   - 발급받은 도메인(nemodu.site)에 대한 프록시 역할
-### Cloud
+### ☁️ Cloud
 - <b>AWS EC2</b>  
   - 필요한 만큼 컴퓨팅 자원 사용(온디맨드)
   - 인스턴스 모니터링
@@ -109,8 +108,8 @@
   - 빠른 조회 및 서버 부하 감소
   - Expire Event 구독: 이벤트가 발행되는 경우 데이터 처리 (FCM 토큰 재발급 요청)
   
-## 개선 과정
-#### 1. 예외 처리 개선  
+## 🏋 개선 과정
+#### :one: 예외 처리 개선  
 >추후 발생할 다양한 예외를 처리하기 위해 유연한 구조 필요
 - 발생할 수 있는 예외에 대한 코드 정의 (ExceptionCodeSet.java)
 - 인터페이스를 통해 예외 클래스의 역할 정의 (BaseException.java)
@@ -120,13 +119,13 @@
 - 기존에 정의한 예외 코드를 활용해 AuthenticationEntryPoint를 상속받은 핸들러에서 예외 처리
 - 케이스별 예외 클래스 생성 및 각 예외에 대한 개별 처리 <br>(Ex:FilterException.java, 필터 레벨에서 발생한 예외를 처리하기 위해 AuthenticationException 상속)
 
-#### 2. 회원가입/로그인 개선
+#### :two: 회원가입/로그인 개선
 >카카오, 애플 2가지 소셜 로그인을 지원. 나중에 추가될 수 있는 다양한 회원가입 형태에 대한 대비
 - Resource Server(현 시점에서 카카오, 애플)에 맞춰 개발해 구조 변경이 힘들다고 판단 -> Resource Server 의존성 최소화
 - 로그인 후 Redirect 받는 형태가 아닌, 클라이언트가 로그인 후 토큰까지 발급하는 것으로 역할 분리.
 - 소셜 로그인에 대한 공통 API를 제공해 서버에서 필요한 정보를 받아 회원 정보 관리
 
-#### 3.메인 화면 API 개선
+#### :three: 메인 화면 API 개선
 >데이터가 많아질수록 메인 화면 API 성능이 급격히 저하됨
 - 1:N 형태로 설계된 '운동 기록<->영역'을 조회할 때, 2번에 걸쳐 조회하던 것을 Join을 활용해 한 번으로 줄임 (DB I/O 최소화)
 - 회원 중심으로 데이터를 조회하는 로직 -> 영역을 중심으로 데이터 조회. 즉, 한 번에 데이터를 조회하도록 로직 개선
@@ -136,33 +135,33 @@
 - MySQL의 MBR_CONTAINS() 함수를 활용해 MBR 내 영역만 조회하도록 개선  
   - <b>테스트 결과: 실행 속도 42.86% 향상</b>
 
-#### 4. 랭킹 개선
+#### :four: 랭킹 개선
 >랭킹 계산에 활용되던 QueryDSL의 Tuple클래스의 의존성이 전역에 퍼져있음.
 - 랭킹 계산에 필요한 공통 DTO 생성
 - DTO를 활용해 조회함으로써, Tuple에 대한 의존성 제거
 - 잘못된 Join 사용으로 인해 불필요하게 복잡해진 랭킹 계산 로직을 Outer Join을 활용해 간소화
 - 랭킹 계산을 공통 모듈로서 활용해 추후 다양한 곳에서 사용하기 쉽도록 함
 
-#### 5. 배치 작업 개선
+#### :five: 배치 작업 개선
 >사용자가 많아졌을 때, 많은 데이터를 한 번에 메모리에 적재하는 것은 부담
 - 일정 단위만큼 데이터를 조회해 처리하도록 함 -> 코드가 복잡해 유지보수가 힘들 것으로 예상
 - 특히, 챌린지 상태 변경 배치의 경우, 변경 전 데이터를 조회할 수 없도록 배타 락을 적용함 -> 빠르게 처리해야 함.
 - Spring Batch를 도입해 Job, Step 각 단계 별 작업을 Chunk로 단위로 수행
 - Postman으로 직접 테스트하기 힘들기 때문에, 테스트 코드 작성
 
-#### 6. 푸시 알람을 위한 FCM 토큰 신선도 유지
+#### :six: 푸시 알람을 위한 FCM 토큰 신선도 유지
 >각 사용자의 FCM 토큰이 2달이 경과한 경우, 클라이언트에게 재발급을 요청해야 함.
 - 사용자마다 만료 시간이 다르기 때문에, 스케줄러를 통해 직접 확인하는 것은 비효율적
 - FCM 토큰을 Redis에 저장하고, TTL을 2달(60일)로 설정
 - 토큰이 만료되는 경우 Expire Event를 발행해 서버로 전달 -> 이벤트를 감지하면 key 정보에 맞춰 토큰 재발급 요청
 - Apns(iOS의 푸시 알람 서비스)의 Silent Message를 활용해 재발급 요청
 
-#### 7. 로그 전략 개선 
+#### :seven: 로그 전략 개선 
 >서버 모니터링 및 빠른 트러블 슈팅을 위한 로그 전략 개선 필요
 - 푸시 알람, 배치 등 특정 서비스에 따른 Logger 분리
 - 로그 레벨에 따른 로그 수집
 - 시간, 용량 별 Rolling 전략 수립
 - Logger 클래스를 Request Scope Bean으로 생성해 쉽게 로그를 확인할 수 있도록 개선<br>-> @Qualifer를 통해 특정 Logger를 주입해야 하는 부분은 개선 필요
 
-#### 8. Prometheus, Grapana를 활용한 모니터링 (진행 중)
+#### :eight: Prometheus, Grapana를 활용한 모니터링 (진행 중)
 >운영을 위해 JVM 메모리 사용량 및 GC 모니터링이 필요하다고 판단
