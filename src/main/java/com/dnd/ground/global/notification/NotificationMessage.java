@@ -27,6 +27,7 @@ public enum NotificationMessage {
      */
     COMMON_WEEK_START("주차 시작 알림", "기록과 챌린지를 새롭게 시작해보세요."),
     COMMON_WEEK_END("주차 종료 알림", "이번 주차 기록/챌린지가 자정에 종료돼요."),
+    COMMON_REISSUE_FCM_TOKEN("FCM 토큰이 만료되었습니다.", "FCM 토큰이 만료되었습니다."),
 
     /**
      * 친구
@@ -39,9 +40,9 @@ public enum NotificationMessage {
      */
     CHALLENGE_RECEIVED_REQUEST("%s님의 챌린지 초대", "%s에 초대했어요."),
     CHALLENGE_ACCEPTED("%s님의 챌린지 수락", "%s님이 챌린지를 수락했어요."),
-    CHALLENGE_START_SOON("챌린지 진행 안내", "%s개의 챌린지가 이번 주차에 시작됩니다."),
+    CHALLENGE_START_SOON("챌린지 진행 안내", "'%s' 챌린지가 오늘부터 시작됩니다."),
     CHALLENGE_CANCELED("챌린지 취소", "수락한 인원이 없어서 챌린지가 취소되었어요."),
-    CHALLENGE_RESULT("지난 주 챌린지 결과 안내", "%s개의 챌린지가 종료되었어요.");
+    CHALLENGE_RESULT("지난 주 챌린지 결과 안내", "'%s' 챌린지가 챌린지가 종료되었어요.");
 
 
     private String title;

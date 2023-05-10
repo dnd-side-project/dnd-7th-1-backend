@@ -19,25 +19,43 @@ spring:
   mvc:
     pathmatch:
       matching-strategy: ant_path_matcher
+  batch:
+    job:
+      names: ${job.name:NONE}
+      enabled: false
+    jdbc:
+      initialize-schema: ALWAYS
+#  sql:
+#    init:
+#      mode: ${db.sql.init}
 logging:
   config: classpath:log4j2.xml
   level:
     org.hibernate.SQL: debug
+management:
+  endpoints:
+    web:
+      exposure:
+        include: prometheus
+
+# 외부 설정 정보
 kakao:
   REST_KEY: ${kakao.REST_KEY}
   REDIRECT_URI: ${kakao.REDIRECT_URI}
 apple:
   ISS: ${apple.ISS}
   AUD: ${apple.AUD}
+fcm:
+  project_id: ${fcm.project_id}
+  key:
+    path: ${fcm.key.path}
+    scope: ${fcm.key.scope}
+
+# 내부 설정 정보
+ip: ${ip}
 picture:
   path: ${picture.path}
   name: ${picture.name}
 jwt:
   secret_key: ${jwt.secret_key}
   issuer: ${jwt.issuer}
-fcm:
-  project_id: ${fcm.project_id}
-  key:
-    path: ${fcm.key.path}
-    scope: ${fcm.key.scope}
-ip: ${ip}

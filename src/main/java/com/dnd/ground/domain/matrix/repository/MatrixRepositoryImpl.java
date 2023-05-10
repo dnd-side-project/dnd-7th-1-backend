@@ -28,8 +28,8 @@ import static com.querydsl.core.group.GroupBy.list;
  * @description 운동 기록(영역) 관련 QueryDSL 레포지토리 (특정 범위 내 영역 조회)
  * @author  박찬호
  * @since   2023-02-14
- * @updated 1.조회 대상 인원에 대한 조건 메소드 수정(and -> or)
- *          - 2023-03-13 박찬호
+ * @updated 1.영역 조회 쿼리 개선
+ *          - 2023-05-01 박찬호
  */
 
 
@@ -42,23 +42,16 @@ public class MatrixRepositoryImpl implements MatrixRepositoryQuery {
     public List<MatrixResponseDto> findMatrix(MatrixCond condition) {
         return queryFactory
                 .select(
-                        new QMatrixResponseDto(
-                                user.nickname,
-                                list(
-                                        new QLocation(
-                                                Expressions.stringTemplate("ST_X({0})", matrix.point).castToNum(Double.class).as("latitude"),
-                                                Expressions.stringTemplate("ST_Y({0})", matrix.point).castToNum(Double.class).as("longitude")
-                                        )
-                                )
-                        )
+                        user.nickname,
+                        Expressions.stringTemplate("ST_X({0})", matrix.point).castToNum(Double.class).as("latitude"),
+                        Expressions.stringTemplate("ST_Y({0})", matrix.point).castToNum(Double.class).as("longitude")
                 )
-                .from(matrix)
-                .innerJoin(exerciseRecord)
-                .on(
-                        matrix.exerciseRecord.eq(exerciseRecord)
-                )
-                .innerJoin(user)
+                .distinct()
+                .from(user)
+                .leftJoin(exerciseRecord)
                 .on(exerciseRecord.user.eq(user))
+                .innerJoin(matrix)
+                .on(matrix.exerciseRecord.eq(exerciseRecord))
                 .where(
                         recordInUserOrUsers(condition.getUser(), condition.getUsers()),
                         recordInPeriod(condition.getStarted(), condition.getEnded()),
@@ -178,13 +171,17 @@ public class MatrixRepositoryImpl implements MatrixRepositoryQuery {
     public Map<User, List<Location>> findMatrixMapDistinct(MatrixCond condition) {
         return queryFactory
                 .select(
-                        exerciseRecord.user,
+                        user,
                         Expressions.stringTemplate("ST_X({0})", matrix.point).castToNum(Double.class).as("latitude"),
                         Expressions.stringTemplate("ST_Y({0})", matrix.point).castToNum(Double.class).as("longitude")
                 )
                 .distinct()
-                .from(matrix)
-                .innerJoin(exerciseRecord)
+                .from(user)
+                .leftJoin(exerciseRecord)
+                .on(
+                        exerciseRecord.user.eq(user)
+                )
+                .innerJoin(matrix)
                 .on(
                         matrix.exerciseRecord.eq(exerciseRecord)
                 )
@@ -194,7 +191,7 @@ public class MatrixRepositoryImpl implements MatrixRepositoryQuery {
                         containMBR(condition.getLocation(), condition.getSpanDelta())
                 )
                 .transform(
-                        groupBy(exerciseRecord.user).as(
+                        groupBy(user).as(
                                 list(new QLocation(
                                                 Expressions.stringTemplate("ST_X({0})", matrix.point).castToNum(Double.class).as("latitude"),
                                                 Expressions.stringTemplate("ST_Y({0})", matrix.point).castToNum(Double.class).as("longitude")

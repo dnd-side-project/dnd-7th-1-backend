@@ -12,8 +12,8 @@ import java.util.Set;
  * @description QueryDSL으로 영역 조회를 하기 위한 조건 클래스
  * @author  박찬호
  * @since   2023-03-03
- * @updated 1.챌린지 영역 조회를 위한 UUID 필드 및 생성자 추가
- *          - 2023-03-12 박찬호
+ * @updated 1.영역 조회 시, 기간에 따라 조회하기 위한 생성자 추가
+ *          - 2023-05-01 박찬호
  */
 @Getter
 @Setter
@@ -53,14 +53,22 @@ public class MatrixCond {
         this.ended = ended;
     }
 
-    public MatrixCond(MatrixRequestDto request, User user, Set<User> users) {
+    public MatrixCond(Location location, Double spanDelta, User user, Set<User> users, LocalDateTime started, LocalDateTime ended) {
         this.user = user;
         this.users = users;
-        this.location = request.getLocation();
-        this.spanDelta = request.getSpanDelta();
+        this.location = location;
+        this.spanDelta = spanDelta;
+        this.started = started;
+        this.ended = ended;
     }
 
-    public MatrixCond(byte[] targetChallengeUuid) {
-        this.targetChallengeUuid = targetChallengeUuid;
+    public MatrixCond(byte[] uuid, Location location, Double spanDelta) {
+        this.targetChallengeUuid = uuid;
+        this.location = location;
+        this.spanDelta = spanDelta;
+    }
+
+    public void setUsers(Set<User> users) {
+        this.users = users;
     }
 }

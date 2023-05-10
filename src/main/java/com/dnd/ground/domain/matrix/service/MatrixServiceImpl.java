@@ -17,16 +17,19 @@ import com.dnd.ground.global.util.UuidUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+
+import static java.time.DayOfWeek.MONDAY;
 
 /**
  * @description 영역 조회와 관련한 Service 구현체
  * @author  박찬호
  * @since   2023.03.12
- * @updated 1. 특정 영역 검색 API 생성
- *          - 2023.03.12 박찬호
+ * @updated 1. 영역 조회 메소드 NULL 처리 보완
+ *          - 2023.05.01 박찬호
  */
 
 @Service
@@ -43,18 +46,24 @@ public class MatrixServiceImpl implements MatrixService {
         User user = userRepository.findByNickname(request.getNickname())
                 .orElseThrow(() -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
 
-        List<User> users = new ArrayList<>();
+        if (request.getStarted() == null || request.getEnded() == null) {
+            request.setStarted(LocalDateTime.now().with(MONDAY).withHour(0).withMinute(0).withSecond(0).withNano(0));
+            request.setEnded(LocalDateTime.now());
+        }
 
-        if (request.getType().equals(MatrixUserCond.ALL)) {
+        if (request.getType() == null || request.getType().equals(MatrixUserCond.ALL)) {
+            List<User> users = new ArrayList<>();
             users.addAll(friendService.getFriends(user));
             users.addAll(challengeRepository.findUCInProgress(user));
-            MatrixCond condition = new MatrixCond(request, user, new HashSet<>(users));
+            users.add(user);
+            MatrixCond condition = new MatrixCond(request.getLocation(), request.getSpanDelta(), null, new HashSet<>(users), request.getStarted(), request.getEnded());
 
             return matrixRepository.findMatrix(condition);
-        } else if (request.getType().equals(MatrixUserCond.CHALLENGE)) {
+        }
+        else if (request.getType().equals(MatrixUserCond.CHALLENGE)) {
             String uuid = request.getUuid();
             if (StringUtils.isNullOrEmpty(uuid)) throw new ExerciseRecordException(ExceptionCodeSet.CHALLENGE_UUID_INVALID);
-            MatrixCond condition = new MatrixCond(UuidUtil.hexToBytes(uuid));
+            MatrixCond condition = new MatrixCond(UuidUtil.hexToBytes(uuid), request.getLocation(), request.getSpanDelta());
 
             return matrixRepository.findChallengeMatrix(condition);
         } else {
