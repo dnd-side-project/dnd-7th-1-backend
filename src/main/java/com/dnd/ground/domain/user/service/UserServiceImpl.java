@@ -21,6 +21,7 @@ import com.dnd.ground.domain.matrix.dto.MatrixCond;
 import com.dnd.ground.domain.matrix.repository.MatrixRepository;
 import com.dnd.ground.domain.matrix.service.RankService;
 import com.dnd.ground.domain.user.User;
+import com.dnd.ground.domain.user.UserProperty;
 import com.dnd.ground.domain.user.dto.*;
 import com.dnd.ground.domain.user.repository.UserPropertyRepository;
 import com.dnd.ground.domain.user.repository.UserRepository;
@@ -32,6 +33,7 @@ import com.dnd.ground.domain.matrix.dto.Location;
 import lombok.*;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -53,8 +55,8 @@ import static java.time.temporal.TemporalAdjusters.lastDayOfMonth;
  * @description 유저 서비스 클래스
  * @author 박세헌, 박찬호
  * @since 2022-08-01
- * @updated 1.회원의 푸시 알람 관련 필터 변경을 위한 API 구현
- *          - 2023-04-13 박찬호
+ * @updated 1.회원의 알람 필터 조회 API 구현
+ *          - 2023-04-17 박찬호
  */
 
 @Slf4j
@@ -448,5 +450,14 @@ public class UserServiceImpl implements UserService {
                 .mail(user.getEmail())
                 .picturePath(user.getPicturePath())
                 .build();
+    }
+
+    /*회원 알람 목록 조회*/
+    public UserResponseDto.NotificationFilters getNotificationFilters(String nickname) {
+        UserProperty userProperty = userPropertyRepository.findByNickname(nickname)
+                .orElseThrow(() -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
+        UserResponseDto.NotificationFilters response = new UserResponseDto.NotificationFilters();
+        BeanUtils.copyProperties(userProperty, response);
+        return response;
     }
 }
