@@ -204,4 +204,17 @@ public class AuthServiceImpl implements AuthService, UserDetailsService {
             return new UserClaim(email, user.getNickname(), user.getCreated(), user.getLoginType());
         } else throw new AuthException(ExceptionCodeSet.WRONG_TOKEN);
     }
+
+    /*DB의 FCM 토큰 최신화*/
+    @Override
+    @Transactional
+    public ExceptionCodeSet updateFcmToken(FcmTokenUpdateDto request) {
+        if (request.getDeviceType() == DeviceType.PHONE) {
+            fcmTokenRepository.save(new PhoneFcmToken(request.getNickname(), request.getFcmToken(), 60L));
+        } else if (request.getDeviceType() == DeviceType.PAD) {
+            fcmTokenRepository.save(new PadFcmToken(request.getNickname(), request.getFcmToken(), 60L));
+        } else throw new CommonException(ExceptionCodeSet.DEVICE_TYPE_INVALID);
+
+        return ExceptionCodeSet.OK;
+    }
 }

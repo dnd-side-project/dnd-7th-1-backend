@@ -1,7 +1,9 @@
 package com.dnd.ground.global.auth.service;
 
 import com.dnd.ground.global.auth.UserClaim;
+import com.dnd.ground.global.auth.dto.FcmTokenUpdateDto;
 import com.dnd.ground.global.auth.dto.UserSignDto;
+import com.dnd.ground.global.exception.ExceptionCodeSet;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import javax.servlet.http.HttpServletResponse;
@@ -18,4 +20,5 @@ public interface AuthService {
     Boolean validateNickname(String nickname);
     UserSignDto.Response  signUp(UserSignDto signDto, HttpServletResponse response);
     UserClaim getUserClaim(String token);
+    ExceptionCodeSet updateFcmToken(FcmTokenUpdateDto request);
 }
