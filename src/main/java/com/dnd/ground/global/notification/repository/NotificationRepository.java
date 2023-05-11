@@ -1,5 +1,6 @@
-package com.dnd.ground.global.notification;
+package com.dnd.ground.global.notification.repository;
 
+import com.dnd.ground.global.notification.PushNotification;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 /**

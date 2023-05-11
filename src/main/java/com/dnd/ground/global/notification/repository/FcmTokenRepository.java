@@ -2,9 +2,6 @@ package com.dnd.ground.global.notification.repository;
 
 import com.dnd.ground.domain.user.UserPropertyFcmToken;
 import com.dnd.ground.domain.user.repository.UserPropertyFcmTokenRepository;
-import com.dnd.ground.domain.user.repository.UserRepository;
-import com.dnd.ground.global.exception.ExceptionCodeSet;
-import com.dnd.ground.global.exception.UserException;
 import com.dnd.ground.global.notification.NotificationService;
 import com.dnd.ground.global.notification.cache.PadFcmToken;
 import com.dnd.ground.global.notification.cache.PhoneFcmToken;
@@ -32,7 +29,6 @@ public class FcmTokenRepository {
     private final UserPropertyFcmTokenRepository userPropertyFcmTokenRepository;
     private final PhoneFcmTokenRepository phoneFcmTokenRepository;
     private final PadFcmTokenRepository padFcmTokenRepository;
-    private final UserRepository userRepository;
 
     @Transactional
     public void save(PhoneFcmToken phoneFcmToken) {
@@ -66,6 +62,28 @@ public class FcmTokenRepository {
         padFcmTokenRepository.save(padFcmToken);
     }
 
+    public String findToken(String nickname, DeviceType type) {
+        if (type == DeviceType.PHONE) {
+            Optional<PhoneFcmToken> phoneTokenOpt = phoneFcmTokenRepository.findById(nickname);
+            if (phoneTokenOpt.isPresent()) {
+                return phoneTokenOpt.get().getFcmToken();
+            } else {
+                return userPropertyFcmTokenRepository.findToken(nickname, DeviceType.PHONE)
+                        .map(UserPropertyFcmToken::getFcmToken)
+                        .get();
+            }
+        } else if (type == DeviceType.PAD) {
+            Optional<PadFcmToken> padTokenOpt = padFcmTokenRepository.findById(nickname);
+            if (padTokenOpt.isPresent()) {
+                return padTokenOpt.get().getFcmToken();
+            } else {
+                return userPropertyFcmTokenRepository.findToken(nickname, DeviceType.PAD)
+                        .map(UserPropertyFcmToken::getFcmToken)
+                        .get();
+            }
+        } else return null;
+    }
+
     public List<String> findAllTokens(String nickname) {
         List<String> tokens = new ArrayList<>();
 
@@ -73,15 +91,18 @@ public class FcmTokenRepository {
         Optional<PhoneFcmToken> phoneTokenOpt = phoneFcmTokenRepository.findById(nickname);
         if (phoneTokenOpt.isPresent()) tokens.add(phoneTokenOpt.get().getFcmToken());
         else {
-            //재발급
-            NotificationService.requestReissueFCMToken(
-                    userRepository.findByNickname(nickname).orElseThrow(() -> new UserException(ExceptionCodeSet.USER_NOT_FOUND)),
-                    DeviceType.PHONE
-            );
+            Optional<String> phoneTokenInDB = userPropertyFcmTokenRepository
+                    .findToken(nickname, DeviceType.PHONE)
+                    .map(UserPropertyFcmToken::getFcmToken);
 
-            userPropertyFcmTokenRepository.findToken(nickname, DeviceType.PHONE)
-                    .map(UserPropertyFcmToken::getFcmToken)
-                    .ifPresent(tokens::add);
+            if (phoneTokenInDB.isPresent()) {
+                String token = phoneTokenInDB.get();
+                tokens.add(token);
+
+                //재발급 요청
+                NotificationService.requestReissueFCMToken(nickname, token);
+            }
+
         }
 
         //패드 토큰 조회
@@ -89,14 +110,16 @@ public class FcmTokenRepository {
         if (padTokenOpt.isPresent()) tokens.add(padTokenOpt.get().getFcmToken());
         else {
             //재발급
-            NotificationService.requestReissueFCMToken(
-                    userRepository.findByNickname(nickname).orElseThrow(() -> new UserException(ExceptionCodeSet.USER_NOT_FOUND)),
-                    DeviceType.PAD
-            );
+            Optional<String> padTokenInDB = userPropertyFcmTokenRepository
+                    .findToken(nickname, DeviceType.PAD)
+                    .map(UserPropertyFcmToken::getFcmToken);
 
-            userPropertyFcmTokenRepository.findToken(nickname, DeviceType.PAD)
-                    .map(UserPropertyFcmToken::getFcmToken)
-                    .ifPresent(tokens::add);
+            if (padTokenInDB.isPresent()) {
+                String token = padTokenInDB.get();
+                tokens.add(token);
+
+                NotificationService.requestReissueFCMToken(nickname, token);
+            }
         }
 
         return tokens;
