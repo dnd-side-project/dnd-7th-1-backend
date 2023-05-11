@@ -1,8 +1,8 @@
 package com.dnd.ground.global.auth.controller;
 
 import com.dnd.ground.domain.user.LoginType;
-import com.dnd.ground.global.auth.UserClaim;
 import com.dnd.ground.domain.user.dto.*;
+import com.dnd.ground.global.auth.dto.FcmTokenUpdateDto;
 import com.dnd.ground.global.auth.dto.SocialResponseDto;
 import com.dnd.ground.global.auth.service.AppleService;
 import com.dnd.ground.global.auth.service.AuthService;
@@ -20,13 +20,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletResponse;
+import javax.validation.Valid;
 
 /**
  * @author 박찬호
  * @description 회원의 인증/인가 및 로그인 관련 컨트롤러
  * @since 2022-08-23
- * @updated 1. 회원가입 이관 (SignFilter -> AuthService)
- *          - 2023.04.09 박찬호
+ * @updated 1. 회원가입 API @Valid 추가
+ *          - 2023.05.11 박찬호
  */
 
 @Slf4j
@@ -42,7 +43,7 @@ public class AuthController {
 
     @PostMapping("/sign")
     @Operation(summary = "회원 가입 V2", description = "변경된 회원가입")
-    public ResponseEntity<UserSignDto.Response> signUp(@RequestBody UserSignDto request, HttpServletResponse response) {
+    public ResponseEntity<UserSignDto.Response> signUp(@Valid @RequestBody UserSignDto request, HttpServletResponse response) {
         return ResponseEntity.ok().body(authService.signUp(request, response));
     }
 
@@ -50,6 +51,12 @@ public class AuthController {
     @Operation(summary = "닉네임 유효성 검사", description = "2~6글자 || 중복X")
     public ResponseEntity<Boolean> validateNickname(@RequestParam("nickname") String nickname) {
         return ResponseEntity.ok(authService.validateNickname(nickname));
+    }
+
+    @PostMapping("/fcm/token")
+    @Operation(summary = "FCM 토큰 추가", description = "FCM 토큰을 추가합니다.")
+    public ResponseEntity<ExceptionCodeSet> updateFcmToken(@RequestBody @Valid FcmTokenUpdateDto request) {
+        return ResponseEntity.ok().body(authService.updateFcmToken(request));
     }
 
     /**

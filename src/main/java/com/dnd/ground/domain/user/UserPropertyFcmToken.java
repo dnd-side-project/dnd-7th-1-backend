@@ -41,6 +41,7 @@ public class UserPropertyFcmToken {
         this.nickname = nickname;
         this.type = type;
         this.fcmToken = token;
+        this.modified = LocalDateTime.now();
     }
 
     public void setFcmToken(String token) {

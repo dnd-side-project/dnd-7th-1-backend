@@ -6,10 +6,15 @@ import com.auth0.jwt.interfaces.DecodedJWT;
 import com.dnd.ground.domain.friend.service.FriendService;
 import com.dnd.ground.domain.user.User;
 import com.dnd.ground.domain.user.UserProperty;
+import com.dnd.ground.global.notification.cache.PadFcmToken;
+import com.dnd.ground.global.notification.repository.FcmTokenRepository;
 import com.dnd.ground.global.auth.UserClaim;
 import com.dnd.ground.domain.user.repository.UserRepository;
+import com.dnd.ground.global.auth.dto.FcmTokenUpdateDto;
 import com.dnd.ground.global.auth.dto.UserSignDto;
 import com.dnd.ground.global.exception.*;
+import com.dnd.ground.global.notification.cache.PhoneFcmToken;
+import com.dnd.ground.global.util.DeviceType;
 import com.dnd.ground.global.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -41,6 +46,8 @@ public class AuthServiceImpl implements AuthService, UserDetailsService {
 
     private final UserRepository userRepository;
     private final FriendService friendService;
+    private final FcmTokenRepository fcmTokenRepository;
+
     @Value("${jwt.secret_key}")
     private String SECRET_KEY;
 
@@ -123,8 +130,6 @@ public class AuthServiceImpl implements AuthService, UserDetailsService {
 
             Boolean isNotification = signDto.getIsNotification();
             UserProperty property = UserProperty.builder()
-                    .fcmToken(signDto.getFcmToken())
-                    .fcmTokenUpdated(LocalDateTime.now())
                     .socialId(signDto.getSocialId())
                     .isShowMine(true)
                     .isShowFriend(true)
@@ -134,6 +139,7 @@ public class AuthServiceImpl implements AuthService, UserDetailsService {
                     .notiFriendRequest(isNotification)
                     .notiFriendAccept(isNotification)
                     .notiChallengeRequest(isNotification)
+                    .notiChallengeAccept(isNotification)
                     .notiChallengeStart(isNotification)
                     .notiChallengeCancel(isNotification)
                     .notiChallengeResult(isNotification)
@@ -141,6 +147,9 @@ public class AuthServiceImpl implements AuthService, UserDetailsService {
 
             user.setUserProperty(property);
             userRepository.save(user);
+
+            if (signDto.getDeviceType() == DeviceType.PHONE) fcmTokenRepository.save(new PhoneFcmToken(nickname, signDto.getFcmToken(), 60L));
+            else if (signDto.getDeviceType() == DeviceType.PAD) fcmTokenRepository.save(new PadFcmToken(nickname, signDto.getFcmToken(), 60L));
 
             //친구 신청
             for (String friendNickname : signDto.getFriends()) {
