@@ -1,7 +1,10 @@
-package com.dnd.ground.global.notification;
+package com.dnd.ground.global.notification.service;
 
 import com.dnd.ground.domain.user.User;
 import com.dnd.ground.global.log.CommonLogger;
+import com.dnd.ground.global.notification.*;
+import com.dnd.ground.global.notification.dto.NotificationForm;
+import com.dnd.ground.global.notification.dto.UserMsgDto;
 import com.dnd.ground.global.notification.repository.FcmTokenRepository;
 import com.dnd.ground.global.notification.repository.NotificationRepository;
 import com.google.auth.oauth2.GoogleCredentials;
@@ -35,7 +38,7 @@ import java.util.stream.Collectors;
 @Service
 @Async("notification")
 @Slf4j
-public class NotificationService {
+public class FcmService {
     private final CommonLogger logger;
     private final NotificationRepository notificationRepository;
     private final FcmTokenRepository fcmTokenRepository;
@@ -49,9 +52,9 @@ public class NotificationService {
     private static final int MAX_RETIRES = 5;
     private static final int BASE_SLEEP_TIME = 60000;
 
-    public NotificationService(NotificationRepository notificationRepository,
-                               FcmTokenRepository fcmTokenRepository,
-                               @Qualifier("notificationLogger") CommonLogger logger) {
+    public FcmService(NotificationRepository notificationRepository,
+                      FcmTokenRepository fcmTokenRepository,
+                      @Qualifier("notificationLogger") CommonLogger logger) {
         this.notificationRepository = notificationRepository;
         this.fcmTokenRepository = fcmTokenRepository;
         this.logger = logger;
@@ -90,6 +93,7 @@ public class NotificationService {
         LocalDateTime created = form.getCreated() != null ? form.getCreated() : LocalDateTime.now();
         LocalDateTime reserved = form.getReserved() != null ? form.getReserved() : LocalDateTime.now();
         NotificationMessage message = form.getMessage();
+        PushNotificationType type = NotificationMessage.getType(message);
 
         Map<String, String> data = form.getData() != null ? form.getData() : new HashMap<>();
         data.put(DATA_PARAM_ACTION, message.name());
@@ -118,7 +122,7 @@ public class NotificationService {
         }
 
         for (User user : users) {
-            PushNotification notification = new PushNotification(getMessageId(), title, content, created, reserved, NotificationStatus.WAIT, user.getNickname());
+            PushNotification notification = new PushNotification(getMessageId(), title, content, created, reserved, NotificationStatus.WAIT, user.getNickname(), type);
             notification.setParams(params);
             notifications.add(notification);
         }
@@ -259,7 +263,7 @@ public class NotificationService {
                     }
                 } else {
                     //전송 실패
-                    logger.errorWrite(String.format("푸시 알람 재전송에 실패했습니다. 시간:%s | 에러코드:%s", LocalDateTime.now().toString(), e.getErrorCode()));
+                    logger.errorWrite(String.format("푸시 알람 재전송에 실패했습니다. 시간:%s | 에러코드:%s", LocalDateTime.now(), e.getErrorCode()));
                     retryMessages.forEach(rm -> {
                         PushNotification notification = rm.getNotification();
                         notification.updateStatus(NotificationStatus.FAIL);

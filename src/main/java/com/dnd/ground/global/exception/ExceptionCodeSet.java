@@ -8,8 +8,8 @@ import org.springframework.http.HttpStatus;
  * @description 에러 코드 구현체
  * @author  박찬호
  * @since   2022-08-24
- * @updated 1.푸시 알람 관련 에러 코드 추가
- *          -2023.04.13 박찬호
+ * @updated 1.예외 코드 추가
+ *          -2023.05.11 박찬호
  */
 
 @RequiredArgsConstructor
@@ -76,8 +76,10 @@ public enum ExceptionCodeSet {
     RANKING_CAL_FAIL(HttpStatus.INTERNAL_SERVER_ERROR, "5001", "랭킹 계산 과정에서 에러가 발생했습니다"),
     INVALID_TIME(HttpStatus.BAD_REQUEST, "5002", "시간이 올바르지 않습니다."),
     MATRIX_TYPE_INVALID(HttpStatus.BAD_REQUEST, "5003", "조회하는 영역의 회원 종류가 올바르지 않습니다."),
+    MATRIX_CENTER_EMPTY(HttpStatus.BAD_REQUEST, "5004", "CENTER 영역이 존재하지 않습니다."),
+    SPAN_DELTA_EMPTY(HttpStatus.BAD_REQUEST, "5005", "Span Delta가 존재하지 않습니다."),
 
-    //Firebase
+    //FCM
     UNSPECIFIED_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "6000", "예상치 못한 에러가 발생했습니다."),
     INVALID_ARGUMENT(HttpStatus.BAD_REQUEST, "6001", "메시지가 유효하지 않습니다."),
     UNREGISTERED(HttpStatus.NOT_FOUND, "6002", "토큰이 유효하지 않습니다."),
@@ -86,6 +88,7 @@ public enum ExceptionCodeSet {
     UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "6005", "FCM 서버가 불안정합니다."),
     INTERNAL(HttpStatus.INTERNAL_SERVER_ERROR, "6006", "FCM 서버에서 오류가 발생했습니다."),
     THIRD_PARTY_AUTH_ERROR(HttpStatus.UNAUTHORIZED, "6007", "메시지 전송 권한이 유효하지 않습니다."),
+    NOT_FOUND_NOTIFICATION(HttpStatus.BAD_REQUEST, "6008", "푸시 알람이 존재하지 않습니다."),
 
     //ETC
     OK(HttpStatus.OK, "0000", "성공적으로 동작하였습니다."),
@@ -96,7 +99,8 @@ public enum ExceptionCodeSet {
     INVALID_HTTP_METHOD(HttpStatus.BAD_REQUEST, "9004", "잘못된 HTTP Method입니다."),
     WEBCLIENT_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "9005", "외부 API 통신 중 에러가 발생했습니다."),
     PARSE_EXCEPTION(HttpStatus.INTERNAL_SERVER_ERROR, "9006", "파싱 중 에러가 발생했습니다."),
-    BAD_REQUEST(HttpStatus.BAD_REQUEST, "9007", "올바르지 않은 요청입니다.");
+    BAD_REQUEST(HttpStatus.BAD_REQUEST, "9007", "올바르지 않은 요청입니다."),
+    DEVICE_TYPE_INVALID(HttpStatus.BAD_REQUEST, "9008", "디바이스 타입이 올바르지 않습니다.");
 
     private final HttpStatus httpStatus;
     private final String code;

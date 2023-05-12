@@ -25,18 +25,26 @@ spring:
       enabled: false
     jdbc:
       initialize-schema: ALWAYS
-#  sql:
-#    init:
-#      mode: ${db.sql.init}
+  redis:
+    host: ${spring.redis.host}
+    port: ${spring.redis.port}
+    timeout: ${spring.redis.timeout}
+  main:
+    allow-bean-definition-overriding: true
 logging:
   config: classpath:log4j2.xml
   level:
     org.hibernate.SQL: debug
 management:
+  endpoint:
+    metrics:
+      enabled: true
+    prometheus:
+      enabled: true
   endpoints:
     web:
       exposure:
-        include: prometheus
+        include: health, info, metrics, prometheus
 
 # 외부 설정 정보
 kakao:

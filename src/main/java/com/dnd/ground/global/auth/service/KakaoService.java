@@ -48,12 +48,12 @@ public class KakaoService {
     @Value("${kakao.REDIRECT_URI}")
     private String REDIRECT_URI;
     
-    private final String AUTHORIZATION = "Authorization";
-    private final String BEARER = "Bearer ";
-    private final String GRANT_TYPE = "grant_type";
-    private final String CLIENT_ID = "client_id";
-    private final String REDIRECT_URI_KEY = "redirect_uri";
-    private final String CODE = "code";
+    private static final String AUTHORIZATION = "Authorization";
+    private static final String BEARER = "Bearer ";
+    private static final String GRANT_TYPE = "grant_type";
+    private static final String CLIENT_ID = "client_id";
+    private static final String REDIRECT_URI_KEY = "redirect_uri";
+    private static final String CODE = "code";
 
     @PostConstruct
     public void initWebClient() {
@@ -91,7 +91,7 @@ public class KakaoService {
 
     public SocialResponseDto kakaoLogin(String token) {
         KakaoDto.UserInfo userInfo = getUserInfo(token);
-        Optional<User> userOpt = userRepository.findByKakaoId(userInfo.getKakaoId());
+        Optional<User> userOpt = userRepository.findByEmail(userInfo.getEmail());
 
         boolean isSigned;
         String email = userInfo.getEmail();
@@ -157,15 +157,14 @@ public class KakaoService {
     }
 
     /*카카오 친구 목록 조회*/
-    public KakaoDto.kakaoFriendResponse getKakaoFriends(String token, Integer offset) throws ParseException {
+    public KakaoDto.kakaoFriendResponse getKakaoFriends(String token, Integer offset) {
         final int PAGING_NUMBER = 15;
 
         //회원 조회
         KakaoDto.UserInfo userInfo = getUserInfo(token);
-        Long kakaoId = userInfo.getKakaoId();
-        Optional<User> userOpt = userRepository.findByKakaoId(kakaoId);
+        Optional<User> userOpt = userRepository.findByEmail(userInfo.getEmail());
 
-        //Variable setting
+        //변수 설정
         KakaoDto.kakaoFriendResponse response = new KakaoDto.kakaoFriendResponse();
         int nextOffset = 100;
         boolean isLast = false;
@@ -188,7 +187,7 @@ public class KakaoService {
                                 KakaoDto.kakaoFriendResponse.FriendsInfo.builder()
                                         .nickname(kakaoUserInNemodu.getNickname())
                                         .kakaoName(element.getProfile_nickname())
-                                        .status(FriendStatus.NoFriend)
+                                        .status(FriendStatus.NO_FRIEND)
                                         .picturePath(kakaoUserInNemodu.getPicturePath())
                                         .build()
                         );

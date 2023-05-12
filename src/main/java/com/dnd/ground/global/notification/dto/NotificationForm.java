@@ -1,8 +1,9 @@
-package com.dnd.ground.global.notification;
+package com.dnd.ground.global.notification.dto;
 
 import com.dnd.ground.domain.user.User;
 import com.dnd.ground.global.log.CommonLogger;
 import com.dnd.ground.global.log.NotificationLogger;
+import com.dnd.ground.global.notification.NotificationMessage;
 import com.dnd.ground.global.util.ApplicationContextProvider;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
