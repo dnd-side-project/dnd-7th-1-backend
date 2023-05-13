@@ -12,8 +12,8 @@ import java.util.MissingFormatArgumentException;
  * @description 푸시 알람 메시지 목록
  * @author  박찬호
  * @since   2023-03-20
- * @updated 1.메시지 속 파라미터를 파싱하는 방식 변경
- *          -2023-04-10 박찬호
+ * @updated 1.메시지 타입 반환 메소드 구현
+ *          -2023-05-11 박찬호
  */
 
 
@@ -47,6 +47,26 @@ public enum NotificationMessage {
 
     private String title;
     private String content;
+
+    public static PushNotificationType getType(NotificationMessage message) {
+        switch (message) {
+
+            case FRIEND_RECEIVED_REQUEST:
+            case FRIEND_ACCEPT:
+                return PushNotificationType.FRIEND;
+            case CHALLENGE_RECEIVED_REQUEST:
+            case CHALLENGE_ACCEPTED:
+            case CHALLENGE_START_SOON:
+            case CHALLENGE_CANCELED:
+            case CHALLENGE_RESULT:
+                return PushNotificationType.CHALLENGE;
+            case COMMON_WEEK_START:
+            case COMMON_WEEK_END:
+            case COMMON_REISSUE_FCM_TOKEN:
+            default:
+                return PushNotificationType.COMMON;
+        }
+    }
 
     public String getTitle(List<String> titleParams) {
         return parse(this.title, titleParams);
