@@ -4,8 +4,9 @@ import com.dnd.ground.domain.challenge.Challenge;
 import com.dnd.ground.domain.challenge.ChallengeStatus;
 import com.dnd.ground.domain.challenge.UserChallenge;
 import com.dnd.ground.domain.user.User;
-import com.dnd.ground.global.notification.NotificationForm;
+import com.dnd.ground.global.notification.dto.NotificationForm;
 import com.dnd.ground.global.notification.NotificationMessage;
+import com.dnd.ground.global.util.UuidUtil;
 import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.item.database.JpaItemWriter;
 import org.springframework.context.ApplicationEventPublisher;
@@ -17,7 +18,9 @@ import javax.persistence.EntityManagerFactory;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @description 챌린지-UC 간 조회를 위한 ItemWriter
@@ -54,14 +57,13 @@ public class ChallengeWithUCItemWriter extends JpaItemWriter<ChallengeWithUCDto>
                 List<User> users = new ArrayList<>();
                 for (UserChallenge uc : ucs) {
                     entityManager.merge(uc);
-                    users.add(uc.getUser());
                 }
 
                 //푸시 알람 발송
                 if (challenge.getStatus() == ChallengeStatus.PROGRESS)
-                    sendChallengeStartNoti(users, challenge.getName());
+                    sendChallengeStartNoti(users, challenge.getName(), challenge.getUuid());
                 else if (challenge.getStatus() == ChallengeStatus.DONE)
-                    sendChallengeEndNoti(users, challenge.getName());
+                    sendChallengeEndNoti(users, challenge.getName(), challenge.getUuid());
 
             }
         }
@@ -70,19 +72,25 @@ public class ChallengeWithUCItemWriter extends JpaItemWriter<ChallengeWithUCDto>
     /**
      * 챌린지 시작 푸시 알람 발송
      */
-    private void sendChallengeStartNoti(List<User> users, String name) {
+    private void sendChallengeStartNoti(List<User> users, String name, byte[] uuid) {
         if (dateTimeConverter == null) dateTimeConverter = new JobParamDateTimeConverter(LocalDate.now().toString());
         LocalDateTime reserved = dateTimeConverter.getCreated().withHour(10);
+        Map<String,String> data = new HashMap<>(){{
+            put("challenge_uuid", UuidUtil.bytesToHex(uuid));
+        }};
         pushNotificationPublisher.publishEvent(
-                new NotificationForm(users, null, List.of(name), NotificationMessage.CHALLENGE_START_SOON, null, reserved)
+                new NotificationForm(users, null, List.of(name), NotificationMessage.CHALLENGE_START_SOON, data, reserved)
         );
     }
 
-    private void sendChallengeEndNoti(List<User> users, String name) {
-        if (dateTimeConverter == null) dateTimeConverter = new JobParamDateTimeConverter(LocalDate.now().toString());
+    private void sendChallengeEndNoti(List<User> users, String name, byte[] uuid) {
+        if (dateTimeConverter == null) dateTimeConverter = new JobParamDateTimeConverter(LocalDateTime.now().toString());
         LocalDateTime reserved = dateTimeConverter.getCreated().withHour(8);
+        Map<String,String> data = new HashMap<>(){{
+            put("challenge_uuid", UuidUtil.bytesToHex(uuid));
+        }};
         pushNotificationPublisher.publishEvent(
-                new NotificationForm(users, null, List.of(name), NotificationMessage.CHALLENGE_RESULT, null, reserved)
+                new NotificationForm(users, null, List.of(name), NotificationMessage.CHALLENGE_RESULT, data, reserved)
         );
     }
 
