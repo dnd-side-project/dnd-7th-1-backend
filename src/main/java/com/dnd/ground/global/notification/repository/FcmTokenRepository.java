@@ -2,7 +2,7 @@ package com.dnd.ground.global.notification.repository;
 
 import com.dnd.ground.domain.user.UserPropertyFcmToken;
 import com.dnd.ground.domain.user.repository.UserPropertyFcmTokenRepository;
-import com.dnd.ground.global.notification.NotificationService;
+import com.dnd.ground.global.notification.service.FcmService;
 import com.dnd.ground.global.notification.cache.PadFcmToken;
 import com.dnd.ground.global.notification.cache.PhoneFcmToken;
 import com.dnd.ground.global.util.DeviceType;
@@ -19,8 +19,8 @@ import java.util.Optional;
  *              해당 계층에서 FCM 토큰과 관련한 공통된 정보를 처리한다.
  * @author  박찬호
  * @since   2023-05-11
- * @updated 1. 객체 저장 및 조회 메소드 구현
- *          -2023-05-11 박찬호
+ * @updated 1. FCM 토큰 삭제 메소드 구현
+ *          -2023-05-15 박찬호
  */
 
 @Repository
@@ -100,7 +100,7 @@ public class FcmTokenRepository {
                 tokens.add(token);
 
                 //재발급 요청
-                NotificationService.requestReissueFCMToken(nickname, token);
+                FcmService.requestReissueFCMToken(nickname, token);
             }
 
         }
@@ -118,10 +118,26 @@ public class FcmTokenRepository {
                 String token = padTokenInDB.get();
                 tokens.add(token);
 
-                NotificationService.requestReissueFCMToken(nickname, token);
+                FcmService.requestReissueFCMToken(nickname, token);
             }
         }
 
         return tokens;
+    }
+
+    public void deleteToken(String nickname, DeviceType type) {
+        //레디스에 저장된 토큰 삭제
+        if (type == DeviceType.PHONE) {
+            phoneFcmTokenRepository
+                    .findById(nickname)
+                    .ifPresent(phoneFcmTokenRepository::delete);
+
+        } else if (type == DeviceType.PAD) {
+            padFcmTokenRepository
+                    .findById(nickname)
+                    .ifPresent(padFcmTokenRepository::delete);
+        }
+
+        userPropertyFcmTokenRepository.deleteByNicknameAndType(nickname, type);
     }
 }

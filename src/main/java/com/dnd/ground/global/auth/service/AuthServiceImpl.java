@@ -35,8 +35,8 @@ import java.util.regex.Pattern;
  * @description 회원의 인증/인가 및 회원 정보 관련 서비스 구현체
  * @author  박찬호
  * @since   2022-09-07
- * @updated 1. 회원가입 이관 (SignFilter -> AuthService)
- *          - 2023.04.09 박찬호
+ * @updated 1. 로그아웃 API 구현
+ *          - 2023.05.15 박찬호
  */
 
 @Slf4j
@@ -214,6 +214,16 @@ public class AuthServiceImpl implements AuthService, UserDetailsService {
         } else if (request.getDeviceType() == DeviceType.PAD) {
             fcmTokenRepository.save(new PadFcmToken(request.getNickname(), request.getFcmToken(), 60L));
         } else throw new CommonException(ExceptionCodeSet.DEVICE_TYPE_INVALID);
+
+        return ExceptionCodeSet.OK;
+    }
+
+
+    /*로그아웃*/
+    @Override
+    @Transactional
+    public ExceptionCodeSet logout(String nickname, DeviceType type) {
+        fcmTokenRepository.deleteToken(nickname, type);
 
         return ExceptionCodeSet.OK;
     }

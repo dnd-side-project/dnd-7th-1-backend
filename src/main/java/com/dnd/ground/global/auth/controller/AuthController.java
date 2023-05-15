@@ -3,6 +3,7 @@ package com.dnd.ground.global.auth.controller;
 import com.dnd.ground.domain.user.LoginType;
 import com.dnd.ground.domain.user.dto.*;
 import com.dnd.ground.global.auth.dto.FcmTokenUpdateDto;
+import com.dnd.ground.global.auth.dto.LogoutDto;
 import com.dnd.ground.global.auth.dto.SocialResponseDto;
 import com.dnd.ground.global.auth.service.AppleService;
 import com.dnd.ground.global.auth.service.AuthService;
@@ -26,8 +27,8 @@ import javax.validation.Valid;
  * @author 박찬호
  * @description 회원의 인증/인가 및 로그인 관련 컨트롤러
  * @since 2022-08-23
- * @updated 1. 회원가입 API @Valid 추가
- *          - 2023.05.11 박찬호
+ * @updated 1. 로그아웃 API 구현
+ *          - 2023.05.15 박찬호
  */
 
 @Slf4j
@@ -55,8 +56,14 @@ public class AuthController {
 
     @PostMapping("/fcm/token")
     @Operation(summary = "FCM 토큰 추가", description = "FCM 토큰을 추가합니다.")
-    public ResponseEntity<ExceptionCodeSet> updateFcmToken(@RequestBody @Valid FcmTokenUpdateDto request) {
+    public ResponseEntity<ExceptionCodeSet> updateFcmToken(@Valid @RequestBody FcmTokenUpdateDto request) {
         return ResponseEntity.ok().body(authService.updateFcmToken(request));
+    }
+
+    @PostMapping("/logout")
+    @Operation(summary = "로그아웃", description = "로그아웃 과정\n1.FCM 토큰 제거")
+    public ResponseEntity<ExceptionCodeSet> logout(@Valid @RequestBody LogoutDto request) {
+        return ResponseEntity.ok().body(authService.logout(request.getNickname(), request.getType()));
     }
 
     /**
@@ -89,7 +96,7 @@ public class AuthController {
     @GetMapping("/kakao/friend")
     @Operation(summary = "카카오 엑세스 토큰으로 카카오 친구 불러오기", description = "검수 전이라 팀 멤버들만 친구로 조회할 수 있음.\n15명씩 페이징하도록 했음. 카카오 친구목록 조회의 경우 최초 offset=0, 이후 서버로부터 받은 offset으로 요청해야 함.")
     public ResponseEntity<KakaoDto.kakaoFriendResponse> getKakaoFriends(@RequestHeader("Kakao-Access-Token") String token,
-                                                                        @RequestParam("offset") Integer offset) throws ParseException {
+                                                                        @RequestParam("offset") Integer offset) {
         return ResponseEntity.ok(kakaoService.getKakaoFriends(token, offset));
     }
 
