@@ -1,5 +1,6 @@
 package com.dnd.ground.domain.friend.controller;
 
+import com.dnd.ground.domain.friend.dto.FriendRecommendRequestDto;
 import com.dnd.ground.domain.friend.dto.FriendRequestDto;
 import com.dnd.ground.domain.friend.dto.FriendResponseDto;
 import com.dnd.ground.domain.friend.service.FriendService;
@@ -10,15 +11,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 /**
  * @description 친구와 관련된 컨트롤러 구현체
  * @author  박찬호
  * @since   2022-08-01
- * @updated 1.친구 목록 조회 페이징 적용
- *          2.친구 요청 목록 조회 기능 구현
- *          - 2022.10.29 박찬호
+ * @updated 1.네모두 추천 친구 API 구현
+ *          - 2023.05.16 박찬호
  */
 
 @Api(tags = "친구")
@@ -32,15 +30,14 @@ public class FriendControllerImpl implements FriendController {
 
     @GetMapping("/list")
     @Operation(summary = "친구 목록 조회", description = "닉네임을 통해 수락 상태의 친구 조회\n서버에서 15명씩 결과를 내려주고, 결과값의 isLast=false이면 경우 뒤에 친구가 더 있다는 뜻이므로, offset+1로 요청하면 됨.")
-    public ResponseEntity<FriendResponseDto> getFriends(@RequestParam("nickname") String nickname,
-                                                        @RequestParam("offset") Integer offset) {
-        return ResponseEntity.ok(friendService.getFriends(nickname, offset));
+    public ResponseEntity<FriendResponseDto> getFriends(@ModelAttribute FriendRequestDto.FriendList request) {
+        return ResponseEntity.ok(friendService.getFriends(request.getNickname(), request.getOffset(), request.getSize()));
     }
 
     @GetMapping("/receive")
     @Operation(summary = "친구 요청 목록 조회", description = "요청 대기 상태의 친구 목록 조회\n서버에서 3명씩 결과를 내려주고, 결과값의 isLast=false이면 경우 뒤에 친구가 더 있다는 뜻이므로, offset+1로 요청하면 됨.")
-    public ResponseEntity<FriendResponseDto.ReceiveRequest> getReceiveRequest(@RequestParam("nickname") String nickname, @RequestParam("offset") Integer offset) {
-        return ResponseEntity.ok(friendService.getReceiveRequest(nickname, offset));
+    public ResponseEntity<FriendResponseDto> getReceiveRequest(@ModelAttribute FriendRequestDto.FriendList request) {
+        return ResponseEntity.ok(friendService.getReceiveRequest(request.getNickname(), request.getOffset(), request.getSize()));
     }
 
     @PostMapping("/request")
@@ -59,6 +56,12 @@ public class FriendControllerImpl implements FriendController {
     @Operation(summary = "친구 삭제(친구 삭제 및 요청 삭제)", description = "DB에 있는 친구 관계 튜플을 삭제하는 것.\n친구 요청 상태(수락,거절,대기)와 상관 없이 아예 삭제함.\n삭제 성공 시 true 반환, 조회되는 친구 튜플이 없으면 false 반환")
     public ResponseEntity<Boolean> deleteFriend(@RequestBody FriendRequestDto.Request request) {
         return ResponseEntity.ok(friendService.deleteFriend(request.getUserNickname(), request.getFriendNickname()));
+    }
+
+    @GetMapping("/recommend")
+    @Operation(summary = "네모두 추천 친구", description = "네모두 추천 친구 API\n파라미터로 넘어온 Location을 기준으로 가까운 회원을 추천함.")
+    public ResponseEntity<FriendResponseDto.RecommendResponse> recommendNemoduFriends(@ModelAttribute FriendRecommendRequestDto request) {
+        return ResponseEntity.ok().body(friendService.recommendNemoduFriends(request.getNickname(), request.getLocation(), request.getDistance(), request.getSize()));
     }
 
 }

@@ -1,23 +1,26 @@
 package com.dnd.ground.domain.friend.repository;
 
-import com.dnd.ground.domain.friend.Friend;
 import com.dnd.ground.domain.friend.FriendStatus;
-import com.dnd.ground.domain.friend.dto.FriendCondition;
+import com.dnd.ground.domain.friend.dto.*;
+import com.dnd.ground.domain.matrix.dto.Location;
 import com.dnd.ground.domain.user.User;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
 
 import java.util.List;
 
 import static com.dnd.ground.domain.friend.QFriend.friend1;
+import static com.dnd.ground.domain.user.QUser.user;
+import static com.dnd.ground.domain.user.QUserProperty.userProperty;
 
 /**
  * @description 친구 조회 레포지토리
  * @author  박찬호
  * @since   2023.02.15
- * @updated 1. 친구 목록 조회 동적 쿼리 생성
- *          - 2023.02.15 박찬호
+ * @updated 1. 네모두 추천 친구 쿼리 구현
+ *          - 2023.05.16 박찬호
  */
 
 @RequiredArgsConstructor
@@ -38,6 +41,34 @@ public class FriendQueryRepositoryImpl implements FriendQueryRepository {
                 .fetch();
     }
 
+    @Override
+    public List<FriendRecommendPageInfo> recommendFriends(String nickname, Location location, Double distance, int size) {
+        return queryFactory
+                .select(new QFriendRecommendPageInfo(
+                        Expressions.stringTemplate("function('ST_DISTANCE_SPHERE', {0}, {1}, {2}, {3})",
+                                        location.getLongitude(), location.getLatitude(), user.longitude, user.latitude)
+                                .castToNum(Double.class)
+                                .as("distance"),
+                        user.nickname,
+                        user.picturePath)
+                )
+                .from(user)
+                .innerJoin(userProperty)
+                .on(user.property.eq(userProperty))
+                .where(
+                        distanceGt(location, distance),
+                        userProperty.isExceptRecommend.eq(false),
+                        user.nickname.ne(nickname)
+                )
+                .orderBy(Expressions.stringTemplate("function('ST_DISTANCE_SPHERE', {0}, {1}, {2}, {3})",
+                                        location.getLongitude(), location.getLatitude(),
+                                        user.longitude, user.latitude).asc(),
+                        user.nickname.asc()
+                )
+                .limit(size + 1)
+                .fetch();
+    }
+
     private BooleanExpression userEq(User user) {
         return user != null ? friend1.user.eq(user) : null;
     }
@@ -48,5 +79,16 @@ public class FriendQueryRepositoryImpl implements FriendQueryRepository {
 
     private BooleanExpression statusEq(FriendStatus status) {
         return status != null ? friend1.status.eq(status) : null;
+    }
+
+    private BooleanExpression distanceGt(Location location, Double distance) {
+        return distance != null ?
+                Expressions.stringTemplate("function('ST_DISTANCE_SPHERE', {0}, {1}, {2}, {3})",
+                                location.getLongitude(), location.getLatitude(),
+                                user.longitude, user.latitude)
+                        .castToNum(Double.class)
+                        .goe(distance)
+                :
+                null;
     }
 }
