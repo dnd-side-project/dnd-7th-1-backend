@@ -4,6 +4,8 @@ import com.dnd.ground.domain.friend.dto.FriendRecommendRequestDto;
 import com.dnd.ground.domain.friend.dto.FriendRequestDto;
 import com.dnd.ground.domain.friend.dto.FriendResponseDto;
 import com.dnd.ground.domain.friend.service.FriendService;
+import com.dnd.ground.global.exception.CommonException;
+import com.dnd.ground.global.exception.ExceptionCodeSet;
 import io.swagger.annotations.Api;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
@@ -12,12 +14,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.util.List;
 
 /**
  * @description 친구와 관련된 컨트롤러 구현체
  * @author  박찬호
  * @since   2022-08-01
  * @updated 1.네모두 추천 친구 API 구현
+ *          2.친구 검색 API 구현
  *          - 2023.05.16 박찬호
  */
 
@@ -66,4 +70,11 @@ public class FriendControllerImpl implements FriendController {
         return ResponseEntity.ok().body(friendService.recommendNemoduFriends(request.getNickname(), request.getLocation(), request.getDistance(), request.getSize()));
     }
 
+    @GetMapping("/search")
+    @Operation(summary = "친구 검색", description = "현재 ACCEPT 상태인 친구를 검색합니다.\n*두 글자 이상 검색 가능*")
+    public ResponseEntity<List<FriendResponseDto.FInfo>> searchFriend(@RequestParam("nickname") String nickname,
+                                                                      @RequestParam("keyword") String keyword) {
+        if (keyword.length() < 2) throw new CommonException(ExceptionCodeSet.SEARCH_KEYWORD_INVALID);
+        return ResponseEntity.ok().body(friendService.searchFriend(nickname, keyword));
+    }
 }

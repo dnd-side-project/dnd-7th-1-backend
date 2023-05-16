@@ -1,6 +1,7 @@
 package com.dnd.ground.domain.friend.repository;
 
 import com.dnd.ground.domain.friend.Friend;
+import com.dnd.ground.domain.friend.vo.FriendSearchVo;
 import com.dnd.ground.domain.user.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -17,6 +18,7 @@ import java.util.Optional;
  * @since   2022-08-01
  * @updated 1.쿼리 개선으로 인한 미사용 쿼리 제거
  *          2.SQL 포맷 정리
+ *          3.친구 검색 쿼리 생성
  *          - 2023.05.16 박찬호
  */
 
@@ -48,4 +50,12 @@ public interface FriendRepository extends JpaRepository<Friend, Long>, FriendQue
                 "AND f.status='WAIT'")
     Optional<Friend> findRequestFriend(@Param("user") User user, @Param("friend") User friend);
 
+    @Query(value = "SELECT u.nickname, u.picture_path as picturePath " +
+            "FROM friend f " +
+            "INNER JOIN user u " +
+            "ON f.friend_id = u.user_id " +
+            "WHERE f.friend_status = 'ACCEPT' " +
+            "AND f.user_id = ?1 " +
+            "AND MATCH(u.nickname) AGAINST(?2 IN BOOLEAN MODE)", nativeQuery = true)
+    List<FriendSearchVo> searchWithFullTextIdx(@Param("userId") Long userId , @Param("keyword") String keyword);
 }

@@ -4,6 +4,7 @@ import com.dnd.ground.domain.friend.Friend;
 import com.dnd.ground.domain.friend.FriendStatus;
 import com.dnd.ground.domain.friend.dto.*;
 import com.dnd.ground.domain.friend.repository.FriendRepository;
+import com.dnd.ground.domain.friend.vo.FriendSearchVo;
 import com.dnd.ground.domain.matrix.dto.Location;
 import com.dnd.ground.domain.user.User;
 import com.dnd.ground.domain.user.repository.UserRepository;
@@ -31,6 +32,7 @@ import static com.dnd.ground.domain.friend.FriendStatus.*;
  * @author 박찬호
  * @since 2022-08-01
  * @updated 1.네모두 추천 친구 API 구현
+ *          2.친구 검색 API 구현
  *          - 2023.05.16 박찬호
  */
 
@@ -105,6 +107,19 @@ public class FriendServiceImpl implements FriendService {
                 .collect(Collectors.toList());
 
         return new FriendResponseDto.RecommendResponse(content, result.size(), isLast, offset);
+    }
+
+    /*친구 검색*/
+    @Override
+    public List<FriendResponseDto.FInfo> searchFriend(String nickname, String keyword) {
+        User user = userRepository.findByNickname(nickname)
+                .orElseThrow(() -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
+
+        List<FriendSearchVo> result = friendRepository.searchWithFullTextIdx(user.getId(), keyword);
+
+        return result.stream()
+                .map(r -> new FriendResponseDto.FInfo(r.getNickname(), r.getPicturePath()))
+                .collect(Collectors.toList());
     }
 
     //List<User> 형태의 친구 목록 반환

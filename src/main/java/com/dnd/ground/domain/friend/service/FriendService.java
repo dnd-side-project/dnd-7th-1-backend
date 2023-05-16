@@ -1,7 +1,6 @@
 package com.dnd.ground.domain.friend.service;
 
 import com.dnd.ground.domain.friend.FriendStatus;
-import com.dnd.ground.domain.friend.dto.FriendRecommendRequestDto;
 import com.dnd.ground.domain.friend.dto.FriendResponseDto;
 import com.dnd.ground.domain.matrix.dto.Location;
 import com.dnd.ground.domain.user.User;
@@ -13,6 +12,7 @@ import java.util.List;
  * @author  박찬호
  * @since   2022-08-01
  * @updated 1.네모두 추천 친구 API 구현
+ *          2.친구 검색 API 구현
  *          - 2023.05.16 박찬호
  */
 
@@ -26,4 +26,5 @@ public interface FriendService {
     FriendStatus getFriendStatus(User user, User friend);
     FriendResponseDto getReceiveRequest(String nickname, Long offset, Integer size);
     FriendResponseDto.RecommendResponse recommendNemoduFriends(String nickname, Location location, Double offset, Integer size);
+    List<FriendResponseDto.FInfo> searchFriend(String nickname, String keyword);
 }
