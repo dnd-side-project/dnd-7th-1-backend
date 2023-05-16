@@ -11,6 +11,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
+
 /**
  * @description 친구와 관련된 컨트롤러 구현체
  * @author  박찬호
@@ -30,13 +32,13 @@ public class FriendControllerImpl implements FriendController {
 
     @GetMapping("/list")
     @Operation(summary = "친구 목록 조회", description = "닉네임을 통해 수락 상태의 친구 조회\n서버에서 15명씩 결과를 내려주고, 결과값의 isLast=false이면 경우 뒤에 친구가 더 있다는 뜻이므로, offset+1로 요청하면 됨.")
-    public ResponseEntity<FriendResponseDto> getFriends(@ModelAttribute FriendRequestDto.FriendList request) {
+    public ResponseEntity<FriendResponseDto> getFriends(@Valid @ModelAttribute FriendRequestDto.FriendList request) {
         return ResponseEntity.ok(friendService.getFriends(request.getNickname(), request.getOffset(), request.getSize()));
     }
 
     @GetMapping("/receive")
     @Operation(summary = "친구 요청 목록 조회", description = "요청 대기 상태의 친구 목록 조회\n서버에서 3명씩 결과를 내려주고, 결과값의 isLast=false이면 경우 뒤에 친구가 더 있다는 뜻이므로, offset+1로 요청하면 됨.")
-    public ResponseEntity<FriendResponseDto> getReceiveRequest(@ModelAttribute FriendRequestDto.FriendList request) {
+    public ResponseEntity<FriendResponseDto> getReceiveRequest(@Valid @ModelAttribute FriendRequestDto.FriendList request) {
         return ResponseEntity.ok(friendService.getReceiveRequest(request.getNickname(), request.getOffset(), request.getSize()));
     }
 

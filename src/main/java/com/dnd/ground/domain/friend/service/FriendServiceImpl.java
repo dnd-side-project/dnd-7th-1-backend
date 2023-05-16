@@ -2,10 +2,7 @@ package com.dnd.ground.domain.friend.service;
 
 import com.dnd.ground.domain.friend.Friend;
 import com.dnd.ground.domain.friend.FriendStatus;
-import com.dnd.ground.domain.friend.dto.FriendCondition;
-import com.dnd.ground.domain.friend.dto.FriendRecommendPageInfo;
-import com.dnd.ground.domain.friend.dto.FriendRecommendRequestDto;
-import com.dnd.ground.domain.friend.dto.FriendResponseDto;
+import com.dnd.ground.domain.friend.dto.*;
 import com.dnd.ground.domain.friend.repository.FriendRepository;
 import com.dnd.ground.domain.matrix.dto.Location;
 import com.dnd.ground.domain.user.User;
@@ -18,8 +15,6 @@ import com.dnd.ground.global.notification.NotificationMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -48,71 +43,52 @@ public class FriendServiceImpl implements FriendService {
     private final UserRepository userRepository;
     private final ApplicationEventPublisher pushNotificationPublisher;
 
-    private static final Integer FRIEND_LARGE_PAGING_NUMBER = 15; //15개씩 페이징하기 위해 1개 더 가져옴(마지막 여부 판단)
-    private static final Integer FRIEND_SMALL_PAGING_NUMBER = 3; //3개씩 페이징 하기 위해 1개 더 가져옴.
-
     //친구 목록과 추가 정보를 함께 반환
     public FriendResponseDto getFriends(String nickname, Long offset, Integer size) {
+        User user = userRepository.findByNickname(nickname)
+                .orElseThrow(() -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
 
-        //유저 및 친구 조회
-        User user = userRepository.findByNickname(nickname).orElseThrow(
-                () -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
+        List<FriendPageInfo> result = friendRepository.findFriendPage(FriendCondition.builder()
+                .user(user)
+                .status(ACCEPT)
+                .offset(offset)
+                .size(size)
+                .build()
+        );
 
-        List<FriendResponseDto.FInfo> infos = new ArrayList<>();
-        boolean isLast;
+        boolean isLast = result.size() <= size;
+        if (!isLast) result.remove(result.size() - 1);
+        Long nextOffset = isLast ? null : result.get(result.size() - 1).getId();
 
-        PageRequest pageRequest = PageRequest.of(offset, FRIEND_LARGE_PAGING_NUMBER);
+        List<FriendResponseDto.FInfo> content = result.stream()
+                .map(f -> new FriendResponseDto.FInfo(f.getNickname(), f.getPicturePath()))
+                .collect(Collectors.toList());
 
-        try {
-            Slice<Friend> findFriendSlice = friendRepository.findFriendsByUserWithPaging(user, pageRequest);
-            isLast = findFriendSlice.isLast();
-
-            List<Friend> findFriends = findFriendSlice.getContent();
-
-            for (Friend findFriend : findFriends) {
-                infos.add(FriendResponseDto.FInfo.of()
-                        .nickname(findFriend.getFriend().getNickname())
-                        .picturePath(findFriend.getFriend().getPicturePath())
-                        .build());
-            }
-            return FriendResponseDto.builder()
-                    .infos(infos)
-                    .size(findFriends.size())
-                    .isLast(isLast)
-                    .build();
-
-        } catch (NullPointerException e) {
-            return FriendResponseDto.builder()
-                    .infos(infos)
-                    .size(0)
-                    .isLast(true)
-                    .build();
-        }
+        return new FriendResponseDto(content, result.size(), isLast, nextOffset);
     }
 
     //요청받은 친구 목록 조회
     public FriendResponseDto getReceiveRequest(String nickname, Long offset, Integer size) {
-        User user = userRepository.findByNickname(nickname).orElseThrow(
-                () -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
+        User user = userRepository.findByNickname(nickname)
+                .orElseThrow(() -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
 
-        List<FriendResponseDto.FInfo> infos = new ArrayList<>();
+        List<FriendPageInfo> result = friendRepository.findWaitFriendPage(FriendCondition.builder()
+                .user(user)
+                .status(WAIT)
+                .offset(offset)
+                .size(size)
+                .build()
+        );
 
-        PageRequest pageRequest = PageRequest.of(offset, FRIEND_SMALL_PAGING_NUMBER);
-        Slice<User> receiveRequestSlice = friendRepository.findReceiveRequest(user, pageRequest);
+        boolean isLast = result.size() <= size;
+        if (!isLast) result.remove(result.size() - 1);
+        Long nextOffset = isLast ? null : result.get(result.size() - 1).getId();
 
-        List<User> receiveRequest = receiveRequestSlice.getContent();
+        List<FriendResponseDto.FInfo> content = result.stream()
+                .map(f -> new FriendResponseDto.FInfo(f.getNickname(), f.getPicturePath()))
+                .collect(Collectors.toList());
 
-        for (User friend : receiveRequest) {
-            infos.add(
-                    FriendResponseDto.FInfo.of()
-                            .nickname(friend.getNickname())
-                            .picturePath(friend.getPicturePath())
-                            .build()
-            );
-        }
-
-//        return new FriendResponseDto(infos, receiveRequestSlice.getSize(), receiveRequestSlice.isLast());
-        return null;
+        return new FriendResponseDto(content, result.size(), isLast, nextOffset);
     }
 
     /*네모두 추천 친구(거리가 가까운 순으로 추천)*/
@@ -125,7 +101,7 @@ public class FriendServiceImpl implements FriendService {
         Double offset = isLast ? null : result.get(result.size() - 1).getDistance();
 
         List<FriendResponseDto.FInfo> content = result.stream()
-                .map(c -> new FriendResponseDto.FInfo(c.getNickname(), c.getPicturePath()))
+                .map(f -> new FriendResponseDto.FInfo(f.getNickname(), f.getPicturePath()))
                 .collect(Collectors.toList());
 
         return new FriendResponseDto.RecommendResponse(content, result.size(), isLast, offset);

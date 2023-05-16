@@ -2,21 +2,41 @@ package com.dnd.ground.domain.friend.dto;
 
 import com.dnd.ground.domain.friend.FriendStatus;
 import io.swagger.annotations.ApiModelProperty;
-import lombok.Data;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotNull;
 
 /**
  * @description 친구와 관련한 정보 조회용 Request DTO
  * @author  박찬호
  * @since   2022.10.10
- * @updated 1. Profile 클래스 이동(UserResponseDto -> FriendResponseDto) 및 이름 변경(Profile -> FriendProfile)
- *          - 2022.08.26 박찬호
+ * @updated 1. @Data 어노테이션 제거
+ *          2. 친구 목록 조회 데이터
+ *          3. 친구 목록 조회 DTO 생성
+ *          - 2023.05.16 박찬호
  */
 
 public class FriendRequestDto {
 
+    @Getter
+    @AllArgsConstructor
+    public static class FriendList {
+        @NotNull
+        private String nickname;
+
+        @Min(1)
+        private Long offset;
+
+        @NotNull
+        @Min(0)
+        private Integer size;
+    }
+
     /*친구 요청을 위한 Request DTO*/
-    @Data
-    static public class Request {
+    @Getter
+    public static class Request {
         @ApiModelProperty(value="본인 닉네임(요청 하는 사람)", example="NickA")
         private String userNickname;
 
@@ -25,8 +45,8 @@ public class FriendRequestDto {
     }
 
     /*친구 요청 응답을 위한 Request DTO*/
-    @Data
-    static public class Response {
+    @Getter
+    public static class Response {
         @ApiModelProperty(value="본인 닉네임(요청 받는 사람)", example="NickA")
         private String userNickname;
 

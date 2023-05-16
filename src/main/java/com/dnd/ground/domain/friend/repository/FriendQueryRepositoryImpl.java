@@ -20,6 +20,7 @@ import static com.dnd.ground.domain.user.QUserProperty.userProperty;
  * @author  박찬호
  * @since   2023.02.15
  * @updated 1. 네모두 추천 친구 쿼리 구현
+ *          2. 친구 목록 조회 쿼리 개선 (No offset)
  *          - 2023.05.16 박찬호
  */
 
@@ -27,7 +28,7 @@ import static com.dnd.ground.domain.user.QUserProperty.userProperty;
 public class FriendQueryRepositoryImpl implements FriendQueryRepository {
     private final JPAQueryFactory queryFactory;
 
-    //친구 목록 조회
+    //메인화면: 친구 목록 조회
     @Override
     public List<User> findFriends(FriendCondition condition) {
         return queryFactory
@@ -38,6 +39,40 @@ public class FriendQueryRepositoryImpl implements FriendQueryRepository {
                         friendEq(condition.getFriend()),
                         statusEq(condition.getStatus())
                 )
+                .fetch();
+    }
+
+    @Override
+    public List<FriendPageInfo> findFriendPage(FriendCondition condition) {
+        return queryFactory
+                .select(new QFriendPageInfo(friend1.id, friend1.friend.nickname, friend1.friend.picturePath))
+                .from(friend1)
+                .innerJoin(user)
+                .on(friend1.user.eq(user))
+                .where(
+                        friendIdLt(condition.getOffset()),
+                        userEq(condition.getUser()),
+                        statusEq(condition.getStatus())
+                )
+                .orderBy(friend1.id.desc())
+                .limit(condition.getSize() + 1)
+                .fetch();
+    }
+
+    @Override
+    public List<FriendPageInfo> findWaitFriendPage(FriendCondition condition) {
+        return queryFactory
+                .select(new QFriendPageInfo(friend1.id, friend1.user.nickname, friend1.user.picturePath))
+                .from(friend1)
+                .innerJoin(user)
+                .on(friend1.user.eq(user))
+                .where(
+                        friendIdLt(condition.getOffset()),
+                        friendEq(condition.getUser()),
+                        statusEq(condition.getStatus())
+                )
+                .orderBy(friend1.id.asc())
+                .limit(condition.getSize() + 1)
                 .fetch();
     }
 
@@ -56,7 +91,7 @@ public class FriendQueryRepositoryImpl implements FriendQueryRepository {
                 .innerJoin(userProperty)
                 .on(user.property.eq(userProperty))
                 .where(
-                        distanceGt(location, distance),
+                        distanceGoe(location, distance),
                         userProperty.isExceptRecommend.eq(false),
                         user.nickname.ne(nickname)
                 )
@@ -81,7 +116,7 @@ public class FriendQueryRepositoryImpl implements FriendQueryRepository {
         return status != null ? friend1.status.eq(status) : null;
     }
 
-    private BooleanExpression distanceGt(Location location, Double distance) {
+    private BooleanExpression distanceGoe(Location location, Double distance) {
         return distance != null ?
                 Expressions.stringTemplate("function('ST_DISTANCE_SPHERE', {0}, {1}, {2}, {3})",
                                 location.getLongitude(), location.getLatitude(),
@@ -90,5 +125,9 @@ public class FriendQueryRepositoryImpl implements FriendQueryRepository {
                         .goe(distance)
                 :
                 null;
+    }
+
+    private BooleanExpression friendIdLt(Long id) {
+        return id != null ? friend1.id.lt(id) : null;
     }
 }

@@ -4,24 +4,23 @@ import com.dnd.ground.domain.challenge.dto.ChallengeResponseDto;
 import com.dnd.ground.domain.friend.FriendStatus;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.annotations.ApiModelProperty;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
  * @description 친구와 관련한 정보 조회용 Response DTO
  * @author  박찬호
  * @since   2022-08-02
- * @updated 1.페이징 적용에 따른 isLast 필드 추가
- *          - 2022.10.29 박찬호
+ * @updated 1. @Data 어노테이션 삭제
+ *          2.@QueryProjection 의존성 제거
+ *          - 2023.05.16 박찬호
  */
 
-@Data @Builder
+@Getter
+@AllArgsConstructor
+@Builder
 public class FriendResponseDto {
 
     @ApiModelProperty(value="친구 정보 리스트", example="[NickB, NickC]")
@@ -33,17 +32,12 @@ public class FriendResponseDto {
     @ApiModelProperty(value="마지막 페이지 여부", example = "true")
     private Boolean isLast;
 
-    
-    //친구와 관련한 정보 모음
-    @Data @NoArgsConstructor
-    static public class FInfo {
+    @ApiModelProperty(value="다음 페이지에 필요한 ID", example = "4")
+    private Long offset;
 
-        @Builder(builderMethodName = "of")
-        public FInfo(String nickname, String picturePath) {
-            this.nickname = nickname;
-            this.picturePath = picturePath;
-        }
-        
+    @Getter
+    @AllArgsConstructor
+    public static class FInfo {
         @ApiModelProperty(value="닉네임", example="NickA")
         private String nickname;
 
@@ -52,9 +46,9 @@ public class FriendResponseDto {
     }
 
     /*회원 프로필 관련 DTO*/
-    @Data
+    @Getter
     @Builder
-    static public class FriendProfile {
+    public static class FriendProfile {
         @ApiModelProperty(value = "친구 닉네임", example = "NickA")
         private String nickname;
 
@@ -86,8 +80,9 @@ public class FriendResponseDto {
     }
 
     /*친구 요청 수락, 거절 등에 대한 결과*/
-    @Data @AllArgsConstructor
-    static public class ResponseResult {
+    @AllArgsConstructor
+    @Getter
+    public static class ResponseResult {
         @ApiModelProperty(value = "회원 닉네임(요청하는 사람)", example = "NickA")
         private String userNickname;
 
@@ -98,17 +93,20 @@ public class FriendResponseDto {
         private FriendStatus status;
     }
 
-    @Data
-    @NoArgsConstructor
-    static public class ReceiveRequest {
-        @ApiModelProperty(value="친구 정보 목록", example="['nickname':'NickA','picturePath':'http:\\/\\/k.kakaocdn.net\\/dn\\/uQVeo\\/btrLgESJyjg\\/Pff3k36lRWkQ98ebAlexv1\\/img_640x640.jpg']")
-        List<FInfo> friendsInfo = new ArrayList<>();
+    @AllArgsConstructor
+    @Getter
+    public static class RecommendResponse {
+        @ApiModelProperty(value="친구 정보 리스트", example="[NickB, NickC]")
+        private List<FInfo> infos;
 
         @ApiModelProperty(value="친구 수", example="3")
         private Integer size;
 
         @ApiModelProperty(value="마지막 페이지 여부", example = "true")
         private Boolean isLast;
+
+        @ApiModelProperty(value="다음 페이지에 필요한 거리 (해당 거리 이상 회원 조회)", example = "92831.2342")
+        private Double offset;
     }
 
 }
