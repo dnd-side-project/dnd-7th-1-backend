@@ -31,9 +31,8 @@ import static com.dnd.ground.domain.friend.FriendStatus.*;
  * @description 친구와 관련된 서비스 구현체
  * @author 박찬호
  * @since 2022-08-01
- * @updated 1.네모두 추천 친구 API 구현
- *          2.친구 검색 API 구현
- *          - 2023.05.16 박찬호
+ * @updated 1.친구 삭제 벌크 API 구현
+ *          - 2023.05.17 박찬호
  */
 
 @Slf4j
@@ -120,6 +119,20 @@ public class FriendServiceImpl implements FriendService {
         return result.stream()
                 .map(r -> new FriendResponseDto.FInfo(r.getNickname(), r.getPicturePath()))
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public Boolean deleteFriends(String nickname, List<String> friendNicknames) {
+        User user = userRepository.findByNickname(nickname)
+                .orElseThrow(() -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
+
+        List<User> friends = userRepository.findAllByNickname(friendNicknames);
+        if (friendNicknames.size() != friends.size()) throw new FriendException(ExceptionCodeSet.FRIEND_NOT_FOUND);
+
+        int result = friendRepository.deleteBulk(user, friends);
+        if (result / 2 == friends.size()) return true;
+        else throw new FriendException(ExceptionCodeSet.FRIEND_FAIL_DELETE);
     }
 
     //List<User> 형태의 친구 목록 반환

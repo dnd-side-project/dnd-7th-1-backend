@@ -11,9 +11,8 @@ import java.util.List;
  * @description 친구와 관련된 서비스의 역할을 분리한 인터페이스
  * @author  박찬호
  * @since   2022-08-01
- * @updated 1.네모두 추천 친구 API 구현
- *          2.친구 검색 API 구현
- *          - 2023.05.16 박찬호
+ * @updated 1.친구 삭제 벌크 API 구현
+ *          - 2023.05.17 박찬호
  */
 
 public interface FriendService {
@@ -27,4 +26,5 @@ public interface FriendService {
     FriendResponseDto getReceiveRequest(String nickname, Long offset, Integer size);
     FriendResponseDto.RecommendResponse recommendNemoduFriends(String nickname, Location location, Double offset, Integer size);
     List<FriendResponseDto.FInfo> searchFriend(String nickname, String keyword);
+    Boolean deleteFriends(String nickname, List<String> friends);
 }

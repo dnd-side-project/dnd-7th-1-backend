@@ -20,9 +20,8 @@ import java.util.List;
  * @description 친구와 관련된 컨트롤러 구현체
  * @author  박찬호
  * @since   2022-08-01
- * @updated 1.네모두 추천 친구 API 구현
- *          2.친구 검색 API 구현
- *          - 2023.05.16 박찬호
+ * @updated 1.친구 삭제 벌크 API 구현
+ *          - 2023.05.17 박찬호
  */
 
 @Api(tags = "친구")
@@ -62,6 +61,12 @@ public class FriendControllerImpl implements FriendController {
     @Operation(summary = "친구 삭제(친구 삭제 및 요청 삭제)", description = "DB에 있는 친구 관계 튜플을 삭제하는 것.\n친구 요청 상태(수락,거절,대기)와 상관 없이 아예 삭제함.\n삭제 성공 시 true 반환, 조회되는 친구 튜플이 없으면 false 반환")
     public ResponseEntity<Boolean> deleteFriend(@RequestBody FriendRequestDto.Request request) {
         return ResponseEntity.ok(friendService.deleteFriend(request.getUserNickname(), request.getFriendNickname()));
+    }
+
+    @PostMapping("/delete/bulk")
+    @Operation(summary = "친구 목록 삭제(여러 개)", description = "한 명이라도 삭제가 되지 않으면, 삭제가 되지 않고 예외 처리")
+    public ResponseEntity<Boolean> deleteFriends(@RequestBody FriendRequestDto.Bulk request) {
+        return ResponseEntity.ok(friendService.deleteFriends(request.getNickname(), request.getFriends()));
     }
 
     @GetMapping("/recommend")

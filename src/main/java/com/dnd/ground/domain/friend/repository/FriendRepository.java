@@ -16,10 +16,8 @@ import java.util.Optional;
  * @description 친구와 관련한 레포지토리
  * @author  박찬호
  * @since   2022-08-01
- * @updated 1.쿼리 개선으로 인한 미사용 쿼리 제거
- *          2.SQL 포맷 정리
- *          3.친구 검색 쿼리 생성
- *          - 2023.05.16 박찬호
+ * @updated 1.친구 삭제 벌크 쿼리 작성
+ *          - 2023.05.17 박찬호
  */
 
 public interface FriendRepository extends JpaRepository<Friend, Long>, FriendQueryRepository {
@@ -32,8 +30,17 @@ public interface FriendRepository extends JpaRepository<Friend, Long>, FriendQue
 
     @Modifying
     @Transactional
-    @Query("DELETE FROM Friend f WHERE f.user = :user OR f.friend = :user")
+    @Query("DELETE FROM Friend f " +
+            "WHERE f.user = :user OR f.friend = :user")
     void deleteAllByUser(@Param("user") User user);
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM Friend f " +
+            "WHERE (f.user = :user AND f.friend IN :friend) " +
+                "OR " +
+                "(f.user IN :friend AND f.friend = :user)")
+    int deleteBulk(@Param("user") User user, @Param("friend") List<User> friend);
 
     //요청 대기, 친구 상태인 친구 관계 조회
     @Query("SELECT f FROM Friend f " +
