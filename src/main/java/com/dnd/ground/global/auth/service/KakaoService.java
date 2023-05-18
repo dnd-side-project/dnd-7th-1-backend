@@ -1,11 +1,12 @@
 package com.dnd.ground.global.auth.service;
 
-import com.dnd.ground.domain.friend.FriendStatus;
-import com.dnd.ground.domain.friend.service.FriendService;
+import com.amazonaws.util.StringUtils;
 import com.dnd.ground.domain.user.User;
 import com.dnd.ground.domain.user.dto.KakaoDto;
+import com.dnd.ground.domain.user.repository.UserPropertyRepository;
 import com.dnd.ground.global.auth.dto.SocialResponseDto;
 import com.dnd.ground.domain.user.repository.UserRepository;
+import com.dnd.ground.global.auth.vo.KakaoFriendVo;
 import com.dnd.ground.global.exception.AuthException;
 import com.dnd.ground.global.exception.ExceptionCodeSet;
 import lombok.RequiredArgsConstructor;
@@ -24,12 +25,13 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import javax.annotation.PostConstruct;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author 박찬호
  * @description 카카오를 비롯한 회원 정보와 관련한 서비스
  * @since 2022-08-23
- * @updated 1. 카카오 엑세스 토큰을 통한 회원정보 반환 API 생성
+ * @updated 1. 카카오 친구 목록 조회 API 수정
  *           - 2023.01.20 박찬호
  */
 
@@ -39,15 +41,17 @@ import java.util.*;
 public class KakaoService {
     WebClient webClient;
     private final UserRepository userRepository;
-    private final FriendService friendService;
+    private final UserPropertyRepository userPropertyRepository;
 
     @Value("${kakao.REST_KEY}")
-    private String REST_API_KEY;
+    private static String REST_API_KEY;
 
-    /*로컬과 배포 환경의 Redirect URI가 다른 점 확인!*/
     @Value("${kakao.REDIRECT_URI}")
-    private String REDIRECT_URI;
-    
+    private static String REDIRECT_URI;
+
+    @Value("${picture.path}")
+    private static String DEFAULT_PATH;
+
     private static final String AUTHORIZATION = "Authorization";
     private static final String BEARER = "Bearer ";
     private static final String GRANT_TYPE = "grant_type";
@@ -156,105 +160,56 @@ public class KakaoService {
                 .build();
     }
 
+
     /*카카오 친구 목록 조회*/
-    public KakaoDto.kakaoFriendResponse getKakaoFriends(String token, Integer offset) {
-        final int PAGING_NUMBER = 15;
+    public KakaoDto.KakaoFriendResponse getKakaoFriends(String token, Integer offset, Integer size) {
+        KakaoDto.FriendsInfoFromKakao friendsInfoFromKakao = requestKakaoFriends(token, offset, size);
+        List<KakaoDto.KakaoFriendResponse.KakaoFriend> friends = new ArrayList<>();
 
-        //회원 조회
-        KakaoDto.UserInfo userInfo = getUserInfo(token);
-        Optional<User> userOpt = userRepository.findByEmail(userInfo.getEmail());
+        List<String> kakaoIds = friendsInfoFromKakao.getElements().stream()
+                .map(KakaoDto.FriendsInfoFromKakao.KakaoFriendElement::getId)
+                .map(String::valueOf)
+                .collect(Collectors.toList());
 
-        //변수 설정
-        KakaoDto.kakaoFriendResponse response = new KakaoDto.kakaoFriendResponse();
-        int nextOffset = 100;
-        boolean isLast = false;
+        Map<Long, User> signedFriend = userPropertyRepository.findBySocialIds(kakaoIds)
+                .stream()
+                .collect(Collectors.toMap(KakaoFriendVo::getSocialId, KakaoFriendVo::getUser));
 
-        //친구 조회
-        KakaoDto.FriendsInfoFromKakao kakaoFriends = requestKakaoFriends(token, offset);
-        List<KakaoDto.FriendsInfoFromKakao.KakaoFriend> elements = Objects.requireNonNull(kakaoFriends).getElements();
 
-        //신규 유저
-        if (userOpt.isEmpty()) {
-            Loop1:
-            while (response.getFriendsInfo().size() < PAGING_NUMBER) {
-                for (KakaoDto.FriendsInfoFromKakao.KakaoFriend element : elements) {
-                    Optional<User> kakaoUserInNemoduOpt = userRepository.findByKakaoId(element.getId());
+        for (KakaoDto.FriendsInfoFromKakao.KakaoFriendElement element : friendsInfoFromKakao.getElements()) {
+            String nickname = null;
+            boolean isSigned = false;
+            String picturePath = StringUtils.isNullOrEmpty(element.getProfile_thumbnail_image()) ? DEFAULT_PATH : element.getProfile_thumbnail_image();
 
-                    //네모두 회원인 카카오 친구는 친구 추천에 포함
-                    if (kakaoUserInNemoduOpt.isPresent()) {
-                        User kakaoUserInNemodu = kakaoUserInNemoduOpt.get();
-                        response.getFriendsInfo().add(
-                                KakaoDto.kakaoFriendResponse.FriendsInfo.builder()
-                                        .nickname(kakaoUserInNemodu.getNickname())
-                                        .kakaoName(element.getProfile_nickname())
-                                        .status(FriendStatus.NO_FRIEND)
-                                        .picturePath(kakaoUserInNemodu.getPicturePath())
-                                        .build()
-                        );
-                    }
-
-                    if (response.getFriendsInfo().size() >= PAGING_NUMBER || kakaoFriends.getAfter_url() == null) {
-                        break Loop1;
-                    }
-
-                    nextOffset += 100;
-                    kakaoFriends = requestKakaoFriends(token, nextOffset);
-                }
-                if (kakaoFriends.getAfter_url() == null) break;
+            User user = signedFriend.getOrDefault(element.getId(), null);
+            if (user != null) {
+                nickname = user.getNickname();
+                isSigned = true;
+                picturePath = user.getPicturePath();
             }
-        } else {
-            //기존 유저
-            User user = userOpt.get();
-            Loop1:
-            while (response.getFriendsInfo().size() < PAGING_NUMBER) {
-                for (KakaoDto.FriendsInfoFromKakao.KakaoFriend kakaoFriend : elements) {
-                    Optional<User> kakaoUserInNemoduOpt = userRepository.findByKakaoId(kakaoFriend.getId());
 
-                    //네모두 회원인 카카오 친구는 친구 추천에 포함
-                    if (kakaoUserInNemoduOpt.isPresent()) {
-                        User kakaoUserInNemodu = kakaoUserInNemoduOpt.get();
-                        response.getFriendsInfo().add(
-                                KakaoDto.kakaoFriendResponse.FriendsInfo.builder()
-                                        .nickname(kakaoUserInNemodu.getNickname())
-                                        .kakaoName(kakaoFriend.getProfile_nickname())
-                                        .status(friendService.getFriendStatus(user, kakaoUserInNemodu))
-                                        .picturePath(kakaoUserInNemodu.getPicturePath())
-                                        .build()
-                        );
-                    }
 
-                    if (response.getFriendsInfo().size() >= PAGING_NUMBER || kakaoFriends.getAfter_url() == null) {
-                        break Loop1;
-                    }
-
-                    nextOffset += 100;
-                    kakaoFriends = requestKakaoFriends(token, nextOffset);
-                }
-            }
+            friends.add(new KakaoDto.KakaoFriendResponse.KakaoFriend(
+                    element.getUuid(),
+                    element.getProfile_nickname(),
+                    nickname,
+                    isSigned,
+                    picturePath
+            ));
         }
 
-        //다음 URL이 없으면 마지막 페이지.
-        if (kakaoFriends.getAfter_url() == null) {
-            isLast = true;
-            nextOffset = 0;
-        }
-
-        response.setNextOffset(nextOffset);
-        response.setSize(response.getFriendsInfo().size());
-        response.setIsLast(isLast);
-
-        return response;
+        return new KakaoDto.KakaoFriendResponse(friendsInfoFromKakao.getAfter_url() == null, friends, offset + friends.size());
     }
 
     /*카카오 친구 목록 요청*/
-    public KakaoDto.FriendsInfoFromKakao requestKakaoFriends(String token, int offset) {
+    public KakaoDto.FriendsInfoFromKakao requestKakaoFriends(String token, int offset, int limit) {
         return webClient.get()
                 .uri(UriComponentsBuilder.newInstance()
                         .scheme("https")
                         .host("kapi.kakao.com")
                         .path("/v1/api/talk/friends")
                         .queryParam("offset", offset)
-                        .queryParam("limit", 100)
+                        .queryParam("limit", limit)
                         .toUriString())
                 .header(AUTHORIZATION, BEARER + token)
                 .retrieve()
