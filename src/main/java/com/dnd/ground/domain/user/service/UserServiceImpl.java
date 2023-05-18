@@ -55,8 +55,8 @@ import static java.time.temporal.TemporalAdjusters.lastDayOfMonth;
  * @description 유저 서비스 클래스
  * @author 박세헌, 박찬호
  * @since 2022-08-01
- * @updated 1.회원의 알람 필터 조회 API 구현
- *          - 2023-04-17 박찬호
+ * @updated 1.회원의 영역 필터 적용
+ *          - 2023-05-18 박찬호
  */
 
 @Slf4j
@@ -89,10 +89,13 @@ public class UserServiceImpl implements UserService {
 
         Location location = Objects.requireNonNull(request.getCenter(), ExceptionCodeSet.EMPTY_LOCATION.getMessage());
         double spanDelta = Objects.requireNonNull(request.getSpanDelta(), ExceptionCodeSet.EMPTY_RANGE.getMessage());
+        final LocalDateTime monday = LocalDateTime.now().with(MONDAY).withHour(0).withMinute(0).withSecond(0).withNano(0);
 
         /*회원 영역 조회*/
-        LocalDateTime monday = LocalDateTime.now().with(MONDAY).withHour(0).withMinute(0).withSecond(0).withNano(0);
-        List<Location> userMatricesThisWeek = matrixRepository.findMatrixListDistinct(new MatrixCond(user, location, spanDelta, monday, LocalDateTime.now()));
+        List<Location> userMatricesThisWeek = null;
+        if (user.getProperty().getIsShowMine()) {
+            userMatricesThisWeek = matrixRepository.findMatrixListDistinct(new MatrixCond(user, location, spanDelta, monday, LocalDateTime.now()));
+        }
 
         UserResponseDto.UserMatrix userMatrix  = UserResponseDto.UserMatrix.builder()
                 .nickname(user.getNickname())
@@ -116,9 +119,8 @@ public class UserServiceImpl implements UserService {
         friends.removeAll(challengeMembers); // 챌린지를 함께하는 친구 제외
 
         //친구, 챌린지 멤버의 영역 한 번에 조회
-        Set<User> friendsMembers = new HashSet<>();
-        friendsMembers.addAll(challengeMembers);
-        friendsMembers.addAll(friends);
+        Set<User> friendsMembers = new HashSet<>(challengeMembers);
+        if (user.getProperty().getIsShowFriend()) friendsMembers.addAll(friends);
         Map<User, List<Location>> usersMatrix = matrixRepository.findMatrixMapDistinct(new MatrixCond(friendsMembers, location, spanDelta, monday, LocalDateTime.now()));
         /*----------*/
 
@@ -132,7 +134,7 @@ public class UserServiceImpl implements UserService {
                             .latitude(friend.getLatitude())
                             .longitude(friend.getLongitude())
                             .picturePath(friend.getPicturePath())
-                            .matrices(usersMatrix.get(friend))
+                            .matrices(friend.getProperty().getIsPublicRecord() ? usersMatrix.get(friend) : null)
                             .build()
             );
         }
@@ -148,7 +150,7 @@ public class UserServiceImpl implements UserService {
         Map<User, Challenge> challengeInfo = challengeRepository.findProgressChallengesInfo(user);
 
         //챌린지 색깔 조회
-        Map<Challenge, ChallengeColor>  challengesColor = challengeRepository.findChallengesColor(new ChallengeCond(user, ChallengeStatus.PROGRESS));
+        Map<Challenge, ChallengeColor>  challengesColor = challengeRepository.findChallengesColor(new ChallengeCond(user, List.of(ChallengeStatus.PROGRESS)));
 
         for (User member : challengeMembers) {
 
@@ -258,6 +260,7 @@ public class UserServiceImpl implements UserService {
         List<ExerciseRecord> record = exerciseRecordRepository.findRecord(user.getId(), start, end);  // start~end 사이 운동기록 조회
         List<RecordResponseDto.activityRecord> activityRecords = new ArrayList<>();
 
+        /*프론트와 일정 협의 후 수정 예정*/
         // 활동 내역 정보
         for (ExerciseRecord exerciseRecord : record) {
 
@@ -266,12 +269,12 @@ public class UserServiceImpl implements UserService {
 
             // 운동 시간 formatting
             Integer exerciseTime = exerciseRecord.getExerciseTime();
-            String time = "";
+            String time;
 
             if (exerciseTime < 60) {
-                time = Integer.toString(exerciseTime) + "초";
+                time = exerciseTime + "초";
             } else {
-                time = Integer.toString(exerciseTime / 60) + "분";
+                time = exerciseTime / 60 + "분";
             }
 
             activityRecords.add(RecordResponseDto.activityRecord
@@ -296,6 +299,7 @@ public class UserServiceImpl implements UserService {
         ExerciseRecord exerciseRecord = exerciseRecordRepository.findById(exerciseId).orElseThrow(
                 () -> new ExerciseRecordException(ExceptionCodeSet.RECORD_NOT_FOUND));
 
+        /*프론트와 일정 협의 후 수정 예정*/
         // 운동 시작, 끝 시간 formatting
         String date = exerciseRecord.getStarted().format(DateTimeFormatter.ofPattern("MM월 dd일 E요일").withLocale(Locale.forLanguageTag("ko")));
         String started = exerciseRecord.getStarted().format(DateTimeFormatter.ofPattern("HH:mm"));

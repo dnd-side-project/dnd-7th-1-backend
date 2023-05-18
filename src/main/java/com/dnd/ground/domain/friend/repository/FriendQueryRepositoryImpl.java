@@ -34,6 +34,7 @@ public class FriendQueryRepositoryImpl implements FriendQueryRepository {
         return queryFactory
                 .select(friend1.friend)
                 .from(friend1)
+                .innerJoin(userProperty).fetchJoin()
                 .where(
                         userEq(condition.getUser()),
                         friendEq(condition.getFriend()),

@@ -28,8 +28,8 @@ import static java.time.DayOfWeek.MONDAY;
  * @description 영역 조회와 관련한 Service 구현체
  * @author  박찬호
  * @since   2023.03.12
- * @updated 1. 영역 조회 메소드 NULL 처리 보완
- *          - 2023.05.01 박찬호
+ * @updated 1. 회원의 영역 필터 적용
+ *          - 2023.05.18 박찬호
  */
 
 @Service
@@ -53,14 +53,19 @@ public class MatrixServiceImpl implements MatrixService {
 
         if (request.getType() == null || request.getType().equals(MatrixUserCond.ALL)) {
             List<User> users = new ArrayList<>();
-            users.addAll(friendService.getFriends(user));
+            if (user.getProperty().getIsShowMine()) users.add(user);
+
+            if (user.getProperty().getIsShowFriend()) {
+                List<User> friends = friendService.getFriends(user);
+                for (User friend : friends) {
+                    if (friend.getProperty().getIsPublicRecord()) users.add(friend);
+                }
+            }
             users.addAll(challengeRepository.findUCInProgress(user));
-            users.add(user);
             MatrixCond condition = new MatrixCond(request.getLocation(), request.getSpanDelta(), null, new HashSet<>(users), request.getStarted(), request.getEnded());
 
             return matrixRepository.findMatrix(condition);
-        }
-        else if (request.getType().equals(MatrixUserCond.CHALLENGE)) {
+        } else if (request.getType().equals(MatrixUserCond.CHALLENGE)) {
             String uuid = request.getUuid();
             if (StringUtils.isNullOrEmpty(uuid)) throw new ExerciseRecordException(ExceptionCodeSet.CHALLENGE_UUID_INVALID);
             MatrixCond condition = new MatrixCond(UuidUtil.hexToBytes(uuid), request.getLocation(), request.getSpanDelta());
