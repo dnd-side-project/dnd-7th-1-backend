@@ -9,12 +9,15 @@ import com.dnd.ground.domain.user.repository.UserRepository;
 import com.dnd.ground.global.auth.vo.KakaoFriendVo;
 import com.dnd.ground.global.exception.AuthException;
 import com.dnd.ground.global.exception.ExceptionCodeSet;
+import com.dnd.ground.global.exception.KakaoException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.json.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
@@ -22,6 +25,7 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.UriComponentsBuilder;
+import reactor.core.publisher.Mono;
 
 import javax.annotation.PostConstruct;
 import java.util.*;
@@ -31,8 +35,9 @@ import java.util.stream.Collectors;
  * @author 박찬호
  * @description 카카오를 비롯한 회원 정보와 관련한 서비스
  * @since 2022-08-23
- * @updated 1. 카카오 친구 목록 조회 API 수정
- *           - 2023.01.20 박찬호
+ * @updated 1. 카카오 메시지 전송 API 구현 (사용자 정의 템플릿으로 친구에게 보내기)
+ *          2. 카카오 API 예외 처리 구현
+ *           - 2023.05.19 박찬호
  */
 
 @RequiredArgsConstructor
@@ -81,6 +86,11 @@ public class KakaoService {
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                 .body(BodyInserters.fromFormData(getTokenBody))
                 .retrieve()
+                .onStatus(HttpStatus::is4xxClientError, error -> error.bodyToMono(KakaoDto.KakaoExceptionDto.class)
+                        .flatMap(dto -> Mono.error(new KakaoException(dto)))
+                )
+                .onStatus(HttpStatus::is5xxServerError, error -> error.bodyToMono(KakaoDto.KakaoExceptionDto.class)
+                        .flatMap(dto -> Mono.error(new KakaoException(dto))))
                 .bodyToMono(KakaoDto.Token.class)
                 .block();
 
@@ -122,6 +132,11 @@ public class KakaoService {
                 .uri("https://kapi.kakao.com/v1/user/access_token_info")
                 .header(AUTHORIZATION, BEARER + token)
                 .retrieve()
+                .onStatus(HttpStatus::is4xxClientError, error -> error.bodyToMono(KakaoDto.KakaoExceptionDto.class)
+                        .flatMap(dto -> Mono.error(new KakaoException(dto)))
+                )
+                .onStatus(HttpStatus::is5xxServerError, error -> error.bodyToMono(KakaoDto.KakaoExceptionDto.class)
+                        .flatMap(dto -> Mono.error(new KakaoException(dto))))
                 .bodyToMono(KakaoDto.TokenInfo.class)
                 .block();
     }
@@ -132,6 +147,11 @@ public class KakaoService {
                 .uri("https://kapi.kakao.com/v2/user/me")
                 .header(AUTHORIZATION, BEARER + token)
                 .retrieve()
+                .onStatus(HttpStatus::is4xxClientError, error -> error.bodyToMono(KakaoDto.KakaoExceptionDto.class)
+                        .flatMap(dto -> Mono.error(new KakaoException(dto)))
+                )
+                .onStatus(HttpStatus::is5xxServerError, error -> error.bodyToMono(KakaoDto.KakaoExceptionDto.class)
+                        .flatMap(dto -> Mono.error(new KakaoException(dto))))
                 .bodyToMono(String.class)
                 .block();
 
@@ -201,22 +221,45 @@ public class KakaoService {
         return new KakaoDto.KakaoFriendResponse(friendsInfoFromKakao.getAfter_url() == null, friends, offset + friends.size());
     }
 
-    /*카카오 친구 목록 요청*/
-    public KakaoDto.FriendsInfoFromKakao requestKakaoFriends(String token, int offset, int limit) {
-        return webClient.get()
-                .uri(UriComponentsBuilder.newInstance()
-                        .scheme("https")
-                        .host("kapi.kakao.com")
-                        .path("/v1/api/talk/friends")
-                        .queryParam("offset", offset)
-                        .queryParam("limit", limit)
-                        .toUriString())
+    /*카카오 친구 초대 메시지 발송*/
+    public ExceptionCodeSet sendInviteMessage(String token, String uuid) {
+        final String TEMPLATE_ID = "93844";
+
+        /*메시지 템플릿 완성 후 전처리 예정*/
+        Map<String, String> templateArgs = new HashMap<>();
+        templateArgs.put("nickname", "보내는사람닉넴"); //Example
+        templateArgs.put("friend_name", "받는사람닉넴"); //Example
+
+        MultiValueMap<String, String> templateParams = new LinkedMultiValueMap<>();
+        templateParams.add("template_id", TEMPLATE_ID);
+        templateParams.add("receiver_uuids", new JSONArray(Collections.singletonList(uuid)).toString());
+        templateParams.add("template_args", new JSONObject(templateArgs).toString());
+
+
+        KakaoDto.SendMessage result = webClient.post()
+                .uri("https://kapi.kakao.com/v1/api/talk/friends/message/send")
                 .header(AUTHORIZATION, BEARER + token)
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .body(BodyInserters.fromFormData(templateParams))
                 .retrieve()
-                .bodyToMono(KakaoDto.FriendsInfoFromKakao.class)
+                .onStatus(HttpStatus::is4xxClientError, error -> error.bodyToMono(KakaoDto.KakaoExceptionDto.class)
+                        .flatMap(dto -> Mono.error(new KakaoException(dto)))
+                )
+                .onStatus(HttpStatus::is5xxServerError, error -> error.bodyToMono(KakaoDto.KakaoExceptionDto.class)
+                        .flatMap(dto -> Mono.error(new KakaoException(dto))))
+                .bodyToMono(KakaoDto.SendMessage.class)
                 .block();
+
+        if (result == null) throw new KakaoException(ExceptionCodeSet.KAKAO_FAILED);
+
+        if (result.getFailure_info() == null && result.getSuccessful_receiver_uuids()[0].equals(uuid)) {
+            return ExceptionCodeSet.OK;
+        } else {
+            return ExceptionCodeSet.KAKAO_FAILED;
+        }
     }
 
+    /*카카오 토큰 재발급*/
     public Map<String, String> reissueKakaoToken(String token) {
         MultiValueMap<String, String> reissueTokenBody = new LinkedMultiValueMap<>();
         reissueTokenBody.add(GRANT_TYPE, "refresh_token");
@@ -229,6 +272,11 @@ public class KakaoService {
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                 .body(BodyInserters.fromFormData(reissueTokenBody))
                 .retrieve()
+                .onStatus(HttpStatus::is4xxClientError, error -> error.bodyToMono(KakaoDto.KakaoExceptionDto.class)
+                        .flatMap(dto -> Mono.error(new KakaoException(dto)))
+                )
+                .onStatus(HttpStatus::is5xxServerError, error -> error.bodyToMono(KakaoDto.KakaoExceptionDto.class)
+                        .flatMap(dto -> Mono.error(new KakaoException(dto))))
                 .bodyToMono(KakaoDto.ReissueToken.class)
                 .block();
 
@@ -238,4 +286,26 @@ public class KakaoService {
 
         return response;
     }
+
+    /*카카오 친구 목록 요청*/
+    private KakaoDto.FriendsInfoFromKakao requestKakaoFriends(String token, int offset, int limit) {
+        return webClient.get()
+                .uri(UriComponentsBuilder.newInstance()
+                        .scheme("https")
+                        .host("kapi.kakao.com")
+                        .path("/v1/api/talk/friends")
+                        .queryParam("offset", offset)
+                        .queryParam("limit", limit)
+                        .toUriString())
+                .header(AUTHORIZATION, BEARER + token)
+                .retrieve()
+                .onStatus(HttpStatus::is4xxClientError, error -> error.bodyToMono(KakaoDto.KakaoExceptionDto.class)
+                        .flatMap(dto -> Mono.error(new KakaoException(dto)))
+                )
+                .onStatus(HttpStatus::is5xxServerError, error -> error.bodyToMono(KakaoDto.KakaoExceptionDto.class)
+                        .flatMap(dto -> Mono.error(new KakaoException(dto))))
+                .bodyToMono(KakaoDto.FriendsInfoFromKakao.class)
+                .block();
+    }
+
 }

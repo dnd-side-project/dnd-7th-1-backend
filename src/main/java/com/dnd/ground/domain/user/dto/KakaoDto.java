@@ -9,9 +9,8 @@ import java.util.List;
  * @description 카카오 API를 사용할 때 필요한 DTO
  * @author  박찬호
  * @since   2022-08-23
- * @updated 1.@Data 어노테이션 제거
- *          2.카카오 친구 목록 조회 DTO 수정
- *          - 2022.05.18 박찬호
+ * @updated 1.카카오 메시지 API 관련 DTO 생성
+ *          - 2022.05.19 박찬호
  */
 
 public class KakaoDto {
@@ -115,5 +114,30 @@ public class KakaoDto {
         private String refresh_token;
         private Long refresh_token_expires_in;
         private Long expires_in;
+    }
+
+    /*카카오 메시지 API DTO*/
+    @Getter
+    @NoArgsConstructor
+    public static class SendMessage {
+        private String[] successful_receiver_uuids;
+        private FailureInfo[] failure_info;
+
+        @Getter
+        @NoArgsConstructor
+        public static class FailureInfo {
+            private Integer code;
+            private String msg;
+            private String[] receiver_uuids;
+        }
+    }
+
+    /*카카오 예외 클래*/
+    @AllArgsConstructor
+    @NoArgsConstructor
+    @Getter
+    public static class KakaoExceptionDto {
+        Integer code;
+        String msg;
     }
 }
