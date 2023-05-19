@@ -192,7 +192,6 @@ public class UserResponseDto {
     }
 
     /* 나의 활동 기록 조회 */
-    @Builder
     @AllArgsConstructor
     @Getter
     static public class ActivityRecordResponseDto {

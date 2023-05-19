@@ -3,6 +3,8 @@ package com.dnd.ground.domain.challenge.service;
 import com.dnd.ground.domain.challenge.ChallengeStatus;
 import com.dnd.ground.domain.challenge.dto.*;
 import com.dnd.ground.domain.exerciseRecord.ExerciseRecord;
+import com.dnd.ground.domain.matrix.dto.Location;
+import com.dnd.ground.domain.user.User;
 
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -28,11 +30,10 @@ public interface ChallengeService {
     List<ChallengeResponseDto.Invite> findInviteChallenge(String nickname);
     ChallengeResponseDto.WaitDetail getDetailWaitChallenge(ChallengeRequestDto.CInfo requestDto);
     ChallengeResponseDto.ProgressDetail getDetailProgress(ChallengeRequestDto.CInfo requestDto);
-    ChallengeMapResponseDto.Detail getChallengeDetailMap(String uuid, String nickname);
-
+    ChallengeMapResponseDto.Detail getChallengeDetailMap(String uuid, String nickname, Double spanDelta, Location center);
     List<ChallengeResponseDto.CInfoRes> findChallengeByRecord(ExerciseRecord exerciseRecord);
-
     Boolean deleteChallenge(ChallengeRequestDto.CInfo request);
+    void deleteChallengeAndUC(User user);
 
     static LocalDateTime getSunday(LocalDateTime started) {
         return LocalDateTime.of(started.plusDays(7 - started.getDayOfWeek().getValue()).toLocalDate(), LocalTime.MAX.minusSeconds(1));

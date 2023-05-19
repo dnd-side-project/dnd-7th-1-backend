@@ -8,8 +8,8 @@ import org.springframework.http.HttpStatus;
  * @description 에러 코드 구현체
  * @author  박찬호
  * @since   2022-08-24
- * @updated 1.예외 코드 추가
- *          -2023.05.11 박찬호
+ * @updated 1.카카오 API 관련 예외 코드 추가
+ *          -2023.05.19 박찬호
  */
 
 @RequiredArgsConstructor
@@ -51,7 +51,7 @@ public enum ExceptionCodeSet {
     FRIEND_NOT_FOUND(HttpStatus.BAD_REQUEST, "3001", "해당 친구가 존재하지 않습니다."),
     FRIEND_EXCEED(HttpStatus.BAD_REQUEST, "3002", "최대 친구 수를 초과하였습니다."),
     FRIEND_RES_FAIL(HttpStatus.INTERNAL_SERVER_ERROR, "3003", "친구 요청에 대한 응답을 실패했습니다."),
-    FRIEND_FAIL_DELETE(HttpStatus.INTERNAL_SERVER_ERROR, "3004", "친구 삭제를 실패했습니다."),
+    FRIEND_FAIL_DELETE(HttpStatus.BAD_REQUEST, "3004", "친구 삭제를 실패했습니다."),
     FRIEND_DUPL(HttpStatus.BAD_REQUEST, "3005", "이미 친구입니다."),
     FRIEND_INVALID_STATUS(HttpStatus.BAD_REQUEST, "3006", "친구 상태가 올바르지 않습니다."),
 
@@ -79,7 +79,7 @@ public enum ExceptionCodeSet {
     MATRIX_CENTER_EMPTY(HttpStatus.BAD_REQUEST, "5004", "CENTER 영역이 존재하지 않습니다."),
     SPAN_DELTA_EMPTY(HttpStatus.BAD_REQUEST, "5005", "Span Delta가 존재하지 않습니다."),
 
-    //FCM
+    //FCM, KAKAO
     UNSPECIFIED_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "6000", "예상치 못한 에러가 발생했습니다."),
     INVALID_ARGUMENT(HttpStatus.BAD_REQUEST, "6001", "메시지가 유효하지 않습니다."),
     UNREGISTERED(HttpStatus.NOT_FOUND, "6002", "토큰이 유효하지 않습니다."),
@@ -89,6 +89,14 @@ public enum ExceptionCodeSet {
     INTERNAL(HttpStatus.INTERNAL_SERVER_ERROR, "6006", "FCM 서버에서 오류가 발생했습니다."),
     THIRD_PARTY_AUTH_ERROR(HttpStatus.UNAUTHORIZED, "6007", "메시지 전송 권한이 유효하지 않습니다."),
     NOT_FOUND_NOTIFICATION(HttpStatus.BAD_REQUEST, "6008", "푸시 알람이 존재하지 않습니다."),
+
+    KAKAO_NO_AGREE(HttpStatus.FORBIDDEN, "6100", "API 사용 동의가 필요합니다."),
+    KAKAO_OVER_QUOTA(HttpStatus.BAD_REQUEST, "6101", "API 사용 쿼터를 초과했습니다."),
+    KAKAO_INVALID_TOKEN(HttpStatus.BAD_REQUEST, "6102", "카카오 토큰이 올바르지 않습니다."),
+    KAKAO_CLOSED(HttpStatus.BAD_REQUEST, "6103", "카카오 서버가 점검중입니다."),
+    KAKAO_FAILED(HttpStatus.BAD_REQUEST, "6105", "카카오 API 호출에 실패했습니다."),
+
+
 
     //ETC
     OK(HttpStatus.OK, "0000", "성공적으로 동작하였습니다."),
@@ -100,7 +108,8 @@ public enum ExceptionCodeSet {
     WEBCLIENT_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "9005", "외부 API 통신 중 에러가 발생했습니다."),
     PARSE_EXCEPTION(HttpStatus.INTERNAL_SERVER_ERROR, "9006", "파싱 중 에러가 발생했습니다."),
     BAD_REQUEST(HttpStatus.BAD_REQUEST, "9007", "올바르지 않은 요청입니다."),
-    DEVICE_TYPE_INVALID(HttpStatus.BAD_REQUEST, "9008", "디바이스 타입이 올바르지 않습니다.");
+    DEVICE_TYPE_INVALID(HttpStatus.BAD_REQUEST, "9008", "디바이스 타입이 올바르지 않습니다."),
+    SEARCH_KEYWORD_INVALID(HttpStatus.BAD_REQUEST, "9009", "검색 키워드가 올바르지 않습니다.");
 
     private final HttpStatus httpStatus;
     private final String code;
