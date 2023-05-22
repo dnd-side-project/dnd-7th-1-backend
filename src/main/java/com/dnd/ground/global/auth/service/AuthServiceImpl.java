@@ -3,9 +3,13 @@ package com.dnd.ground.global.auth.service;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.interfaces.DecodedJWT;
+import com.dnd.ground.domain.challenge.service.ChallengeService;
+import com.dnd.ground.domain.exerciseRecord.service.ExerciseRecordService;
 import com.dnd.ground.domain.friend.service.FriendService;
 import com.dnd.ground.domain.user.User;
 import com.dnd.ground.domain.user.UserProperty;
+import com.dnd.ground.domain.user.repository.UserPropertyFcmTokenRepository;
+import com.dnd.ground.domain.user.repository.UserPropertyRepository;
 import com.dnd.ground.global.notification.cache.PadFcmToken;
 import com.dnd.ground.global.notification.repository.FcmTokenRepository;
 import com.dnd.ground.global.auth.UserClaim;
@@ -35,8 +39,8 @@ import java.util.regex.Pattern;
  * @description 회원의 인증/인가 및 회원 정보 관련 서비스 구현체
  * @author  박찬호
  * @since   2022-09-07
- * @updated 1. 로그아웃 API 구현
- *          - 2023.05.15 박찬호
+ * @updated 1. 회원 탈퇴 API 구현 - 카카오 연결 끊기에 따른 콜백 API 및 서비스 탈퇴 API 구현
+ *          - 2023.05.22 박찬호
  */
 
 @Slf4j
@@ -45,7 +49,11 @@ import java.util.regex.Pattern;
 public class AuthServiceImpl implements AuthService, UserDetailsService {
 
     private final UserRepository userRepository;
+    private final UserPropertyRepository userPropertyRepository;
+    private final UserPropertyFcmTokenRepository userPropertyFcmTokenRepository;
     private final FriendService friendService;
+    private final ChallengeService challengeService;
+    private final ExerciseRecordService exerciseRecordService;
     private final FcmTokenRepository fcmTokenRepository;
 
     @Value("${jwt.secret_key}")
@@ -131,6 +139,7 @@ public class AuthServiceImpl implements AuthService, UserDetailsService {
             Boolean isNotification = signDto.getIsNotification();
             UserProperty property = UserProperty.builder()
                     .socialId(signDto.getSocialId())
+                    .isExceptRecommend(signDto.getIsExceptRecommend())
                     .isShowMine(true)
                     .isShowFriend(true)
                     .isPublicRecord(signDto.getIsPublicRecord())
@@ -222,8 +231,38 @@ public class AuthServiceImpl implements AuthService, UserDetailsService {
     /*로그아웃*/
     @Override
     @Transactional
-    public ExceptionCodeSet logout(String nickname, DeviceType type) {
-        fcmTokenRepository.deleteToken(nickname, type);
+    public ExceptionCodeSet logout(String nickname, DeviceType deviceType) {
+        fcmTokenRepository.deleteToken(nickname, deviceType);
+
+        return ExceptionCodeSet.OK;
+    }
+
+    /*회원 탈퇴*/
+    @Override
+    @Transactional
+    public ExceptionCodeSet deleteUser(String nickname) {
+        User user = userRepository.findByNickname(nickname)
+                .orElseThrow(() -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
+
+        return deleteUser(user);
+    }
+
+    @Override
+    @Transactional
+    public ExceptionCodeSet deleteUser(User user) {
+        //운동 기록, 영역 삭제
+        exerciseRecordService.deleteRecordAll(user);
+
+        //친구 삭제
+        friendService.deleteFriendAll(user);
+
+        //챌린지 삭제
+        challengeService.convertDeleteUser(user);
+
+        //회원정보 삭제
+        fcmTokenRepository.deleteToken(user.getNickname()); //FCM 토큰 삭제
+        userRepository.delete(user);//회원 삭제
+        userPropertyRepository.delete(user.getProperty()); //회원 정보 삭제
 
         return ExceptionCodeSet.OK;
     }

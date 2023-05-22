@@ -12,8 +12,8 @@ import javax.persistence.*;
  * @description User - Challenge 간 조인 테이블
  * @author  박찬호
  * @since   2022-07-27
- * @updated 1. 생성자 수정: 파라미터로 전달 받은 ChallengeStatus로 객체를 생성함.
- *          - 2022-08-16 박찬호
+ * @updated 1. 회원 탈퇴 API 구현 - 삭제된 유저로 변환하기 위한 메소드 구현
+ *          - 2023-05-22 박찬호
  */
 
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -53,5 +53,9 @@ public class UserChallenge {
     //챌린지 상태 변경
     public void changeStatus(ChallengeStatus status) {
         this.status = status;
+    }
+
+    public void changeUser(User user) {
+        this.user = user;
     }
 }

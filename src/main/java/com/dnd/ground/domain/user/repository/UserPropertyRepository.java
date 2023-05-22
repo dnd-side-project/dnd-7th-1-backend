@@ -1,5 +1,6 @@
 package com.dnd.ground.domain.user.repository;
 
+import com.dnd.ground.domain.user.User;
 import com.dnd.ground.domain.user.UserProperty;
 import com.dnd.ground.global.auth.vo.KakaoFriendVo;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -32,5 +33,11 @@ public interface UserPropertyRepository extends JpaRepository<UserProperty, Long
             "ON u.property = up " +
             "WHERE up.socialId IN :socialIds")
     List<KakaoFriendVo> findBySocialIds(@Param("socialIds") List<String> socialIds);
+
+    @Query("SELECT u " +
+            "FROM User u " +
+            "INNER JOIN UserProperty up " +
+            "ON up.socialId = :socialId")
+    User findUserBySocialId(@Param("socialId") String socialId);
 }
 

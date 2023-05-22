@@ -16,9 +16,8 @@ import java.util.List;
  * @description 회원 엔티티
  * @author  박찬호
  * @since   2022.07.28
- * @updated 1.User - UserProperty 분리
- *          2.메인화면 관련 필터 필드 및 메소드 삭제
- *           - 2023-03-20 박찬호
+ * @updated 1.회원 탈퇴를 위해, 참여 중인 챌린지를 지우는 메소드 구현
+ *           - 2023-05-22 박찬호
  */
 
 @Getter
@@ -92,5 +91,9 @@ public class User {
     public void setUserProperty(UserProperty property) {
         this.property = property;
         property.setUser(this);
+    }
+
+    public void clearChallenges() {
+        this.challenges.clear();
     }
 }

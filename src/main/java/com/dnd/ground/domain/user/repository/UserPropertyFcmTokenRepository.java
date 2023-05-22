@@ -24,4 +24,7 @@ public interface UserPropertyFcmTokenRepository extends JpaRepository<UserProper
 
     @Transactional
     void deleteByNicknameAndType(@Param("nickname") String nickname, @Param("type") DeviceType type);
+
+    @Transactional
+    void deleteByNickname(@Param("nickname") String nickname);
 }

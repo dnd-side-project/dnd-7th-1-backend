@@ -19,8 +19,8 @@ import java.util.Optional;
  *              해당 계층에서 FCM 토큰과 관련한 공통된 정보를 처리한다.
  * @author  박찬호
  * @since   2023-05-11
- * @updated 1. FCM 토큰 삭제 메소드 구현
- *          -2023-05-15 박찬호
+ * @updated 1.회원 탈퇴 API 구현 - 회원의 FCM 토큰 전체 삭제
+ *          -2023-05-22 박찬호
  */
 
 @Repository
@@ -139,5 +139,18 @@ public class FcmTokenRepository {
         }
 
         userPropertyFcmTokenRepository.deleteByNicknameAndType(nickname, type);
+    }
+
+    @Transactional
+    public void deleteToken(String nickname) {
+        phoneFcmTokenRepository
+                .findById(nickname)
+                .ifPresent(phoneFcmTokenRepository::delete);
+
+        padFcmTokenRepository
+                .findById(nickname)
+                .ifPresent(padFcmTokenRepository::delete);
+
+        userPropertyFcmTokenRepository.deleteByNickname(nickname);
     }
 }

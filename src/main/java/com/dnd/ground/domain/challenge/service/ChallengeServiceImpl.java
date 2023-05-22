@@ -14,6 +14,7 @@ import com.dnd.ground.domain.matrix.service.RankService;
 import com.dnd.ground.domain.user.User;
 import com.dnd.ground.domain.user.dto.UserResponseDto;
 import com.dnd.ground.domain.user.repository.UserRepository;
+import com.dnd.ground.global.util.RequirementUtil;
 import com.dnd.ground.global.exception.*;
 import com.dnd.ground.global.notification.dto.NotificationForm;
 import com.dnd.ground.global.notification.NotificationMessage;
@@ -35,6 +36,8 @@ import java.util.stream.Collectors;
  * @since 2022-08-03
  * @updated 1.챌린지 상세조회 반환할 때, center(latitude, longitude) 추가. (영역이 가장 많은 운동 기록의 가운데)
  *          2.챌린지 상태변경 시 최대 개수를 넘지 않도록 예외처리
+ *          3.회원 탈퇴 API 구현 - 해당 멤버를 삭제된 유저로 변환
+ *          4. 회원 탈퇴 API 구현 - 참여 중인 챌린지를 삭제된 유저로 변환
  *          - 2023.05.22 박찬호
  */
 
@@ -417,7 +420,7 @@ public class ChallengeServiceImpl implements ChallengeService {
         }
 
         //랭킹 계산
-        List<User> members = userChallengeRepository.findChallengeUsers(challenge); //본인 포함 챌린지에 참여하는 인원들
+        List<User> members = userChallengeRepository.findMembers(challenge); //본인 포함 챌린지에 참여하는 인원들
         if (!members.contains(user)) throw new ChallengeException(ExceptionCodeSet.USER_CHALLENGE_NOT_FOUND); //참여하는 챌린지가 아니면 예외처리
 
         Map<Challenge, List<RankDto>> challengeMatrixRankWithMembers = exerciseRecordRepository.findChallengeMatrixRankWithUsers(user, members, List.of(ChallengeStatus.PROGRESS, ChallengeStatus.DONE));
@@ -465,12 +468,12 @@ public class ChallengeServiceImpl implements ChallengeService {
     }
 
     /*챌린지 상세보기: 지도*/
-    public ChallengeMapResponseDto.Detail getChallengeDetailMap(String uuid, String nickname, Double spanDelta, Location center) {
+    public ChallengeMapResponseDto.DetailMap getChallengeDetailMap(String uuid, String nickname, Double spanDelta, Location center) {
         Challenge challenge = challengeRepository.findByUuid(UuidUtil.hexToBytes(uuid))
                 .orElseThrow(() -> new ChallengeException(ExceptionCodeSet.CHALLENGE_NOT_FOUND));
 
         //챌린지 참여 인원 조회
-        List<User> members = userChallengeRepository.findChallengeUsers(challenge);
+        List<User> members = userChallengeRepository.findMembers(challenge);
 
         //랭킹 계산
         List<RankDto> rankByChallenge = exerciseRecordRepository.findRankByChallenge(challenge);
@@ -497,7 +500,7 @@ public class ChallengeServiceImpl implements ChallengeService {
             }
         }
 
-        return new ChallengeMapResponseDto.Detail(matrixList, rankings);
+        return new ChallengeMapResponseDto.DetailMap(matrixList, rankings);
     }
 
     /*챌린지 삭제*/
@@ -522,10 +525,37 @@ public class ChallengeServiceImpl implements ChallengeService {
         }
     }
 
+    /**
+     * 회원 탈퇴의 경우, 1명만 남아도 챌린지가 진행된다는 요구사항에 따라 (알 수 없음) 회원으로 변경한다.
+     * 모든 회원이 탈퇴하면 챌린지가 삭제된다.
+     * @param user
+     */
     @Override
-    public void deleteChallengeAndUC(User user) {
-        //챌린지 조회
-        //UC 조회
-        //회원 빼면 남는 애가 1명이면 ?? 대기상태면 챌린지 삭제 후 푸시 알람 / 진행 상태면 ??
+    @Transactional
+    public void convertDeleteUser(User user) {
+        List<ChallengeUcsDto> challengeUcs = challengeRepository.findChallengeUcs(user);
+        User deleteUser = RequirementUtil.getDeleteUser();
+        user.clearChallenges();
+
+        for (ChallengeUcsDto challengeUc : challengeUcs) {
+            Challenge challenge = challengeUc.getChallenge();
+            List<UserChallenge> ucs = challengeUc.getUcs();
+
+            int cnt = 1;
+            for (UserChallenge uc : ucs) {
+                User member = uc.getUser();
+
+                if (Objects.equals(member,user)) {
+                    uc.changeUser(deleteUser);
+                } else if (Objects.equals(member.getId(), deleteUser.getId())) {
+                    cnt++;
+                }
+            }
+
+            if (ucs.size() == 1 || cnt == ucs.size()) {
+                userChallengeRepository.deleteAll(ucs);
+                challengeRepository.delete(challenge);
+            }
+        }
     }
 }
