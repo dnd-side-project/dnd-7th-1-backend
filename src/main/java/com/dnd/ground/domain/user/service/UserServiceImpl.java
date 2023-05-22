@@ -54,8 +54,8 @@ import static java.time.temporal.TemporalAdjusters.lastDayOfMonth;
  * @description 유저 서비스 클래스
  * @author 박세헌, 박찬호
  * @since 2022-08-01
- * @updated 1. 불필요한 날짜 포매팅 제거
- *          - 2023-05-18 박찬호
+ * @updated 1.회원 프로필 사진 조회 API 구현
+ *          - 2023-05-22 박찬호
  */
 
 @Slf4j
@@ -414,6 +414,17 @@ public class UserServiceImpl implements UserService {
                 .mail(user.getEmail())
                 .picturePath(user.getPicturePath())
                 .build();
+    }
+
+    /*프로필 사진 조회*/
+    @Override
+    public UserResponseDto.UInfo getPicture(String nickname) {
+        return new UserResponseDto.UInfo(
+                nickname,
+                userRepository.findByNickname(nickname)
+                        .orElseThrow(() -> new UserException(ExceptionCodeSet.USER_NOT_FOUND))
+                        .getPicturePath()
+        );
     }
 
     /*회원 알람 목록 조회*/
