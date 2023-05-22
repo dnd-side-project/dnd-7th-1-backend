@@ -33,9 +33,8 @@ import java.util.stream.Collectors;
  * @author 박찬호
  * @description 챌린지와 관련된 서비스의 역할을 분리한 구현체
  * @since 2022-08-03
- * @updated 1.푸시 알람의 화면 네비게이팅을 위한 챌린지 UUID 추가
- *          2.챌린지 상세보기: 지도 API의 응답을 회원의 순서에 맞춰 정렬
- *          - 2023.04.10
+ * @updated 1.챌린지 상세조회 반환할 때, center(latitude, longitude) 추가. (영역이 가장 많은 운동 기록의 가운데)
+ *          - 2023.05.22 박찬호
  */
 
 @Slf4j
@@ -371,8 +370,8 @@ public class ChallengeServiceImpl implements ChallengeService {
                 .build();
     }
 
-    /*진행 중인 챌린지 상세 조회*/
-    public ChallengeResponseDto.ProgressDetail getDetailProgress(ChallengeRequestDto.CInfo request) {
+    /*진행 중, 완료된 챌린지 상세 조회*/
+    public ChallengeResponseDto.Detail getDetailProgressOrDone(ChallengeRequestDto.CInfo request) {
         User user = userRepository.findByNickname(request.getNickname())
                 .orElseThrow(() -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
 
@@ -382,21 +381,33 @@ public class ChallengeServiceImpl implements ChallengeService {
         //개인 기록 계산 및 영역 저장
         LocalDateTime started = challenge.getStarted();
         LocalDateTime ended = challenge.getEnded();
-        int distance = 0; //거리
-        int exerciseTime = 0; //운동시간
-        int stepCount = 0; //걸음수
+        int distance = 0;
+        int exerciseTime = 0;
+        int stepCount = 0;
+        Double latitude = null;
+        Double longitude = null;
 
         Map<ExerciseRecord, List<Location>> recordWithLocation = exerciseRecordRepository.findRecordWithLocation(user, started, ended);
         List<Location> matrices = new ArrayList<>();
+        int biggestSize = Integer.MIN_VALUE;
 
         for (Map.Entry<ExerciseRecord, List<Location>> entry : recordWithLocation.entrySet()) {
             ExerciseRecord record = entry.getKey();
+            List<Location> locations = entry.getValue();
 
             distance += record.getDistance();
             exerciseTime += record.getExerciseTime();
             stepCount += record.getStepCount();
 
-            matrices.addAll(entry.getValue());
+            matrices.addAll(locations);
+
+            if (biggestSize < locations.size()) {
+                biggestSize = locations.size();
+                int center = locations.size() / 2;
+
+                latitude = locations.get(center).getLatitude();
+                longitude = locations.get(center).getLongitude();
+            }
         }
 
         //랭킹 계산
@@ -406,7 +417,7 @@ public class ChallengeServiceImpl implements ChallengeService {
         Map<Challenge, List<RankDto>> challengeMatrixRankWithMembers = exerciseRecordRepository.findChallengeMatrixRankWithUsers(user, members, List.of(ChallengeStatus.PROGRESS, ChallengeStatus.DONE));
         List<UserResponseDto.Ranking> rankings = rankService.calculateUsersRank(challengeMatrixRankWithMembers.get(challenge));
 
-        return ChallengeResponseDto.ProgressDetail.builder()
+        return ChallengeResponseDto.Detail.builder()
                 .name(challenge.getName())
                 .uuid(UuidUtil.bytesToHex(challenge.getUuid()))
                 .type(challenge.getType())
@@ -418,6 +429,8 @@ public class ChallengeServiceImpl implements ChallengeService {
                 .distance(distance)
                 .exerciseTime(exerciseTime)
                 .stepCount(stepCount)
+                .latitude(latitude)
+                .longitude(longitude)
                 .build();
     }
 
