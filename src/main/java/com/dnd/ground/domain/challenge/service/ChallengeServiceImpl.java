@@ -34,6 +34,7 @@ import java.util.stream.Collectors;
  * @description 챌린지와 관련된 서비스의 역할을 분리한 구현체
  * @since 2022-08-03
  * @updated 1.챌린지 상세조회 반환할 때, center(latitude, longitude) 추가. (영역이 가장 많은 운동 기록의 가운데)
+ *          2.챌린지 상태변경 시 최대 개수를 넘지 않도록 예외처리
  *          - 2023.05.22 박찬호
  */
 
@@ -60,7 +61,7 @@ public class ChallengeServiceImpl implements ChallengeService {
         //진행 중인 챌린지 개수를 비롯한 필요한 데이터 조회 및 Validation
         Set<String> members = requestDto.getFriends();
         members.add(requestDto.getNickname()); // 주최자 추가
-        Map<User, Long> challengeCountMap = challengeRepository.findUsersProgressChallengeCount(members);
+        Map<User, Long> challengeCountMap = challengeRepository.findUsersJoinChallengeCount(members);
 
         //조회해온 멤버의 수가 맞지 않는 경우(닉네임이 올바르지 않음)
         if (challengeCountMap.size() != members.size()) {
@@ -141,11 +142,17 @@ public class ChallengeServiceImpl implements ChallengeService {
     /*유저-챌린지 상태 변경*/
     @Transactional
     public ChallengeResponseDto.Status changeUserChallengeStatus(ChallengeRequestDto.CInfo requestDto, ChallengeStatus status) {
+        User user = userRepository.findByNickname(requestDto.getNickname())
+                .orElseThrow(() -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
         UserChallenge userChallenge = challengeRepository.findUC(requestDto.getNickname(), requestDto.getUuid());
 
         if (userChallenge == null) throw new ChallengeException(ExceptionCodeSet.NOT_FOUND_UC);
         else if (userChallenge.getStatus() == ChallengeStatus.MASTER) { //주최자의 상태 변경X
             throw new ChallengeException(ExceptionCodeSet.MASTER_STATUS_NOT_CHANGE, requestDto.getNickname());
+        }
+
+        if (status == ChallengeStatus.READY && MAX_CHALLENGE_COUNT < challengeRepository.findUserJoinChallengeCount(user)) {
+            throw new ChallengeException(ExceptionCodeSet.CHALLENGE_EXCEED);
         }
 
         //상태 변경
@@ -154,7 +161,6 @@ public class ChallengeServiceImpl implements ChallengeService {
         //푸시 알람 발송
         if (status.equals(ChallengeStatus.READY)) {
             User master = userChallengeRepository.findMasterInChallenge(UuidUtil.hexToBytes(requestDto.getUuid()));
-            User user = userChallenge.getUser();
             pushNotificationPublisher.publishEvent(
                     new NotificationForm(
                             new ArrayList<>(Arrays.asList(master)),
