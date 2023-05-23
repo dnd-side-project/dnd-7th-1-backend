@@ -24,8 +24,8 @@ import javax.validation.Valid;
  * @author 박찬호
  * @description 회원의 인증/인가 및 로그인 관련 컨트롤러
  * @since 2022-08-23
- * @updated 1. 회원 탈퇴 API 구현 - 카카오 연결 끊기에 따른 콜백 API 및 서비스 탈퇴 API 구현
- *          - 2023.05.22 박찬호
+ * @updated 1. 회원 탈퇴 API 수정
+ *          - 2023.05.23 박찬호
  */
 
 @Slf4j
@@ -74,9 +74,11 @@ public class AuthController {
     }
 
     @DeleteMapping("/sign")
-    @Operation(summary = "애플 유저를 위한 회원 탈퇴", description = "카카오 회원은 카카오 SDK에서 unlink를 호출하면 됩니다.")
-    public ResponseEntity<ExceptionCodeSet> deleteUser(@RequestParam("nickname") String nickname) {
-        return ResponseEntity.ok().body(authService.deleteUser(nickname));
+    @Operation(summary = "회원 탈퇴", description = "Resource Owner(소셜)의 종류와 상관 없이 호출해주시면 됩니다.")
+    public ResponseEntity<ExceptionCodeSet> deleteUser(@RequestHeader(value = "Kakao-Access-Token", required = false) String kakaoToken,
+                                                       @RequestParam("nickname") String nickname,
+                                                       @RequestParam("loginType") LoginType loginType) {
+        return ResponseEntity.ok().body(authService.deleteUser(nickname, kakaoToken, loginType));
     }
 
     /**

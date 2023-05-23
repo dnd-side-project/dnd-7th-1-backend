@@ -1,4 +1,4 @@
-package com.dnd.ground.domain.user.dto;
+package com.dnd.ground.global.auth.dto;
 
 import io.swagger.annotations.ApiModelProperty;
 import lombok.*;
@@ -9,8 +9,9 @@ import java.util.List;
  * @description 카카오 API를 사용할 때 필요한 DTO
  * @author  박찬호
  * @since   2022-08-23
- * @updated 1.카카오 메시지 API 관련 DTO 생성
- *          - 2022.05.19 박찬호
+ * @updated 1.패키지 변경
+ *          2.카카오 연결끊기 관련 DTO 생성
+ *          - 2022.05.23 박찬호
  */
 
 public class KakaoDto {
@@ -132,12 +133,27 @@ public class KakaoDto {
         }
     }
 
-    /*카카오 예외 클래*/
+    /*카카오 예외 클래스*/
     @AllArgsConstructor
     @NoArgsConstructor
     @Getter
     public static class KakaoExceptionDto {
         Integer code;
         String msg;
+    }
+
+    @AllArgsConstructor
+    @NoArgsConstructor
+    @Getter
+    public static class KakaoUnlinkCallbackDto {
+        private Long kakao_id;
+        private String referrer_type;
+    }
+
+    @AllArgsConstructor
+    @NoArgsConstructor
+    @Getter
+    public static class KakaoUnlinkResponseDto {
+        private Long id;
     }
 }

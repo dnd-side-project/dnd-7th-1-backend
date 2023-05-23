@@ -2,7 +2,7 @@ package com.dnd.ground.global.auth.service;
 
 import com.amazonaws.util.StringUtils;
 import com.dnd.ground.domain.user.User;
-import com.dnd.ground.domain.user.dto.KakaoDto;
+import com.dnd.ground.global.auth.dto.KakaoDto;
 import com.dnd.ground.domain.user.repository.UserPropertyRepository;
 import com.dnd.ground.global.auth.dto.SocialResponseDto;
 import com.dnd.ground.domain.user.repository.UserRepository;
@@ -35,9 +35,8 @@ import java.util.stream.Collectors;
  * @author 박찬호
  * @description 카카오를 비롯한 회원 정보와 관련한 서비스
  * @since 2022-08-23
- * @updated 1. 카카오 메시지 전송 API 구현 (사용자 정의 템플릿으로 친구에게 보내기)
- *          2. 카카오 API 예외 처리 구현
- *           - 2023.05.19 박찬호
+ * @updated 1.카카오 연결끊기 API 구현
+ *           - 2023.05.23 박찬호
  */
 
 @RequiredArgsConstructor
@@ -222,13 +221,12 @@ public class KakaoService {
     }
 
     /*카카오 친구 초대 메시지 발송*/
-    public ExceptionCodeSet sendInviteMessage(String token, String uuid) {
+    public ExceptionCodeSet sendInviteMessage(String token, String uuid, String nickname) {
         final String TEMPLATE_ID = "93844";
 
         /*메시지 템플릿 완성 후 전처리 예정*/
         Map<String, String> templateArgs = new HashMap<>();
-        templateArgs.put("nickname", "보내는사람닉넴"); //Example
-        templateArgs.put("friend_name", "받는사람닉넴"); //Example
+        templateArgs.put("nickname", nickname);
 
         MultiValueMap<String, String> templateParams = new LinkedMultiValueMap<>();
         templateParams.add("template_id", TEMPLATE_ID);
@@ -308,4 +306,21 @@ public class KakaoService {
                 .block();
     }
 
+    /*연결 끊기*/
+    public void unlink(String kakaoToken, long socialId) {
+        KakaoDto.KakaoUnlinkResponseDto result = webClient.post()
+                .uri("https://kapi.kakao.com/v1/user/unlink")
+                .header(AUTHORIZATION, BEARER + kakaoToken)
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .retrieve()
+                .onStatus(HttpStatus::is4xxClientError, error -> error.bodyToMono(KakaoDto.KakaoExceptionDto.class)
+                        .flatMap(dto -> Mono.error(new KakaoException(dto)))
+                )
+                .onStatus(HttpStatus::is5xxServerError, error -> error.bodyToMono(KakaoDto.KakaoExceptionDto.class)
+                        .flatMap(dto -> Mono.error(new KakaoException(dto))))
+                .bodyToMono(KakaoDto.KakaoUnlinkResponseDto.class)
+                .block();
+
+        if (result == null || result.getId() != socialId) throw new AuthException(ExceptionCodeSet.KAKAO_UNLINK_FAILED);
+    }
 }

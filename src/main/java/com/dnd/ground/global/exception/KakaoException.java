@@ -1,6 +1,6 @@
 package com.dnd.ground.global.exception;
 
-import com.dnd.ground.domain.user.dto.KakaoDto;
+import com.dnd.ground.global.auth.dto.KakaoDto;
 import lombok.extern.slf4j.Slf4j;
 
 /**

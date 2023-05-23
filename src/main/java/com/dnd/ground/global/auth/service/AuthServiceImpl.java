@@ -1,14 +1,15 @@
 package com.dnd.ground.global.auth.service;
 
+import com.amazonaws.util.StringUtils;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.dnd.ground.domain.challenge.service.ChallengeService;
 import com.dnd.ground.domain.exerciseRecord.service.ExerciseRecordService;
 import com.dnd.ground.domain.friend.service.FriendService;
+import com.dnd.ground.domain.user.LoginType;
 import com.dnd.ground.domain.user.User;
 import com.dnd.ground.domain.user.UserProperty;
-import com.dnd.ground.domain.user.repository.UserPropertyFcmTokenRepository;
 import com.dnd.ground.domain.user.repository.UserPropertyRepository;
 import com.dnd.ground.global.notification.cache.PadFcmToken;
 import com.dnd.ground.global.notification.repository.FcmTokenRepository;
@@ -39,8 +40,8 @@ import java.util.regex.Pattern;
  * @description 회원의 인증/인가 및 회원 정보 관련 서비스 구현체
  * @author  박찬호
  * @since   2022-09-07
- * @updated 1. 회원 탈퇴 API 구현 - 카카오 연결 끊기에 따른 콜백 API 및 서비스 탈퇴 API 구현
- *          - 2023.05.22 박찬호
+ * @updated 1. 회원 탈퇴 API 수정
+ *          - 2023.05.23 박찬호
  */
 
 @Slf4j
@@ -50,11 +51,11 @@ public class AuthServiceImpl implements AuthService, UserDetailsService {
 
     private final UserRepository userRepository;
     private final UserPropertyRepository userPropertyRepository;
-    private final UserPropertyFcmTokenRepository userPropertyFcmTokenRepository;
+    private final FcmTokenRepository fcmTokenRepository;
     private final FriendService friendService;
     private final ChallengeService challengeService;
     private final ExerciseRecordService exerciseRecordService;
-    private final FcmTokenRepository fcmTokenRepository;
+    private final KakaoService kakaoService;
 
     @Value("${jwt.secret_key}")
     private String SECRET_KEY;
@@ -240,11 +241,23 @@ public class AuthServiceImpl implements AuthService, UserDetailsService {
     /*회원 탈퇴*/
     @Override
     @Transactional
-    public ExceptionCodeSet deleteUser(String nickname) {
-        User user = userRepository.findByNickname(nickname)
+    public ExceptionCodeSet deleteUser(String nickname, String kakaoToken, LoginType loginType) {
+        User user = userRepository.findByNicknameWithProperty(nickname)
                 .orElseThrow(() -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
 
-        return deleteUser(user);
+        deleteUser(user);
+
+        if (loginType == LoginType.KAKAO) {
+            if (StringUtils.isNullOrEmpty(kakaoToken)) throw new AuthException(ExceptionCodeSet.SOCIAL_ID_INVALID);
+
+            try {
+                kakaoService.unlink(kakaoToken, Long.parseLong(user.getProperty().getSocialId()));
+            } catch (NumberFormatException e) {
+                throw new AuthException(ExceptionCodeSet.SOCIAL_ID_INVALID);
+            }
+        }
+
+        return ExceptionCodeSet.OK;
     }
 
     @Override
