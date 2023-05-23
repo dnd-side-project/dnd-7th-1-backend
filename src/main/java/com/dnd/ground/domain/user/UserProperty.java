@@ -11,8 +11,8 @@ import javax.persistence.*;
  * @description 회원 정보 엔티티
  * @author  박찬호
  * @since   2023.03.20
- * @updated 1.FCM 토큰 관련 필드 삭제
- *           - 2023-05-11 박찬호
+ * @updated 1.친구 추천 목록 제외 필터 변경 API 구현
+ *          - 2023-05-23 박찬호
  */
 
 @Entity
@@ -31,6 +31,9 @@ public class UserProperty {
 
     @Column(name = "social_id", unique = true)
     private String socialId;
+
+    @Column(name = "is_except_recommend", nullable = false)
+    private Boolean isExceptRecommend;
 
     /**
      * 메인 화면 필터
@@ -97,6 +100,12 @@ public class UserProperty {
     public Boolean changeFilterRecord() {
         this.isPublicRecord = !this.isPublicRecord;
         return this.isPublicRecord;
+    }
+
+    //'친구 추천 목록 제외' 필터 변경
+    public Boolean changeFilterExceptRecommend() {
+        this.isExceptRecommend = !this.isExceptRecommend;
+        return this.isExceptRecommend;
     }
 
     public Boolean changeFilterNotification(NotificationMessage message) {

@@ -54,8 +54,8 @@ import static java.time.temporal.TemporalAdjusters.lastDayOfMonth;
  * @description 유저 서비스 클래스
  * @author 박세헌, 박찬호
  * @since 2022-08-01
- * @updated 1.회원 프로필 사진 조회 API 구현
- *          - 2023-05-22 박찬호
+ * @updated 1.친구 추천 목록 제외 필터 변경 API 구현
+ *          - 2023-05-23 박찬호
  */
 
 @Slf4j
@@ -143,7 +143,7 @@ public class UserServiceImpl implements UserService {
         List<UserResponseDto.ChallengeMatrix> challengeMatrices = new ArrayList<>();
 
         //함께하는 챌린지 개수 조회
-        Map<User, Long> challengeCount = challengeRepository.findUsersProgressChallengeCount(user);
+        Map<User, Long> challengeCount = challengeRepository.findUserProgressChallengeCount(user);
 
         //챌린지 진행 정보 조회
         Map<User, Challenge> challengeInfo = challengeRepository.findProgressChallengesInfo(user);
@@ -334,6 +334,14 @@ public class UserServiceImpl implements UserService {
                 .changeFilterRecord();
     }
 
+    /*필터 변경: 친구 추천 목록 제외*/
+    public Boolean changeFilterExceptRecommend(String nickname) {
+        return userPropertyRepository.findByNickname(nickname)
+                .orElseThrow(() -> new UserException(ExceptionCodeSet.USER_NOT_FOUND))
+                .changeFilterExceptRecommend();
+    }
+
+    /*필터 변경: 푸시 알람*/
     @Transactional
     public Boolean changeFilterNotification(UserRequestDto.NotificationFilter request) {
         return userPropertyRepository.findByNickname(request.getNickname())
