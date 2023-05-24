@@ -16,8 +16,8 @@ import java.util.Map;
  * @description 푸시 알람 기록용 엔티티
  * @author  박찬호
  * @since   2023-03-20
- * @updated 1.푸시 알람 읽었는지 여부와 관련한 필드 추가
- *          - 2023-05-13 박찬호
+ * @updated 1.알람함 비우기 API에 따른 isDeleted 필드 추가
+ *          - 2023-05-24 박찬호
  */
 
 @Entity
@@ -50,6 +50,9 @@ public class PushNotification {
     @Column(name="is_read", nullable = false)
     private Boolean isRead;
 
+    @Column(name="is_deleted", nullable = false)
+    private Boolean isDeleted;
+
     @Column(name="type", nullable = false)
     @Enumerated(EnumType.STRING)
     private PushNotificationType type;
@@ -70,6 +73,7 @@ public class PushNotification {
         this.params = new ArrayList<>();
         this.type = type;
         this.isRead = false;
+        this.isDeleted = false;
     }
 
     public void setParams(List<PushNotificationParam> params) {
@@ -85,6 +89,10 @@ public class PushNotification {
 
     public void read() {
         this.isRead = true;
+    }
+
+    public void delete() {
+        this.isDeleted = true;
     }
 
     public Map<String, String> getParamMap() {
