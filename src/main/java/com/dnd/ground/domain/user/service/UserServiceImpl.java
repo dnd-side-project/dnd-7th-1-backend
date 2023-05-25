@@ -54,8 +54,8 @@ import static java.time.temporal.TemporalAdjusters.lastDayOfMonth;
  * @description 유저 서비스 클래스
  * @author 박세헌, 박찬호
  * @since 2022-08-01
- * @updated 1.친구 추천 목록 제외 필터 변경 API 구현
- *          - 2023-05-23 박찬호
+ * @updated 1.친구 추천 목록 제외 필터 조회 API 구현
+ *          - 2023-05-25 박찬호
  */
 
 @Slf4j
@@ -335,6 +335,7 @@ public class UserServiceImpl implements UserService {
     }
 
     /*필터 변경: 친구 추천 목록 제외*/
+    @Transactional
     public Boolean changeFilterExceptRecommend(String nickname) {
         return userPropertyRepository.findByNickname(nickname)
                 .orElseThrow(() -> new UserException(ExceptionCodeSet.USER_NOT_FOUND))
@@ -347,6 +348,15 @@ public class UserServiceImpl implements UserService {
         return userPropertyRepository.findByNickname(request.getNickname())
                 .orElseThrow(() -> new UserException(ExceptionCodeSet.USER_NOT_FOUND))
                 .changeFilterNotification(request.getNotification());
+    }
+
+    /*필터 조회: 친구 추천 제외*/
+    public UserResponseDto.Filter getFilterExceptRecommend(String nickname) {
+        return new UserResponseDto.Filter(
+                userPropertyRepository.findByNickname(nickname)
+                .orElseThrow(() -> new UserException(ExceptionCodeSet.USER_NOT_FOUND))
+                .getIsExceptRecommend()
+        );
     }
 
     /* 운동 기록의 상세 메시지 수정 */

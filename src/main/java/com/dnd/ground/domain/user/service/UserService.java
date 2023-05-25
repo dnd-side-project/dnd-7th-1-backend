@@ -10,8 +10,8 @@ import org.springframework.web.multipart.MultipartFile;
  * @description 회원 서비스 인터페이스
  * @author  박세헌, 박찬호
  * @since   2022-08-01
- * @updated 1.친구 추천 목록 제외 필터 변경 API 구현
- *          - 2023-05-23 박찬호
+ * @updated 1.친구 추천 목록 제외 필터 조회 API 구현
+ *          - 2023-05-25 박찬호
  */
 
 public interface UserService {
@@ -32,4 +32,5 @@ public interface UserService {
     UserResponseDto.dayEventList getDayEventList(UserRequestDto.DayEventList requestDto);
     UserResponseDto.Profile getUserProfile(String nickname);
     UserResponseDto.UInfo getPicture(String nickname);
+    UserResponseDto.Filter getFilterExceptRecommend(String nickname);
 }

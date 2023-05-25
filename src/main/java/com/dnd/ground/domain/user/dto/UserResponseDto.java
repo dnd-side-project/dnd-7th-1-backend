@@ -231,4 +231,11 @@ public class UserResponseDto {
         @ApiModelProperty(name = "회원 알람 필터: 챌린지 결과 알림", example = "true")
         private Boolean notiChallengeResult;
     }
+
+    @AllArgsConstructor
+    @NoArgsConstructor
+    @Getter
+    public static class Filter {
+        private Boolean value;
+    }
 }
