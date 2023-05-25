@@ -1,6 +1,8 @@
 package com.dnd.ground.global.auth.service;
 
 import com.amazonaws.util.StringUtils;
+import com.dnd.ground.domain.friend.Friend;
+import com.dnd.ground.domain.friend.repository.FriendRepository;
 import com.dnd.ground.domain.user.User;
 import com.dnd.ground.global.auth.dto.KakaoDto;
 import com.dnd.ground.domain.user.repository.UserPropertyRepository;
@@ -10,6 +12,7 @@ import com.dnd.ground.global.auth.vo.KakaoFriendVo;
 import com.dnd.ground.global.exception.AuthException;
 import com.dnd.ground.global.exception.ExceptionCodeSet;
 import com.dnd.ground.global.exception.KakaoException;
+import com.dnd.ground.global.exception.UserException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONArray;
@@ -35,8 +38,8 @@ import java.util.stream.Collectors;
  * @author 박찬호
  * @description 카카오를 비롯한 회원 정보와 관련한 서비스
  * @since 2022-08-23
- * @updated 1.카카오 연결끊기 API 구현
- *           - 2023.05.23 박찬호
+ * @updated 1.카카오 친구 목록 조회 API 수정
+ *           - 2023.05.25 박찬호
  */
 
 @RequiredArgsConstructor
@@ -46,6 +49,7 @@ public class KakaoService {
     WebClient webClient;
     private final UserRepository userRepository;
     private final UserPropertyRepository userPropertyRepository;
+    private final FriendRepository friendRepository;
 
     @Value("${kakao.REST_KEY}")
     private static String REST_API_KEY;
@@ -181,7 +185,7 @@ public class KakaoService {
 
 
     /*카카오 친구 목록 조회*/
-    public KakaoDto.KakaoFriendResponse getKakaoFriends(String token, Integer offset, Integer size) {
+    public KakaoDto.KakaoFriendResponse getKakaoFriends(String targetNickname, String token, Integer offset, Integer size) {
         KakaoDto.FriendsInfoFromKakao friendsInfoFromKakao = requestKakaoFriends(token, offset, size);
         List<KakaoDto.KakaoFriendResponse.KakaoFriend> friends = new ArrayList<>();
 
@@ -194,6 +198,18 @@ public class KakaoService {
                 .stream()
                 .collect(Collectors.toMap(KakaoFriendVo::getSocialId, KakaoFriendVo::getUser));
 
+        //친구 제외
+        List<User> allFriends = new ArrayList<>();
+        if (targetNickname != null) {
+            User target = userRepository.findByNickname(targetNickname)
+                    .orElseThrow(() -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
+
+            List<Friend> allFriendRelations = friendRepository.findAllFriends(target);
+            for (Friend friend : allFriendRelations) {
+                if (friend.getFriend() == target) allFriends.add(friend.getUser());
+                else if (friend.getUser() == target) allFriends.add(friend.getFriend());
+            }
+        }
 
         for (KakaoDto.FriendsInfoFromKakao.KakaoFriendElement element : friendsInfoFromKakao.getElements()) {
             String nickname = null;
@@ -201,12 +217,13 @@ public class KakaoService {
             String picturePath = StringUtils.isNullOrEmpty(element.getProfile_thumbnail_image()) ? DEFAULT_PATH : element.getProfile_thumbnail_image();
 
             User user = signedFriend.getOrDefault(element.getId(), null);
+            if (allFriends.contains(user)) continue;
+
             if (user != null) {
                 nickname = user.getNickname();
                 isSigned = true;
                 picturePath = user.getPicturePath();
             }
-
 
             friends.add(new KakaoDto.KakaoFriendResponse.KakaoFriend(
                     element.getUuid(),

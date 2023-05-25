@@ -24,8 +24,8 @@ import javax.validation.Valid;
  * @author 박찬호
  * @description 회원의 인증/인가 및 로그인 관련 컨트롤러
  * @since 2022-08-23
- * @updated 1. 회원 탈퇴 API 수정
- *          - 2023.05.23 박찬호
+ * @updated 1. 카카오 친구 목록 조회 API 수정
+ *          - 2023.05.25 박찬호
  */
 
 @Slf4j
@@ -96,9 +96,10 @@ public class AuthController {
     @GetMapping("/kakao/friend")
     @Operation(summary = "카카오 엑세스 토큰으로 카카오 친구 불러오기", description = "검수 전이라 팀 멤버들만 친구로 조회할 수 있음.")
     public ResponseEntity<KakaoDto.KakaoFriendResponse> getKakaoFriends(@RequestHeader("Kakao-Access-Token") String token,
+                                                                        @RequestParam(value = "nickname", required = false) String nickname,
                                                                         @RequestParam("offset") Integer offset,
                                                                         @RequestParam("size") Integer size) {
-        return ResponseEntity.ok(kakaoService.getKakaoFriends(token, offset, size));
+        return ResponseEntity.ok(kakaoService.getKakaoFriends(nickname, token, offset, size));
     }
 
     @PostMapping("/kakao/message/{uuid}")

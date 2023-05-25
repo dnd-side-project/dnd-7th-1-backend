@@ -16,8 +16,8 @@ import java.util.Optional;
  * @description 친구와 관련한 레포지토리
  * @author  박찬호
  * @since   2022-08-01
- * @updated 1.친구 삭제 벌크 쿼리 작성
- *          - 2023.05.17 박찬호
+ * @updated 1.모든 친구 관계 조회 쿼리 생성
+ *          - 2023.05.25 박찬호
  */
 
 public interface FriendRepository extends JpaRepository<Friend, Long>, FriendQueryRepository {
@@ -57,6 +57,7 @@ public interface FriendRepository extends JpaRepository<Friend, Long>, FriendQue
                 "AND f.status='WAIT'")
     Optional<Friend> findRequestFriend(@Param("user") User user, @Param("friend") User friend);
 
+    //네모두 친구 검색
     @Query(value = "SELECT u.nickname, u.picture_path as picturePath " +
             "FROM friend f " +
             "INNER JOIN user u " +
@@ -65,4 +66,11 @@ public interface FriendRepository extends JpaRepository<Friend, Long>, FriendQue
             "AND f.user_id = ?1 " +
             "AND MATCH(u.nickname) AGAINST(?2 IN BOOLEAN MODE)", nativeQuery = true)
     List<FriendSearchVo> searchWithFullTextIdx(@Param("userId") Long userId , @Param("keyword") String keyword);
+
+    //모든 친구 관계 조회
+    @Query("SELECT f " +
+            "FROM Friend f " +
+            "WHERE f.user = :user " +
+                "OR f.friend = :user")
+    List<Friend> findAllFriends(@Param("user") User user);
 }
