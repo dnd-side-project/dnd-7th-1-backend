@@ -31,8 +31,8 @@ import static com.dnd.ground.domain.friend.FriendStatus.*;
  * @description 친구와 관련된 서비스 구현체
  * @author 박찬호
  * @since 2022-08-01
- * @updated 1.친구 삭제 벌크 API 구현
- *          - 2023.05.17 박찬호
+ * @updated 1.네모두 친구 추천 API 수정
+ *          - 2023.05.25 박찬호
  */
 
 @Slf4j
@@ -95,7 +95,13 @@ public class FriendServiceImpl implements FriendService {
     /*네모두 추천 친구(거리가 가까운 순으로 추천)*/
     @Override
     public FriendResponseDto.RecommendResponse recommendNemoduFriends(String nickname, Location location, Double distance, Integer size) {
-        List<FriendRecommendPageInfo> result = friendRepository.recommendFriends(nickname, location, distance, size);
+        List<FriendRecommendPageInfo> result;
+
+        if (nickname != null) {
+            User user = userRepository.findByNickname(nickname).orElseThrow(() -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
+            result = friendRepository.recommendFriends(user, location, distance, size);
+        }
+        else result = friendRepository.recommendFriends(location, distance, size);
 
         boolean isLast = result.size() <= size;
         if (!isLast) result.remove(result.size() - 1);

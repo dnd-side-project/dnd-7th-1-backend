@@ -11,14 +11,14 @@ import lombok.Getter;
  * @description 네모두 추천 친구 조회를 위한 Request DTO
  * @author  박찬호
  * @since   2023.05.16
- * @updated 1. 클래스 생성
- *          - 2023.05.16 박찬호
+ * @updated 1. 친구 추천 닉네임 nullable
+ *          - 2023.05.25 박찬호
  */
 
 @Getter
 public class FriendRecommendRequestDto {
     public FriendRecommendRequestDto(String nickname, Double latitude, Double longitude, Double distance, Integer size) {
-        if (nickname == null ||latitude == null || longitude == null || size == null) throw new CommonException(ExceptionCodeSet.MISSING_REQUIRED_PARAM);
+        if (latitude == null || longitude == null || size == null) throw new CommonException(ExceptionCodeSet.MISSING_REQUIRED_PARAM);
         this.nickname = nickname;
         this.location = new Location(latitude, longitude);
         this.distance = distance;

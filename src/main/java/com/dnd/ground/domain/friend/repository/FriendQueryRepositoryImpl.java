@@ -19,9 +19,8 @@ import static com.dnd.ground.domain.user.QUserProperty.userProperty;
  * @description 친구 조회 레포지토리
  * @author  박찬호
  * @since   2023.02.15
- * @updated 1. 네모두 추천 친구 쿼리 구현
- *          2. 친구 목록 조회 쿼리 개선 (No offset)
- *          - 2023.05.16 박찬호
+ * @updated 1. 네모두 추천 친구 쿼리 분리
+ *          - 2023.05.25 박찬호
  */
 
 @RequiredArgsConstructor
@@ -34,7 +33,9 @@ public class FriendQueryRepositoryImpl implements FriendQueryRepository {
         return queryFactory
                 .select(friend1.friend)
                 .from(friend1)
-                .innerJoin(userProperty).fetchJoin()
+                .innerJoin(userProperty)
+                .on(friend1.friend.property.eq(userProperty))
+                .fetchJoin()
                 .where(
                         userEq(condition.getUser()),
                         friendEq(condition.getFriend()),
@@ -78,7 +79,7 @@ public class FriendQueryRepositoryImpl implements FriendQueryRepository {
     }
 
     @Override
-    public List<FriendRecommendPageInfo> recommendFriends(String nickname, Location location, Double distance, int size) {
+    public List<FriendRecommendPageInfo> recommendFriends(User target, Location location, Double distance, int size) {
         return queryFactory
                 .select(new QFriendRecommendPageInfo(
                         Expressions.stringTemplate("function('ST_DISTANCE_SPHERE', {0}, {1}, {2}, {3})",
@@ -88,17 +89,51 @@ public class FriendQueryRepositoryImpl implements FriendQueryRepository {
                         user.nickname,
                         user.picturePath)
                 )
+                .distinct()
+                .from(user)
+                .innerJoin(userProperty)
+                .on(user.property.eq(userProperty))
+                .leftJoin(friend1)
+                .on(
+                        friend1.user.ne(target),
+                        friend1.friend.ne(target)
+                )
+                .where(
+                        exceptMeAndFriend(target),
+                        distanceGoe(location, distance),
+                        userProperty.isExceptRecommend.eq(false)
+                )
+                .orderBy(Expressions.stringTemplate("function('ST_DISTANCE_SPHERE', {0}, {1}, {2}, {3})",
+                                        location.getLongitude(), location.getLatitude(),
+                                        user.longitude, user.latitude).castToNum(Double.class).asc(),
+                        user.nickname.asc()
+                )
+                .limit(size + 1)
+                .fetch();
+    }
+
+    @Override
+    public List<FriendRecommendPageInfo> recommendFriends(Location location, Double distance, int size) {
+        return queryFactory
+                .select(new QFriendRecommendPageInfo(
+                        Expressions.stringTemplate("function('ST_DISTANCE_SPHERE', {0}, {1}, {2}, {3})",
+                                        location.getLongitude(), location.getLatitude(), user.longitude, user.latitude)
+                                .castToNum(Double.class)
+                                .as("distance"),
+                        user.nickname,
+                        user.picturePath)
+                )
+                .distinct()
                 .from(user)
                 .innerJoin(userProperty)
                 .on(user.property.eq(userProperty))
                 .where(
                         distanceGoe(location, distance),
-                        userProperty.isExceptRecommend.eq(false),
-                        user.nickname.ne(nickname)
+                        userProperty.isExceptRecommend.eq(false)
                 )
                 .orderBy(Expressions.stringTemplate("function('ST_DISTANCE_SPHERE', {0}, {1}, {2}, {3})",
-                                        location.getLongitude(), location.getLatitude(),
-                                        user.longitude, user.latitude).asc(),
+                                location.getLongitude(), location.getLatitude(),
+                                user.longitude, user.latitude).castToNum(Double.class).asc(),
                         user.nickname.asc()
                 )
                 .limit(size + 1)
@@ -130,5 +165,14 @@ public class FriendQueryRepositoryImpl implements FriendQueryRepository {
 
     private BooleanExpression friendIdLt(Long id) {
         return id != null ? friend1.id.lt(id) : null;
+    }
+
+    private BooleanExpression exceptMeAndFriend(User target) {
+        return target != null ?
+                friend1.user.ne(target)
+                        .and(friend1.friend.ne(target))
+                        .and(user.ne(target))
+                :
+                null;
     }
 }
