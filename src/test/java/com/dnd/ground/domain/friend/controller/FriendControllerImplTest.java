@@ -4,6 +4,7 @@ import com.dnd.ground.common.DataProvider;
 import com.dnd.ground.domain.friend.Friend;
 import com.dnd.ground.domain.friend.FriendStatus;
 import com.dnd.ground.domain.friend.dto.FriendRequestDto;
+import com.dnd.ground.domain.friend.dto.FriendResponseDto;
 import com.dnd.ground.domain.friend.repository.FriendRepository;
 import com.dnd.ground.domain.user.User;
 import com.dnd.ground.domain.user.repository.UserRepository;
@@ -157,7 +158,7 @@ class FriendControllerImplTest {
 
             //THEN
             ErrorResponse result = mapper.readValue(response, ErrorResponse.class);
-            assertThat(result.getCode()).isEqualTo("3005");
+            assertThat(result.getCode()).isEqualTo(ExceptionCodeSet.FRIEND_DUPL.getCode());
         }
 
         @Test
@@ -186,7 +187,140 @@ class FriendControllerImplTest {
 
             //THEN
             ErrorResponse result = mapper.readValue(response, ErrorResponse.class);
-            assertThat(result.getCode()).isEqualTo("3001");
+            assertThat(result.getCode()).isEqualTo(ExceptionCodeSet.FRIEND_NOT_FOUND.getCode());
+        }
+    }
+
+    @Nested
+    @DisplayName("친구 응답하기")
+    class ResponseFriend {
+
+        @Test
+        @DisplayName("친구 응답 성공: 수락")
+        public void responseFriend_Success_Accept() throws Exception {
+            System.out.println(">>> 친구 응답 성공: 수락 <<< 테스트 START");
+
+            //GIVEN
+            String nickname = "nick1";
+            User user = userRepository.findByNickname(nickname)
+                    .orElseThrow(() -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
+
+            String friendNickname = "nick2";
+            User friend = userRepository.findByNickname(friendNickname)
+                    .orElseThrow(() -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
+
+            FriendRequestDto.Request request = new FriendRequestDto.Request(nickname, friendNickname);
+            String requestBody = mapper.writeValueAsString(request);
+
+            mvc
+                    .perform(post("/friend/request")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(requestBody)
+                    )
+                    .andExpect(status().isOk());
+
+            //WHEN
+            FriendRequestDto.Response responseRequest = new FriendRequestDto.Response(friendNickname, nickname, FriendStatus.ACCEPT);
+            String responseRequestBody = mapper.writeValueAsString(responseRequest);
+
+            String response = mvc
+                    .perform(post("/friend/response")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(responseRequestBody)
+                    )
+                    .andExpect(status().isOk())
+                    .andReturn()
+                    .getResponse()
+                    .getContentAsString();
+
+            //THEN
+            FriendResponseDto.ResponseResult result = mapper.readValue(response, FriendResponseDto.ResponseResult.class);
+            assertThat(result.getUserNickname()).isEqualTo(nickname);
+            assertThat(result.getFriendNickname()).isEqualTo(friendNickname);
+            assertThat(result.getStatus()).isEqualTo(FriendStatus.ACCEPT);
+
+            List<Friend> friendRelation = friendRepository.findFriendRelation(user, friend);
+            assertThat(friendRelation.size()).isEqualTo(2);
+
+            for (Friend f : friendRelation) {
+                assert (f.getUser() == user && f.getFriend() == friend && f.getStatus() == FriendStatus.ACCEPT)
+                        || (f.getFriend() == user && f.getUser() == friend && f.getStatus() == FriendStatus.ACCEPT);
+            }
+        }
+
+        @Test
+        @DisplayName("친구 응답 성공: 거절")
+        public void responseFriend_Success_Reject() throws Exception {
+            System.out.println(">>> 친구 응답 성공: 거절 <<< 테스트 START");
+
+            //GIVEN
+            String nickname = "nick1";
+            User user = userRepository.findByNickname(nickname)
+                    .orElseThrow(() -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
+
+            String friendNickname = "nick2";
+            User friend = userRepository.findByNickname(friendNickname)
+                    .orElseThrow(() -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
+
+            FriendRequestDto.Request request = new FriendRequestDto.Request(nickname, friendNickname);
+            String requestBody = mapper.writeValueAsString(request);
+
+            mvc
+                    .perform(post("/friend/request")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(requestBody)
+                    )
+                    .andExpect(status().isOk());
+
+            //WHEN
+            FriendRequestDto.Response responseRequest = new FriendRequestDto.Response(friendNickname, nickname, FriendStatus.REJECT);
+            String responseRequestBody = mapper.writeValueAsString(responseRequest);
+
+            String response = mvc
+                    .perform(post("/friend/response")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(responseRequestBody)
+                    )
+                    .andExpect(status().isOk())
+                    .andReturn()
+                    .getResponse()
+                    .getContentAsString();
+
+            //THEN
+            FriendResponseDto.ResponseResult result = mapper.readValue(response, FriendResponseDto.ResponseResult.class);
+            assertThat(result.getUserNickname()).isEqualTo(nickname);
+            assertThat(result.getFriendNickname()).isEqualTo(friendNickname);
+
+            List<Friend> friendRelation = friendRepository.findFriendRelation(user, friend);
+            assertThat(friendRelation.isEmpty()).isTrue();
+        }
+
+        @Test
+        @DisplayName("친구 응답 실패: 친구 요청 없이 응답")
+        void requestFriend_Fail_InvalidFriend() throws Exception {
+            System.out.println(">>> 친구 응답 실패: 친구 요청 없이 응답 <<< 테스트 START");
+
+            //GIVEN
+            String nickname = "nick1";
+            String friendNickname = "nick2";
+
+            //WHEN
+            FriendRequestDto.Response responseRequest = new FriendRequestDto.Response(friendNickname, nickname, FriendStatus.ACCEPT);
+            String responseRequestBody = mapper.writeValueAsString(responseRequest);
+
+            String response = mvc
+                    .perform(post("/friend/response")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(responseRequestBody)
+                    )
+                    .andExpect(status().isBadRequest())
+                    .andReturn()
+                    .getResponse()
+                    .getContentAsString();
+
+            //THEN
+            ErrorResponse result = mapper.readValue(response, ErrorResponse.class);
+            assertThat(result.getCode()).isEqualTo(ExceptionCodeSet.FRIEND_NOT_FOUND_REQ.getCode());
         }
     }
 }
