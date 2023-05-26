@@ -11,8 +11,8 @@ import javax.persistence.*;
  * @description 예약된 푸시 알람의 파라미터 (data 값)
  * @author  박찬호
  * @since   2023-04-22
- * @updated 1.예약 푸시 알람에 대해 Key-value 형태로 파라미터 변경에 유연하게 대처
- *          - 2023-05-13 박찬호
+ * @updated 1.테이블 컬럼 이름 변경
+ *          - 2023-05-26 박찬호
  */
 
 @Entity
@@ -24,7 +24,7 @@ public class PushNotificationParam {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "params", nullable = false)
+    @JoinColumn(name = "notification_id", nullable = false)
     private PushNotification notification;
 
     @Enumerated(EnumType.STRING)

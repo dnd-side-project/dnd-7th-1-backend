@@ -1,5 +1,6 @@
 package com.dnd.ground.global.notification;
 
+import com.dnd.ground.domain.user.User;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -16,8 +17,8 @@ import java.util.Map;
  * @description 푸시 알람 기록용 엔티티
  * @author  박찬호
  * @since   2023-03-20
- * @updated 1.알람함 비우기 API에 따른 isDeleted 필드 추가
- *          - 2023-05-24 박찬호
+ * @updated 1.대상 닉네임 -> 회원 엔티티 연관 관계 설정
+ *          - 2023-05-26 박찬호
  */
 
 @Entity
@@ -44,8 +45,9 @@ public class PushNotification {
     @Enumerated(EnumType.STRING)
     private NotificationStatus status;
 
-    @Column(name="target_nickname", nullable = false)
-    private String nickname;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
     @Column(name="is_read", nullable = false)
     private Boolean isRead;
@@ -62,14 +64,14 @@ public class PushNotification {
 
     public PushNotification(String messageId, String title, String content,
                             LocalDateTime created, LocalDateTime reserved,
-                            NotificationStatus status, String nickname, PushNotificationType type) {
+                            NotificationStatus status, User user, PushNotificationType type) {
         this.messageId = messageId;
         this.title = title;
         this.content = content;
         this.created = created;
         this.reserved = reserved;
         this.status = status;
-        this.nickname = nickname;
+        this.user = user;
         this.params = new ArrayList<>();
         this.type = type;
         this.isRead = false;
