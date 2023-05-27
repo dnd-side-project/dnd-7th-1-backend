@@ -13,9 +13,8 @@ import java.util.List;
  * @description 친구와 관련한 정보 조회용 Response DTO
  * @author  박찬호
  * @since   2022-08-02
- * @updated 1. @Data 어노테이션 삭제
- *          2.@QueryProjection 의존성 제거
- *          - 2023.05.16 박찬호
+ * @updated 1.결과 확인을 위해 FInfo 클래스 toString 생성
+ *          - 2023.05.27 박찬호
  */
 
 @Getter
@@ -43,6 +42,14 @@ public class FriendResponseDto {
 
         @ApiModelProperty(value="프로필 사진 URI(카카오 프로필 사용 시 kakao/카카오회원번호)", example="http:\\/\\/k.kakaocdn.net\\/dn\\/uQVeo\\/btrLgESJyjg\\/Pff3k36lRWkQ98ebAlexv1\\/img_640x640.jpg")
         private String picturePath;
+
+        @Override
+        public String toString() {
+            return "FInfo{" +
+                    "nickname='" + nickname + '\'' +
+                    ", picturePath='" + picturePath + '\'' +
+                    '}';
+        }
     }
 
     /*회원 프로필 관련 DTO*/

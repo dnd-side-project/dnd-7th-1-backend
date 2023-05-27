@@ -19,10 +19,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.dnd.ground.domain.friend.FriendStatus.*;
@@ -31,8 +28,9 @@ import static com.dnd.ground.domain.friend.FriendStatus.*;
  * @description 친구와 관련된 서비스 구현체
  * @author 박찬호
  * @since 2022-08-01
- * @updated 1.네모두 친구 추천 API 수정
- *          - 2023.05.25 박찬호
+ * @updated 1.네모두 추천 친구 닉네임 유무에 따른 로직 추가
+ *          2.친구 요청 응답 변수명 수정
+ *          - 2023.05.27 박찬호
  */
 
 @Slf4j
@@ -95,13 +93,22 @@ public class FriendServiceImpl implements FriendService {
     /*네모두 추천 친구(거리가 가까운 순으로 추천)*/
     @Override
     public FriendResponseDto.RecommendResponse recommendNemoduFriends(String nickname, Location location, Double distance, Integer size) {
-        List<FriendRecommendPageInfo> result;
+        List<FriendRecommendPageInfo> result = friendRepository.recommendFriends(location, distance, size);
+        Set<String> friends = new HashSet<>();
 
         if (nickname != null) {
-            User user = userRepository.findByNickname(nickname).orElseThrow(() -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
-            result = friendRepository.recommendFriends(user, location, distance, size);
+            Optional<User> nicknameOpt = userRepository.findByNickname(nickname);
+            if (nicknameOpt.isPresent()) {
+                User user = nicknameOpt.get();
+                friends.add(nickname);
+
+                List<Friend> allFriendRelations = friendRepository.findAllFriends(user);
+                for (Friend friend : allFriendRelations) {
+                    if (friend.getFriend() == user) friends.add(friend.getUser().getNickname());
+                    else if (friend.getUser() == user) friends.add(friend.getFriend().getNickname());
+                }
+            }
         }
-        else result = friendRepository.recommendFriends(location, distance, size);
 
         boolean isLast = result.size() <= size;
         if (!isLast) result.remove(result.size() - 1);
@@ -109,9 +116,10 @@ public class FriendServiceImpl implements FriendService {
 
         List<FriendResponseDto.FInfo> content = result.stream()
                 .map(f -> new FriendResponseDto.FInfo(f.getNickname(), f.getPicturePath()))
+                .filter(f -> !friends.contains(f.getNickname()))
                 .collect(Collectors.toList());
 
-        return new FriendResponseDto.RecommendResponse(content, result.size(), isLast, offset);
+        return new FriendResponseDto.RecommendResponse(content, content.size(), isLast, offset);
     }
 
     /*친구 검색*/
@@ -188,16 +196,16 @@ public class FriendServiceImpl implements FriendService {
 
     /*친구 요청 수락, 거절 등에 대한 처리*/
     @Transactional
-    public FriendResponseDto.ResponseResult responseFriend(String userNickname, String friendNickname, FriendStatus status) {
-        User user = userRepository.findByNickname(userNickname)
+    public FriendResponseDto.ResponseResult responseFriend(String receiverNickname, String senderNickname, FriendStatus status) {
+        User receiver = userRepository.findByNickname(receiverNickname)
                 .orElseThrow(() -> new UserException(ExceptionCodeSet.USER_NOT_FOUND)
         );
 
-        User friend = userRepository.findByNicknameWithProperty(friendNickname)
+        User sender = userRepository.findByNicknameWithProperty(senderNickname)
                 .orElseThrow(() -> new FriendException(ExceptionCodeSet.FRIEND_NOT_FOUND)
         );
 
-        Friend friendRelation = friendRepository.findRequestFriend(user, friend)
+        Friend friendRelation = friendRepository.findRequestFriend(receiver, sender)
                 .orElseThrow(() -> new FriendException(ExceptionCodeSet.FRIEND_NOT_FOUND_REQ)
         );
 
@@ -205,15 +213,15 @@ public class FriendServiceImpl implements FriendService {
             friendRelation.updateStatus(ACCEPT);
             friendRepository.save(
                     Friend.builder()
-                            .user(user)
-                            .friend(friend)
+                            .user(receiver)
+                            .friend(sender)
                             .status(ACCEPT)
                             .build()
             );
 
             pushNotificationPublisher.publishEvent(new NotificationForm(
-                    new ArrayList<>(Collections.singletonList(friend)),
-                    List.of(user.getNickname()),
+                    new ArrayList<>(Collections.singletonList(sender)),
+                    List.of(receiver.getNickname()),
                     null,
                     NotificationMessage.FRIEND_ACCEPT)
             );
@@ -221,7 +229,7 @@ public class FriendServiceImpl implements FriendService {
             friendRepository.delete(friendRelation);
         } else throw new FriendException(ExceptionCodeSet.FRIEND_INVALID_STATUS);
 
-        return new FriendResponseDto.ResponseResult(user.getNickname(), friend.getNickname(), friendRelation.getStatus());
+        return new FriendResponseDto.ResponseResult(sender.getNickname(), receiver.getNickname(), friendRelation.getStatus());
     }
 
     /*친구 삭제*/

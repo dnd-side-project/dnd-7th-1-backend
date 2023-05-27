@@ -4,6 +4,7 @@ import com.dnd.ground.domain.friend.FriendStatus;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
@@ -13,8 +14,8 @@ import java.util.List;
  * @description 친구와 관련한 정보 조회용 Request DTO
  * @author  박찬호
  * @since   2022.10.10
- * @updated 1.친구 삭제 벌크 API를 위한 DTO 생성
- *          - 2023.05.17 박찬호
+ * @updated 1.테스트를 위해 일부 DTO 생성자 추가
+ *          - 2023.05.27 박찬호
  */
 
 public class FriendRequestDto {
@@ -35,6 +36,8 @@ public class FriendRequestDto {
 
     /*친구 요청을 위한 Request DTO*/
     @Getter
+    @AllArgsConstructor
+    @NoArgsConstructor
     public static class Request {
         @ApiModelProperty(value="본인 닉네임(요청 하는 사람)", example="NickA")
         private String userNickname;
@@ -45,6 +48,8 @@ public class FriendRequestDto {
 
     /*친구 요청 응답을 위한 Request DTO*/
     @Getter
+    @AllArgsConstructor
+    @NoArgsConstructor
     public static class Response {
         @ApiModelProperty(value="본인 닉네임(요청 받는 사람)", example="NickA")
         private String userNickname;

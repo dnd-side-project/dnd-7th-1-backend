@@ -19,8 +19,8 @@ import static com.dnd.ground.domain.user.QUserProperty.userProperty;
  * @description 친구 조회 레포지토리
  * @author  박찬호
  * @since   2023.02.15
- * @updated 1. 네모두 추천 친구 쿼리 분리
- *          - 2023.05.25 박찬호
+ * @updated 1. 추천 친구 쿼리 수정
+ *          - 2023.05.27 박찬호
  */
 
 @RequiredArgsConstructor
@@ -99,8 +99,8 @@ public class FriendQueryRepositoryImpl implements FriendQueryRepository {
                         friend1.friend.ne(target)
                 )
                 .where(
-                        exceptMeAndFriend(target),
-                        distanceGoe(location, distance),
+                        exceptMe(target),
+                        distanceGt(location, distance),
                         userProperty.isExceptRecommend.eq(false)
                 )
                 .orderBy(Expressions.stringTemplate("function('ST_DISTANCE_SPHERE', {0}, {1}, {2}, {3})",
@@ -128,7 +128,7 @@ public class FriendQueryRepositoryImpl implements FriendQueryRepository {
                 .innerJoin(userProperty)
                 .on(user.property.eq(userProperty))
                 .where(
-                        distanceGoe(location, distance),
+                        distanceGt(location, distance),
                         userProperty.isExceptRecommend.eq(false)
                 )
                 .orderBy(Expressions.stringTemplate("function('ST_DISTANCE_SPHERE', {0}, {1}, {2}, {3})",
@@ -152,13 +152,13 @@ public class FriendQueryRepositoryImpl implements FriendQueryRepository {
         return status != null ? friend1.status.eq(status) : null;
     }
 
-    private BooleanExpression distanceGoe(Location location, Double distance) {
+    private BooleanExpression distanceGt(Location location, Double distance) {
         return distance != null ?
                 Expressions.stringTemplate("function('ST_DISTANCE_SPHERE', {0}, {1}, {2}, {3})",
                                 location.getLongitude(), location.getLatitude(),
                                 user.longitude, user.latitude)
                         .castToNum(Double.class)
-                        .goe(distance)
+                        .gt(distance)
                 :
                 null;
     }
@@ -167,12 +167,7 @@ public class FriendQueryRepositoryImpl implements FriendQueryRepository {
         return id != null ? friend1.id.lt(id) : null;
     }
 
-    private BooleanExpression exceptMeAndFriend(User target) {
-        return target != null ?
-                friend1.user.ne(target)
-                        .and(friend1.friend.ne(target))
-                        .and(user.ne(target))
-                :
-                null;
+    private BooleanExpression exceptMe(User target) {
+        return target != null ? user.ne(target) : null;
     }
 }

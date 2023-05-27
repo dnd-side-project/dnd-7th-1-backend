@@ -19,7 +19,7 @@ public interface FriendService {
     FriendResponseDto getFriends(String nickname, Long offset, Integer size);
     List<User> getFriends(User user);
     Boolean requestFriend(String userNickname, String friendNickname);
-    FriendResponseDto.ResponseResult responseFriend(String userNickname, String friendNickname, FriendStatus status);
+    FriendResponseDto.ResponseResult responseFriend(String receiverNickname, String senderNickname, FriendStatus status);
     Boolean deleteFriend(String userNickname, String friendNickname);
     void deleteFriendAll(User user);
     FriendStatus getFriendStatus(User user, User friend);
