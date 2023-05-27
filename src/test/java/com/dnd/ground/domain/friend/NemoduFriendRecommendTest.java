@@ -1,8 +1,8 @@
-package com.dnd.ground.domain.friend.service;
+package com.dnd.ground.domain.friend;
 
 import com.dnd.ground.common.DataProvider;
-import com.dnd.ground.domain.friend.FriendStatus;
 import com.dnd.ground.domain.friend.dto.FriendResponseDto;
+import com.dnd.ground.domain.friend.service.FriendService;
 import com.dnd.ground.domain.user.LoginType;
 import com.dnd.ground.domain.user.User;
 import com.dnd.ground.domain.user.UserProperty;

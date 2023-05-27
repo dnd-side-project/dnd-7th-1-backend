@@ -1,8 +1,6 @@
-package com.dnd.ground.domain.friend.controller;
+package com.dnd.ground.domain.friend;
 
 import com.dnd.ground.common.DataProvider;
-import com.dnd.ground.domain.friend.Friend;
-import com.dnd.ground.domain.friend.FriendStatus;
 import com.dnd.ground.domain.friend.dto.FriendRequestDto;
 import com.dnd.ground.domain.friend.dto.FriendResponseDto;
 import com.dnd.ground.domain.friend.repository.FriendRepository;
@@ -37,9 +35,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 @AutoConfigureMockMvc
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
-@DisplayName("친구: FriendControllerImpl Test")
+@DisplayName("친구: 친구 요청 및 응답 테스트")
 @Transactional
-class FriendControllerImplTest {
+class FriendCreateTest {
 
     @Autowired
     DataProvider dataProvider;
@@ -85,7 +83,6 @@ class FriendControllerImplTest {
 
             FriendRequestDto.Request request = new FriendRequestDto.Request(nickname, friendNickname);
             String requestBody = mapper.writeValueAsString(request);
-            System.out.println("request body: " + requestBody);
 
             //WHEN
             String response = mvc
@@ -136,7 +133,6 @@ class FriendControllerImplTest {
 
             FriendRequestDto.Request request = new FriendRequestDto.Request(nickname, friendNickname);
             String requestBody = mapper.writeValueAsString(request);
-            System.out.println("request body: " + requestBody);
 
             mvc
                     .perform(post("/friend/request")
@@ -172,7 +168,6 @@ class FriendControllerImplTest {
 
             FriendRequestDto.Request request = new FriendRequestDto.Request(nickname, invalidNickname);
             String requestBody = mapper.writeValueAsString(request);
-            System.out.println("request body: " + requestBody);
 
             //WHEN
             String response = mvc
