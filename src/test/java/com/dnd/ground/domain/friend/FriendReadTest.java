@@ -1,14 +1,10 @@
 package com.dnd.ground.domain.friend;
 
 import com.dnd.ground.common.DataProvider;
-import com.dnd.ground.domain.friend.FriendStatus;
 import com.dnd.ground.domain.friend.dto.FriendResponseDto;
-import com.dnd.ground.domain.friend.repository.FriendRepository;
 import com.dnd.ground.domain.friend.service.FriendService;
-import com.dnd.ground.domain.user.repository.UserRepository;
 import com.dnd.ground.global.exception.ErrorResponse;
 import com.dnd.ground.global.exception.ExceptionCodeSet;
-import com.dnd.ground.global.notification.repository.NotificationRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -48,16 +44,7 @@ public class FriendReadTest {
     MockMvc mvc;
 
     @Autowired
-    FriendRepository friendRepository;
-
-    @Autowired
     FriendService friendService;
-
-    @Autowired
-    UserRepository userRepository;
-
-    @Autowired
-    NotificationRepository notificationRepository;
 
     static final String NICKNAME = "nick1";
     static final List<String> requestMeFriends = new ArrayList<>(); //나에게 요청을 보낸 친구들
@@ -324,4 +311,95 @@ public class FriendReadTest {
         }
     }
 
+    @Nested
+    @DisplayName("친구 목록 조회")
+    class readFriendList {
+
+        @Test
+        @DisplayName("친구 목록 조회 성공")
+        void readFriendList_Success() throws Exception {
+            System.out.println(">>> 친구 목록 조회 성공 <<< 테스트 START");
+
+            //GIVEN
+            MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+            params.add("nickname", NICKNAME);
+            params.add("size", "5");
+
+            //WHEN + THEN (페이지 끝까지)
+            long lastOffset = Long.MAX_VALUE;
+            FriendResponseDto result;
+            do {
+                String response = mvc
+                        .perform(get("/friend/list")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .params(params)
+                        )
+                        .andExpect(status().isOk())
+                        .andReturn()
+                        .getResponse()
+                        .getContentAsString();
+
+                result = mapper.readValue(response, FriendResponseDto.class);
+
+                List<FriendResponseDto.FInfo> infos = result.getInfos();
+                for (FriendResponseDto.FInfo info : infos) {
+                    System.out.println(">>> " + info.toString());
+
+                    assertThat(friends.contains(info.getNickname())).isTrue();
+                    assertThat(requestMeFriends.contains(info.getNickname())).isFalse();
+                    assertThat(requestFriends.contains(info.getNickname())).isFalse();
+                }
+
+                if (!result.getIsLast()) {
+                    params.remove("offset");
+                    params.add("offset", String.valueOf(result.getOffset()));
+                    assertThat(result.getOffset()).isLessThan(lastOffset); //내림차순 정렬 확인
+                    lastOffset = result.getOffset();
+                }
+            } while (!result.getIsLast());
+        }
+
+        @Test
+        @DisplayName("친구 목록 실패: 유효하지 않은 닉네임")
+        void readFriendList_Fail_InvalidNickname() throws Exception {
+            System.out.println(">>> 친구 목록 실패: 유효하지 않은 닉네임 <<< 테스트 START");
+
+            //GIVEN
+            MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+            params.add("nickname", "-");
+            params.add("size", "5");
+
+            //WHEN
+            String response = mvc
+                    .perform(get("/friend/list")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .params(params)
+                    )
+                    .andExpect(status().isBadRequest())
+                    .andReturn()
+                    .getResponse()
+                    .getContentAsString();
+
+            //THEN
+            ErrorResponse result = mapper.readValue(response, ErrorResponse.class);
+            assertThat(result.getCode()).isEqualTo(ExceptionCodeSet.USER_NOT_FOUND.getCode());
+        }
+
+        @Test
+        @DisplayName("친구 목록 조회 실패: 필수 파라미터 누락")
+        void readFriendList_Fail_EmptyRequiredParam() throws Exception {
+            System.out.println(">>> 친구 목록 실패: 필수 파라미터 누락 <<< 테스트 START");
+
+            //GIVEN
+            MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+            params.add("nickname", NICKNAME);
+
+            //WHEN + THEN
+            mvc.perform(get("/friend/list")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .params(params)
+                    )
+                    .andExpect(status().isBadRequest());
+        }
+    }
 }
