@@ -3,6 +3,8 @@ package com.dnd.ground.domain.challenge;
 import com.dnd.ground.common.DataProvider;
 import com.dnd.ground.domain.challenge.dto.ChallengeCreateRequestDto;
 import com.dnd.ground.domain.challenge.dto.ChallengeCreateResponseDto;
+import com.dnd.ground.domain.challenge.dto.ChallengeRequestDto;
+import com.dnd.ground.domain.challenge.dto.ChallengeResponseDto;
 import com.dnd.ground.domain.challenge.repository.ChallengeRepository;
 import com.dnd.ground.domain.challenge.repository.UserChallengeRepository;
 import com.dnd.ground.domain.challenge.service.ChallengeService;
@@ -277,6 +279,226 @@ class ChallengeCreateTest {
             //THEN
             ErrorResponse result = mapper.readValue(response, ErrorResponse.class);
             assertThat(result.getCode()).isEqualTo(ExceptionCodeSet.CHALLENGE_DATE_INVALID.getCode());
+        }
+    }
+
+    /**
+     * 챌린지 수락&거절은 엔드포인트만 다를 뿐, Request Body, Service 게층 메소드가 동일하다.
+     * 따라서 에러 테스트는 수락 API를 기준으로 하고, 추후 변경사항이 생기는 경우 추가로 테스트 코드를 작성한다.
+     */
+    @Nested
+    @DisplayName("챌린지 수락 & 거절")
+    class ResponseChallenge {
+
+        @Test
+        @DisplayName("챌린지 수락 성공")
+        void readyChallenge_Success_Ready() throws Exception {
+            System.out.println(">>> 챌린지 수락 성공 <<< 테스트 START");
+
+            //GIVEN
+            String masterNickname = "nick1";
+            String member1Nickname = "nick2";
+            String member2Nickname = "nick3";
+
+            Set<String> members = new HashSet<>();
+            members.add(member1Nickname);
+            members.add(member2Nickname);
+
+            String challengeName = "챌린지 수락 테스트";
+            String message = "챌린지 수락 테스트입니다.";
+            LocalDateTime started = LocalDateTime.of(LocalDate.now().plusDays(1), LocalTime.MIN);
+            ChallengeType type = ChallengeType.WIDEN;
+
+            //챌린지 생성
+            challengeService.createChallenge(new ChallengeCreateRequestDto(masterNickname, challengeName, message, started, type, members));
+            ChallengeResponseDto.Invite invitedChallenge = challengeService.findInviteChallenge(member1Nickname).get(0);
+
+            //WHEN
+            ChallengeRequestDto.CInfo request = new ChallengeRequestDto.CInfo(invitedChallenge.getUuid(), member1Nickname);
+            String requestBody = mapper.writeValueAsString(request);
+
+            String response = mvc.perform(post("/challenge/accept")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(requestBody)
+                    )
+                    .andExpect(status().isOk())
+                    .andReturn()
+                    .getResponse()
+                    .getContentAsString();
+
+            //THEN
+            ChallengeResponseDto.Status result = mapper.readValue(response, ChallengeResponseDto.Status.class);
+            assertThat(result.getStatus()).isEqualTo(ChallengeStatus.READY);
+        }
+
+        @Test
+        @DisplayName("챌린지 거절 성공")
+        void readyChallenge_Success_Reject() throws Exception {
+            System.out.println(">>> 챌린지 거절 성공 <<< 테스트 START");
+
+            //GIVEN
+            String masterNickname = "nick1";
+            String member1Nickname = "nick2";
+            String member2Nickname = "nick3";
+
+            Set<String> members = new HashSet<>();
+            members.add(member1Nickname);
+            members.add(member2Nickname);
+
+            String challengeName = "챌린지 거절 테스트";
+            String message = "챌린지 거절 테스트입니다.";
+            LocalDateTime started = LocalDateTime.of(LocalDate.now().plusDays(1), LocalTime.MIN);
+            ChallengeType type = ChallengeType.WIDEN;
+
+            //챌린지 생성
+            challengeService.createChallenge(new ChallengeCreateRequestDto(masterNickname, challengeName, message, started, type, members));
+            ChallengeResponseDto.Invite invitedChallenge = challengeService.findInviteChallenge(member1Nickname).get(0);
+
+            //WHEN
+            ChallengeRequestDto.CInfo request = new ChallengeRequestDto.CInfo(invitedChallenge.getUuid(), member1Nickname);
+            String requestBody = mapper.writeValueAsString(request);
+
+            String response = mvc.perform(post("/challenge/reject")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(requestBody)
+                    )
+                    .andExpect(status().isOk())
+                    .andReturn()
+                    .getResponse()
+                    .getContentAsString();
+
+            //THEN
+            ChallengeResponseDto.Status result = mapper.readValue(response, ChallengeResponseDto.Status.class);
+            assertThat(result.getStatus()).isEqualTo(ChallengeStatus.REJECT);
+        }
+
+        @Test
+        @DisplayName("챌린지 수락 실패: 참여하지 않는 챌린지")
+        void readyChallenge_Fail_NotInviteChallenge() throws Exception {
+            System.out.println(">>> 챌린지 수락 실패: 참여하지 않는 챌린지 <<< 테스트 START");
+
+            //GIVEN
+            String masterNickname = "nick1";
+            String member1Nickname = "nick2";
+            String member2Nickname = "nick3";
+
+            String notMemberNickname = "nick4";
+
+            Set<String> members = new HashSet<>();
+            members.add(member1Nickname);
+            members.add(member2Nickname);
+
+            String challengeName = "챌린지 수락 실패 테스트";
+            String message = "챌린지 수락 실패 테스트입니다.";
+            LocalDateTime started = LocalDateTime.of(LocalDate.now().plusDays(1), LocalTime.MIN);
+            ChallengeType type = ChallengeType.WIDEN;
+
+            //챌린지 생성
+            challengeService.createChallenge(new ChallengeCreateRequestDto(masterNickname, challengeName, message, started, type, members));
+            ChallengeResponseDto.Invite invitedChallenge = challengeService.findInviteChallenge(member1Nickname).get(0);
+
+            //WHEN
+            ChallengeRequestDto.CInfo request = new ChallengeRequestDto.CInfo(invitedChallenge.getUuid(), notMemberNickname);
+            String requestBody = mapper.writeValueAsString(request);
+
+            String response = mvc.perform(post("/challenge/accept")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(requestBody)
+                    )
+                    .andExpect(status().isBadRequest())
+                    .andReturn()
+                    .getResponse()
+                    .getContentAsString();
+
+            //THEN
+            ErrorResponse result = mapper.readValue(response, ErrorResponse.class);
+            assertThat(result.getCode()).isEqualTo(ExceptionCodeSet.NOT_FOUND_UC.getCode());
+        }
+
+        @Test
+        @DisplayName("챌린지 수락 실패: 존재하지 않는 회원")
+        void readyChallenge_Fail_InvalidUser() throws Exception {
+            System.out.println(">>> 챌린지 수락 실패: 존재하지 않는 회원 <<< 테스트 START");
+
+            //GIVEN
+            String masterNickname = "nick1";
+            String member1Nickname = "nick2";
+            String member2Nickname = "nick3";
+
+            String invalidNickname = "-";
+
+            Set<String> members = new HashSet<>();
+            members.add(member1Nickname);
+            members.add(member2Nickname);
+
+            String challengeName = "챌린지 수락 실패 테스트";
+            String message = "챌린지 수락 실패 테스트입니다.";
+            LocalDateTime started = LocalDateTime.of(LocalDate.now().plusDays(1), LocalTime.MIN);
+            ChallengeType type = ChallengeType.WIDEN;
+
+            //챌린지 생성
+            challengeService.createChallenge(new ChallengeCreateRequestDto(masterNickname, challengeName, message, started, type, members));
+            ChallengeResponseDto.Invite invitedChallenge = challengeService.findInviteChallenge(member1Nickname).get(0);
+
+            //WHEN
+            ChallengeRequestDto.CInfo request = new ChallengeRequestDto.CInfo(invitedChallenge.getUuid(), invalidNickname);
+            String requestBody = mapper.writeValueAsString(request);
+
+            String response = mvc.perform(post("/challenge/accept")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(requestBody)
+                    )
+                    .andExpect(status().isBadRequest())
+                    .andReturn()
+                    .getResponse()
+                    .getContentAsString();
+
+            //THEN
+            ErrorResponse result = mapper.readValue(response, ErrorResponse.class);
+            assertThat(result.getCode()).isEqualTo(ExceptionCodeSet.USER_NOT_FOUND.getCode());
+        }
+
+        @Test
+        @DisplayName("챌린지 수락 실패: 존재하지 않는 챌린지")
+        void readyChallenge_Fail_InvalidUuid() throws Exception {
+            System.out.println(">>> 챌린지 수락 실패: 존재하지 않는 챌린지 <<< 테스트 START");
+
+            //GIVEN
+            String masterNickname = "nick1";
+            String member1Nickname = "nick2";
+            String member2Nickname = "nick3";
+
+            String invalidUuid = "-";
+
+            Set<String> members = new HashSet<>();
+            members.add(member1Nickname);
+            members.add(member2Nickname);
+
+            String challengeName = "챌린지 수락 실패 테스트";
+            String message = "챌린지 수락 실패 테스트입니다.";
+            LocalDateTime started = LocalDateTime.of(LocalDate.now().plusDays(1), LocalTime.MIN);
+            ChallengeType type = ChallengeType.WIDEN;
+
+            //챌린지 생성
+            challengeService.createChallenge(new ChallengeCreateRequestDto(masterNickname, challengeName, message, started, type, members));
+            challengeService.findInviteChallenge(member1Nickname).get(0);
+
+            //WHEN
+            ChallengeRequestDto.CInfo request = new ChallengeRequestDto.CInfo(invalidUuid, member1Nickname);
+            String requestBody = mapper.writeValueAsString(request);
+
+            String response = mvc.perform(post("/challenge/accept")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(requestBody)
+                    )
+                    .andExpect(status().isBadRequest())
+                    .andReturn()
+                    .getResponse()
+                    .getContentAsString();
+
+            //THEN
+            ErrorResponse result = mapper.readValue(response, ErrorResponse.class);
+            assertThat(result.getCode()).isEqualTo(ExceptionCodeSet.NOT_FOUND_UC.getCode());
         }
     }
 }
