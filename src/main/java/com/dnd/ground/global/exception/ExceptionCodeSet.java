@@ -8,8 +8,8 @@ import org.springframework.http.HttpStatus;
  * @description 에러 코드 구현체
  * @author  박찬호
  * @since   2022-08-24
- * @updated 1.카카오 API 관련 예외 코드 추가
- *          -2023.05.19 박찬호
+ * @updated 1.예외 코드 생성
+ *          -2023.05.30 박찬호
  */
 
 @RequiredArgsConstructor
@@ -44,6 +44,7 @@ public enum ExceptionCodeSet {
     TOKEN_EMPTY(HttpStatus.BAD_REQUEST, "2017", "토큰이 존재하지 않습니다."),
     REFRESH_TOKEN_INVALID(HttpStatus.BAD_REQUEST, "2018", "리프레시 토큰이 유효하지 않습니다."),
     CREDENTIAL_FAIL(HttpStatus.UNAUTHORIZED, "2019", "인증에 실패했습니다."),
+    SOCIAL_ID_INVALID(HttpStatus.BAD_REQUEST, "2020", "OAuth ID가 올바르지 않습니다."),
 
 
     //친구
@@ -60,7 +61,6 @@ public enum ExceptionCodeSet {
     CHALLENGE_DATE_INVALID(HttpStatus.BAD_REQUEST, "4001", "챌린지 시작 날짜는 오늘 이후부터 가능합니다."),
     CHALLENGE_INVALID(HttpStatus.BAD_REQUEST, "4002", "챌린지 정보가 올바르지 않습니다."),
     CHALLENGE_TYPE_INVALID(HttpStatus.BAD_REQUEST, "4003", "챌린지 종류가 올바르지 않습니다."),
-    CHALLENGE_UUID_INVALID(HttpStatus.BAD_REQUEST, "4004", "챌린지 UUID가 올바르지 않습니다."),
 
     //회원-챌린지
     USER_CHALLENGE_NOT_FOUND(HttpStatus.BAD_REQUEST, "4500", "챌린지에 참가하는 회원이 아닙니다."),
@@ -89,13 +89,15 @@ public enum ExceptionCodeSet {
     INTERNAL(HttpStatus.INTERNAL_SERVER_ERROR, "6006", "FCM 서버에서 오류가 발생했습니다."),
     THIRD_PARTY_AUTH_ERROR(HttpStatus.UNAUTHORIZED, "6007", "메시지 전송 권한이 유효하지 않습니다."),
     NOT_FOUND_NOTIFICATION(HttpStatus.BAD_REQUEST, "6008", "푸시 알람이 존재하지 않습니다."),
+    NOTIFICATION_DELETE_FAILED(HttpStatus.BAD_REQUEST, "6009", "알림을 삭제할 수 없습니다."),
+
 
     KAKAO_NO_AGREE(HttpStatus.FORBIDDEN, "6100", "API 사용 동의가 필요합니다."),
     KAKAO_OVER_QUOTA(HttpStatus.BAD_REQUEST, "6101", "API 사용 쿼터를 초과했습니다."),
-    KAKAO_INVALID_TOKEN(HttpStatus.BAD_REQUEST, "6102", "카카오 토큰이 올바르지 않습니다."),
+    KAKAO_INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "6102", "카카오 토큰이 올바르지 않습니다."),
     KAKAO_CLOSED(HttpStatus.BAD_REQUEST, "6103", "카카오 서버가 점검중입니다."),
-    KAKAO_FAILED(HttpStatus.BAD_REQUEST, "6105", "카카오 API 호출에 실패했습니다."),
-
+    KAKAO_FAILED(HttpStatus.BAD_REQUEST, "6104", "카카오 API 호출에 실패했습니다."),
+    KAKAO_UNLINK_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "6105", "카카오 연결 끊기에 실패했습니다."),
 
 
     //ETC
@@ -109,7 +111,8 @@ public enum ExceptionCodeSet {
     PARSE_EXCEPTION(HttpStatus.INTERNAL_SERVER_ERROR, "9006", "파싱 중 에러가 발생했습니다."),
     BAD_REQUEST(HttpStatus.BAD_REQUEST, "9007", "올바르지 않은 요청입니다."),
     DEVICE_TYPE_INVALID(HttpStatus.BAD_REQUEST, "9008", "디바이스 타입이 올바르지 않습니다."),
-    SEARCH_KEYWORD_INVALID(HttpStatus.BAD_REQUEST, "9009", "검색 키워드가 올바르지 않습니다.");
+    SEARCH_KEYWORD_INVALID(HttpStatus.BAD_REQUEST, "9009", "검색 키워드가 올바르지 않습니다."),
+    UUID_INVALID(HttpStatus.BAD_REQUEST, "9010", "UUID가 올바르지 않습니다."),;
 
     private final HttpStatus httpStatus;
     private final String code;
