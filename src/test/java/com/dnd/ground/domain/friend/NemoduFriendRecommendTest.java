@@ -8,6 +8,7 @@ import com.dnd.ground.domain.user.User;
 import com.dnd.ground.domain.user.UserProperty;
 import com.dnd.ground.domain.user.repository.UserRepository;
 import com.dnd.ground.domain.user.service.UserService;
+import com.dnd.ground.global.util.RequirementUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -302,6 +303,38 @@ public class NemoduFriendRecommendTest {
                 assertThat(exceptUsers.contains(info.getNickname())).isFalse();
 
                 last = idx;
+            }
+
+            if (!result.getIsLast()) {
+                map.remove("distance");
+                map.add("distance", String.valueOf(result.getOffset()));
+            }
+        } while (!result.getIsLast());
+    }
+
+    @Test
+    @DisplayName("네모두 추천 친구: 삭제된 회원 제외")
+    void recommendNemoduFriend_No_DeleteUser() throws Exception {
+        System.out.println(">>> 네모두 추천 친구: 삭제된 회원 제외 <<< 테스트 START");
+
+        //GIVEN
+        String deleteUserNickname = RequirementUtil.getDeleteUser().getNickname();
+
+        MultiValueMap<String, String> map = new LinkedMultiValueMap<>();
+        map.add("latitude", String.valueOf(37.333418));
+        map.add("longitude", String.valueOf(126.810133));
+        map.add("size", "10");
+
+        //WHEN + THEN (페이지 끝까지 요청 및 검사)
+        FriendResponseDto.RecommendResponse result;
+
+        do {
+            String response = request(map);
+            result = mapper.readValue(response, FriendResponseDto.RecommendResponse.class);
+
+            for (FriendResponseDto.FInfo info : result.getInfos()) {
+                System.out.println(">>>" + info.toString());
+                assertThat(info.getNickname()).isNotEqualTo(deleteUserNickname);
             }
 
             if (!result.getIsLast()) {

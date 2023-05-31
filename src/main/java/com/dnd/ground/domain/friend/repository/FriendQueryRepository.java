@@ -19,6 +19,5 @@ public interface FriendQueryRepository {
     List<User> findFriends(FriendCondition condition);
     List<FriendPageInfo> findFriendPage(FriendCondition condition);
     List<FriendPageInfo> findWaitFriendPage(FriendCondition condition);
-    List<FriendRecommendPageInfo> recommendFriends(User user, Location location, Double offset, int size);
     List<FriendRecommendPageInfo> recommendFriends(Location location, Double offset, int size);
 }

@@ -4,6 +4,7 @@ import com.dnd.ground.domain.friend.FriendStatus;
 import com.dnd.ground.domain.friend.dto.*;
 import com.dnd.ground.domain.matrix.dto.Location;
 import com.dnd.ground.domain.user.User;
+import com.dnd.ground.global.util.RequirementUtil;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
@@ -19,8 +20,8 @@ import static com.dnd.ground.domain.user.QUserProperty.userProperty;
  * @description 친구 조회 레포지토리
  * @author  박찬호
  * @since   2023.02.15
- * @updated 1. 추천 친구 쿼리 수정
- *          - 2023.05.27 박찬호
+ * @updated 1. 네모두 추천 친구에 삭제된 유저 제외 조건 추가
+ *          - 2023.05.31 박찬호
  */
 
 @RequiredArgsConstructor
@@ -54,6 +55,7 @@ public class FriendQueryRepositoryImpl implements FriendQueryRepository {
                 .where(
                         friendIdLt(condition.getOffset()),
                         userEq(condition.getUser()),
+                        friendEq(condition.getFriend()),
                         statusEq(condition.getStatus())
                 )
                 .orderBy(friend1.id.desc())
@@ -73,42 +75,8 @@ public class FriendQueryRepositoryImpl implements FriendQueryRepository {
                         friendEq(condition.getUser()),
                         statusEq(condition.getStatus())
                 )
-                .orderBy(friend1.id.asc())
+                .orderBy(friend1.id.desc())
                 .limit(condition.getSize() + 1)
-                .fetch();
-    }
-
-    @Override
-    public List<FriendRecommendPageInfo> recommendFriends(User target, Location location, Double distance, int size) {
-        return queryFactory
-                .select(new QFriendRecommendPageInfo(
-                        Expressions.stringTemplate("function('ST_DISTANCE_SPHERE', {0}, {1}, {2}, {3})",
-                                        location.getLongitude(), location.getLatitude(), user.longitude, user.latitude)
-                                .castToNum(Double.class)
-                                .as("distance"),
-                        user.nickname,
-                        user.picturePath)
-                )
-                .distinct()
-                .from(user)
-                .innerJoin(userProperty)
-                .on(user.property.eq(userProperty))
-                .leftJoin(friend1)
-                .on(
-                        friend1.user.ne(target),
-                        friend1.friend.ne(target)
-                )
-                .where(
-                        exceptMe(target),
-                        distanceGt(location, distance),
-                        userProperty.isExceptRecommend.eq(false)
-                )
-                .orderBy(Expressions.stringTemplate("function('ST_DISTANCE_SPHERE', {0}, {1}, {2}, {3})",
-                                        location.getLongitude(), location.getLatitude(),
-                                        user.longitude, user.latitude).castToNum(Double.class).asc(),
-                        user.nickname.asc()
-                )
-                .limit(size + 1)
                 .fetch();
     }
 
@@ -129,7 +97,8 @@ public class FriendQueryRepositoryImpl implements FriendQueryRepository {
                 .on(user.property.eq(userProperty))
                 .where(
                         distanceGt(location, distance),
-                        userProperty.isExceptRecommend.eq(false)
+                        userProperty.isExceptRecommend.eq(false),
+                        deleteUserNe()
                 )
                 .orderBy(Expressions.stringTemplate("function('ST_DISTANCE_SPHERE', {0}, {1}, {2}, {3})",
                                 location.getLongitude(), location.getLatitude(),
@@ -167,7 +136,7 @@ public class FriendQueryRepositoryImpl implements FriendQueryRepository {
         return id != null ? friend1.id.lt(id) : null;
     }
 
-    private BooleanExpression exceptMe(User target) {
-        return target != null ? user.ne(target) : null;
+    private BooleanExpression deleteUserNe() {
+        return user.ne(RequirementUtil.getDeleteUser());
     }
 }
