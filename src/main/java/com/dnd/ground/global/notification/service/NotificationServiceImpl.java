@@ -2,8 +2,7 @@ package com.dnd.ground.global.notification.service;
 
 import com.dnd.ground.global.exception.CommonException;
 import com.dnd.ground.global.exception.ExceptionCodeSet;
-import com.dnd.ground.global.notification.NotificationStatus;
-import com.dnd.ground.global.notification.PushNotification;
+import com.dnd.ground.global.notification.*;
 import com.dnd.ground.global.notification.dto.NotificationResponseDto;
 import com.dnd.ground.global.notification.repository.NotificationRepository;
 import lombok.RequiredArgsConstructor;
@@ -11,15 +10,15 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @description 푸시 알람 관련 서비스 클래스
  * @author  박찬호
  * @since   2023-05-13
- * @updated  1.알람함 비우기 API 구현
- *          - 2023-05-24 박찬호
+ * @updated  1.알람함 목록 조회 API 수정
+ *          - 2023-05-31 박찬호
  */
 
 @Service
@@ -29,7 +28,32 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Override
     public List<NotificationResponseDto> getNotifications(String nickname) {
-        return notificationRepository.findNotifications(nickname, PageRequest.of(0, 20));
+        List<NotificationResponseDto> response = new ArrayList<>();
+        List<PushNotification> notifications = notificationRepository.findNotifications(nickname, PageRequest.of(0, 20));
+
+        for (PushNotification notification : notifications) {
+            Map<PushNotificationParamList, String> paramMap = notification.getParams()
+                    .stream()
+                    .collect(Collectors.toMap(PushNotificationParam::getKey, PushNotificationParam::getValue));
+
+            NotificationResponseDto dto = new NotificationResponseDto(
+                    notification.getMessageId(),
+                    notification.getTitle(),
+                    notification.getContent(),
+                    notification.getIsRead(),
+                    NotificationMessage.getMessage(paramMap.getOrDefault(PushNotificationParamList.ACTION, NotificationMessage.DEFAULT.name())),
+                    notification.getReserved());
+
+            if (notification.getType() == PushNotificationType.CHALLENGE) {
+                dto.setChallengeData(new NotificationResponseDto.NotificationChallengeData(
+                        paramMap.getOrDefault(PushNotificationParamList.CHALLENGE_UUID, null))
+                );
+            }
+
+            response.add(dto);
+        }
+
+        return response;
     }
 
     /*푸시 알람 읽기 (요청이 들어오면 항상 true)*/
