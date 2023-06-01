@@ -5,6 +5,7 @@ import com.dnd.ground.domain.exerciseRecord.Repository.ExerciseRecordRepository;
 import com.dnd.ground.domain.exerciseRecord.dto.RecordCreateDto;
 import com.dnd.ground.domain.matrix.Matrix;
 import com.dnd.ground.domain.matrix.dto.Location;
+import com.dnd.ground.domain.matrix.repository.MatrixRepository;
 import com.dnd.ground.domain.user.User;
 import com.dnd.ground.domain.user.repository.UserRepository;
 import com.dnd.ground.global.exception.ExceptionCodeSet;
@@ -20,9 +21,8 @@ import java.util.*;
  * @description 운동 기록 서비스 클래스
  * @author  박찬호
  * @since   2022-08-01
- * @updated 1.기록 저장 API 수정(반환 타입 수정 및 객체 생성 방식 변경)
- *          2.메소드 이름 변경 (end -> createExerciseRecord)
- *          2023-03-05 박찬호
+ * @updated 1. 회원 탈퇴 API 구현 - 운동 기록 및 영역 삭제
+ *          - 2023.05.22 박찬호
  */
 
 @Service
@@ -31,6 +31,7 @@ import java.util.*;
 public class ExerciseRecordServiceImpl implements ExerciseRecordService {
 
     private final ExerciseRecordRepository exerciseRecordRepository;
+    private final MatrixRepository matrixRepository;
     private final UserRepository userRepository;
 
     // 운동 기록 생성
@@ -62,5 +63,12 @@ public class ExerciseRecordServiceImpl implements ExerciseRecordService {
         user.updatePosition(lastPosition.getLatitude(), lastPosition.getLongitude());
 
         return true;
+    }
+
+    @Transactional
+    public void deleteRecordAll(User user) {
+        List<ExerciseRecord> records = exerciseRecordRepository.findRecordsByUser(user);
+        matrixRepository.deleteAllByRecord(records);
+        exerciseRecordRepository.deleteAll(records);
     }
 }

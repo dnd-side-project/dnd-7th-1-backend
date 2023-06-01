@@ -1,15 +1,25 @@
 package com.dnd.ground.global.auth.service;
 
+import com.amazonaws.util.StringUtils;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.interfaces.DecodedJWT;
+import com.dnd.ground.domain.challenge.service.ChallengeService;
+import com.dnd.ground.domain.exerciseRecord.service.ExerciseRecordService;
 import com.dnd.ground.domain.friend.service.FriendService;
+import com.dnd.ground.domain.user.LoginType;
 import com.dnd.ground.domain.user.User;
 import com.dnd.ground.domain.user.UserProperty;
+import com.dnd.ground.domain.user.repository.UserPropertyRepository;
+import com.dnd.ground.global.notification.cache.PadFcmToken;
+import com.dnd.ground.global.notification.repository.FcmTokenRepository;
 import com.dnd.ground.global.auth.UserClaim;
 import com.dnd.ground.domain.user.repository.UserRepository;
+import com.dnd.ground.global.auth.dto.FcmTokenUpdateDto;
 import com.dnd.ground.global.auth.dto.UserSignDto;
 import com.dnd.ground.global.exception.*;
+import com.dnd.ground.global.notification.cache.PhoneFcmToken;
+import com.dnd.ground.global.util.DeviceType;
 import com.dnd.ground.global.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,8 +40,8 @@ import java.util.regex.Pattern;
  * @description 회원의 인증/인가 및 회원 정보 관련 서비스 구현체
  * @author  박찬호
  * @since   2022-09-07
- * @updated 1. 회원가입 이관 (SignFilter -> AuthService)
- *          - 2023.04.09 박찬호
+ * @updated 1. 회원 탈퇴 API 수정
+ *          - 2023.05.23 박찬호
  */
 
 @Slf4j
@@ -40,7 +50,13 @@ import java.util.regex.Pattern;
 public class AuthServiceImpl implements AuthService, UserDetailsService {
 
     private final UserRepository userRepository;
+    private final UserPropertyRepository userPropertyRepository;
+    private final FcmTokenRepository fcmTokenRepository;
     private final FriendService friendService;
+    private final ChallengeService challengeService;
+    private final ExerciseRecordService exerciseRecordService;
+    private final KakaoService kakaoService;
+
     @Value("${jwt.secret_key}")
     private String SECRET_KEY;
 
@@ -123,9 +139,8 @@ public class AuthServiceImpl implements AuthService, UserDetailsService {
 
             Boolean isNotification = signDto.getIsNotification();
             UserProperty property = UserProperty.builder()
-                    .fcmToken(signDto.getFcmToken())
-                    .fcmTokenUpdated(LocalDateTime.now())
                     .socialId(signDto.getSocialId())
+                    .isExceptRecommend(signDto.getIsExceptRecommend())
                     .isShowMine(true)
                     .isShowFriend(true)
                     .isPublicRecord(signDto.getIsPublicRecord())
@@ -134,6 +149,7 @@ public class AuthServiceImpl implements AuthService, UserDetailsService {
                     .notiFriendRequest(isNotification)
                     .notiFriendAccept(isNotification)
                     .notiChallengeRequest(isNotification)
+                    .notiChallengeAccept(isNotification)
                     .notiChallengeStart(isNotification)
                     .notiChallengeCancel(isNotification)
                     .notiChallengeResult(isNotification)
@@ -141,6 +157,9 @@ public class AuthServiceImpl implements AuthService, UserDetailsService {
 
             user.setUserProperty(property);
             userRepository.save(user);
+
+            if (signDto.getDeviceType() == DeviceType.PHONE) fcmTokenRepository.save(new PhoneFcmToken(nickname, signDto.getFcmToken(), 60L));
+            else if (signDto.getDeviceType() == DeviceType.PAD) fcmTokenRepository.save(new PadFcmToken(nickname, signDto.getFcmToken(), 60L));
 
             //친구 신청
             for (String friendNickname : signDto.getFriends()) {
@@ -194,5 +213,70 @@ public class AuthServiceImpl implements AuthService, UserDetailsService {
             User user = userOpt.get();
             return new UserClaim(email, user.getNickname(), user.getCreated(), user.getLoginType());
         } else throw new AuthException(ExceptionCodeSet.WRONG_TOKEN);
+    }
+
+    /*DB의 FCM 토큰 최신화*/
+    @Override
+    @Transactional
+    public ExceptionCodeSet updateFcmToken(FcmTokenUpdateDto request) {
+        if (request.getDeviceType() == DeviceType.PHONE) {
+            fcmTokenRepository.save(new PhoneFcmToken(request.getNickname(), request.getFcmToken(), 60L));
+        } else if (request.getDeviceType() == DeviceType.PAD) {
+            fcmTokenRepository.save(new PadFcmToken(request.getNickname(), request.getFcmToken(), 60L));
+        } else throw new CommonException(ExceptionCodeSet.DEVICE_TYPE_INVALID);
+
+        return ExceptionCodeSet.OK;
+    }
+
+
+    /*로그아웃*/
+    @Override
+    @Transactional
+    public ExceptionCodeSet logout(String nickname, DeviceType deviceType) {
+        fcmTokenRepository.deleteToken(nickname, deviceType);
+
+        return ExceptionCodeSet.OK;
+    }
+
+    /*회원 탈퇴*/
+    @Override
+    @Transactional
+    public ExceptionCodeSet deleteUser(String nickname, String kakaoToken, LoginType loginType) {
+        User user = userRepository.findByNicknameWithProperty(nickname)
+                .orElseThrow(() -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
+
+        deleteUser(user);
+
+        if (loginType == LoginType.KAKAO) {
+            if (StringUtils.isNullOrEmpty(kakaoToken)) throw new AuthException(ExceptionCodeSet.SOCIAL_ID_INVALID);
+
+            try {
+                kakaoService.unlink(kakaoToken, Long.parseLong(user.getProperty().getSocialId()));
+            } catch (NumberFormatException e) {
+                throw new AuthException(ExceptionCodeSet.SOCIAL_ID_INVALID);
+            }
+        }
+
+        return ExceptionCodeSet.OK;
+    }
+
+    @Override
+    @Transactional
+    public ExceptionCodeSet deleteUser(User user) {
+        //운동 기록, 영역 삭제
+        exerciseRecordService.deleteRecordAll(user);
+
+        //친구 삭제
+        friendService.deleteFriendAll(user);
+
+        //챌린지 삭제
+        challengeService.convertDeleteUser(user);
+
+        //회원정보 삭제
+        fcmTokenRepository.deleteToken(user.getNickname()); //FCM 토큰 삭제
+        userRepository.delete(user);//회원 삭제
+        userPropertyRepository.delete(user.getProperty()); //회원 정보 삭제
+
+        return ExceptionCodeSet.OK;
     }
 }

@@ -1,5 +1,7 @@
 package com.dnd.ground.global.util;
 
+import com.dnd.ground.global.exception.CommonException;
+import com.dnd.ground.global.exception.ExceptionCodeSet;
 import com.fasterxml.uuid.Generators;
 
 import java.nio.ByteBuffer;
@@ -9,9 +11,8 @@ import java.util.UUID;
  * @description UUID 성능 개선을 위한 Sequential UUID 생성기
  * @author  박찬호
  * @since   2022-08-04
- * @updated 1. 성능 개선을 위해 UUID 타입을 byte[]로 변경
- *          2. byte[] <-> String 변환용 static method 생성
- *          - 2022.03.03 박찬호
+ * @updated 1.hexToBytes() 올바르지 않은 문자열에 대한 예외 처리 추가
+ *          - 2023.05.30 박찬호
  */
 
 public class UuidUtil {
@@ -42,6 +43,9 @@ public class UuidUtil {
 
     public static byte[] hexToBytes(String uuid) {
         String sequentialUuidV1 = String.join("", uuid);
+
+        if (sequentialUuidV1.length() < 16) throw new CommonException(ExceptionCodeSet.UUID_INVALID);
+
         ByteBuffer bb = ByteBuffer.wrap(new byte[16]);
         bb.putLong(Long.parseUnsignedLong(sequentialUuidV1.substring(0, 16), 16));
         bb.putLong(Long.parseUnsignedLong(sequentialUuidV1.substring(16), 16));

@@ -13,7 +13,7 @@ import java.util.List;
  * @description 챌린지와 관련된 지도 조회 시 사용할 DTO
  * @author  박찬호
  * @since   2022-08-26
- * @updated 1. UserMapInfo에 들어가는 영역 자료형 변경(Location)
+ * @updated 1. UserMapInfo에 닉네임 필드 추가
  */
 
 public class ChallengeMapResponseDto {
@@ -29,6 +29,9 @@ public class ChallengeMapResponseDto {
     @Data
     @AllArgsConstructor
     public static class UserMapInfo {
+        @ApiModelProperty(value = "닉네임", example = "nick1")
+        private String nickname;
+
         @ApiModelProperty(value = "챌린지 색깔", example = "Red")
         private ChallengeColor color;
 

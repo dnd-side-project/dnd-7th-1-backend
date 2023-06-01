@@ -1,8 +1,11 @@
 package com.dnd.ground.domain.friend.controller;
 
+import com.dnd.ground.domain.friend.dto.FriendRecommendRequestDto;
 import com.dnd.ground.domain.friend.dto.FriendRequestDto;
 import com.dnd.ground.domain.friend.dto.FriendResponseDto;
 import com.dnd.ground.domain.friend.service.FriendService;
+import com.dnd.ground.global.exception.CommonException;
+import com.dnd.ground.global.exception.ExceptionCodeSet;
 import io.swagger.annotations.Api;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
@@ -10,15 +13,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
 import java.util.List;
 
 /**
  * @description 친구와 관련된 컨트롤러 구현체
  * @author  박찬호
  * @since   2022-08-01
- * @updated 1.친구 목록 조회 페이징 적용
- *          2.친구 요청 목록 조회 기능 구현
- *          - 2022.10.29 박찬호
+ * @updated 1.친구 삭제 벌크 API 구현
+ *          - 2023.05.17 박찬호
  */
 
 @Api(tags = "친구")
@@ -32,15 +35,14 @@ public class FriendControllerImpl implements FriendController {
 
     @GetMapping("/list")
     @Operation(summary = "친구 목록 조회", description = "닉네임을 통해 수락 상태의 친구 조회\n서버에서 15명씩 결과를 내려주고, 결과값의 isLast=false이면 경우 뒤에 친구가 더 있다는 뜻이므로, offset+1로 요청하면 됨.")
-    public ResponseEntity<FriendResponseDto> getFriends(@RequestParam("nickname") String nickname,
-                                                        @RequestParam("offset") Integer offset) {
-        return ResponseEntity.ok(friendService.getFriends(nickname, offset));
+    public ResponseEntity<FriendResponseDto> getFriends(@Valid @ModelAttribute FriendRequestDto.FriendList request) {
+        return ResponseEntity.ok(friendService.getFriends(request.getNickname(), request.getOffset(), request.getSize()));
     }
 
     @GetMapping("/receive")
     @Operation(summary = "친구 요청 목록 조회", description = "요청 대기 상태의 친구 목록 조회\n서버에서 3명씩 결과를 내려주고, 결과값의 isLast=false이면 경우 뒤에 친구가 더 있다는 뜻이므로, offset+1로 요청하면 됨.")
-    public ResponseEntity<FriendResponseDto.ReceiveRequest> getReceiveRequest(@RequestParam("nickname") String nickname, @RequestParam("offset") Integer offset) {
-        return ResponseEntity.ok(friendService.getReceiveRequest(nickname, offset));
+    public ResponseEntity<FriendResponseDto> getReceiveRequest(@Valid @ModelAttribute FriendRequestDto.FriendList request) {
+        return ResponseEntity.ok(friendService.getReceiveRequest(request.getNickname(), request.getOffset(), request.getSize()));
     }
 
     @PostMapping("/request")
@@ -61,4 +63,23 @@ public class FriendControllerImpl implements FriendController {
         return ResponseEntity.ok(friendService.deleteFriend(request.getUserNickname(), request.getFriendNickname()));
     }
 
+    @PostMapping("/delete/bulk")
+    @Operation(summary = "친구 목록 삭제(여러 개)", description = "한 명이라도 삭제가 되지 않으면, 삭제가 되지 않고 예외 처리")
+    public ResponseEntity<Boolean> deleteFriends(@RequestBody FriendRequestDto.Bulk request) {
+        return ResponseEntity.ok(friendService.deleteFriends(request.getNickname(), request.getFriends()));
+    }
+
+    @GetMapping("/recommend")
+    @Operation(summary = "네모두 추천 친구", description = "네모두 추천 친구 API\n파라미터로 넘어온 Location을 기준으로 가까운 회원을 추천함.")
+    public ResponseEntity<FriendResponseDto.RecommendResponse> recommendNemoduFriends(@ModelAttribute FriendRecommendRequestDto request) {
+        return ResponseEntity.ok().body(friendService.recommendNemoduFriends(request.getNickname(), request.getLocation(), request.getDistance(), request.getSize()));
+    }
+
+    @GetMapping("/search")
+    @Operation(summary = "친구 검색", description = "현재 ACCEPT 상태인 친구를 검색합니다.\n*두 글자 이상 검색 가능*")
+    public ResponseEntity<List<FriendResponseDto.FInfo>> searchFriend(@RequestParam("nickname") String nickname,
+                                                                      @RequestParam("keyword") String keyword) {
+        if (keyword.length() < 2) throw new CommonException(ExceptionCodeSet.SEARCH_KEYWORD_INVALID);
+        return ResponseEntity.ok().body(friendService.searchFriend(nickname, keyword));
+    }
 }

@@ -7,7 +7,7 @@ import com.dnd.ground.domain.challenge.repository.ChallengeRepository;
 import com.dnd.ground.domain.challenge.repository.UserChallengeRepository;
 import com.dnd.ground.global.batch.*;
 import com.dnd.ground.global.log.CommonLogger;
-import com.dnd.ground.global.notification.NotificationForm;
+import com.dnd.ground.global.notification.dto.NotificationForm;
 import com.dnd.ground.global.notification.NotificationMessage;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;

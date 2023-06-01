@@ -41,6 +41,7 @@ logs/
 application-dev.properties
 application-local.properties
 application-production.properties
+application-test.properties
 aws.yml
 src/main/java/com/dnd/ground/global/securityFilter/JWTDummySignFilter.java
 src/main/java/com/dnd/ground/global/securityFilter/JWTReissueAccessFilter.java

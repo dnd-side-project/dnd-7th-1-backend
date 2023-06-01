@@ -12,8 +12,9 @@ import java.util.MissingFormatArgumentException;
  * @description 푸시 알람 메시지 목록
  * @author  박찬호
  * @since   2023-03-20
- * @updated 1.메시지 속 파라미터를 파싱하는 방식 변경
- *          -2023-04-10 박찬호
+ * @updated 1.String to NotificationMessage 메소드 생성
+ *          2.DEFAULT 추가
+ *          -2023-05-31 박찬호
  */
 
 
@@ -25,6 +26,7 @@ public enum NotificationMessage {
     /**
      * 공통
      */
+    DEFAULT("", ""),
     COMMON_WEEK_START("주차 시작 알림", "기록과 챌린지를 새롭게 시작해보세요."),
     COMMON_WEEK_END("주차 종료 알림", "이번 주차 기록/챌린지가 자정에 종료돼요."),
     COMMON_REISSUE_FCM_TOKEN("FCM 토큰이 만료되었습니다.", "FCM 토큰이 만료되었습니다."),
@@ -47,6 +49,33 @@ public enum NotificationMessage {
 
     private String title;
     private String content;
+
+    public static PushNotificationType getType(NotificationMessage message) {
+        switch (message) {
+
+            case FRIEND_RECEIVED_REQUEST:
+            case FRIEND_ACCEPT:
+                return PushNotificationType.FRIEND;
+            case CHALLENGE_RECEIVED_REQUEST:
+            case CHALLENGE_ACCEPTED:
+            case CHALLENGE_START_SOON:
+            case CHALLENGE_CANCELED:
+            case CHALLENGE_RESULT:
+                return PushNotificationType.CHALLENGE;
+            case COMMON_WEEK_START:
+            case COMMON_WEEK_END:
+            case COMMON_REISSUE_FCM_TOKEN:
+            default:
+                return PushNotificationType.COMMON;
+        }
+    }
+
+    public static NotificationMessage getMessage(String name) {
+        for (NotificationMessage m : NotificationMessage.values()) {
+            if (m.name().equals(name)) return m;
+        }
+        return DEFAULT;
+    }
 
     public String getTitle(List<String> titleParams) {
         return parse(this.title, titleParams);

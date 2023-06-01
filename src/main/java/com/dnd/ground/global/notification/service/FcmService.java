@@ -1,12 +1,12 @@
-package com.dnd.ground.global.notification;
+package com.dnd.ground.global.notification.service;
 
 import com.dnd.ground.domain.user.User;
-import com.dnd.ground.domain.user.UserProperty;
-import com.dnd.ground.domain.user.repository.UserPropertyRepository;
-import com.dnd.ground.domain.user.repository.UserRepository;
-import com.dnd.ground.global.exception.ExceptionCodeSet;
-import com.dnd.ground.global.exception.UserException;
 import com.dnd.ground.global.log.CommonLogger;
+import com.dnd.ground.global.notification.*;
+import com.dnd.ground.global.notification.dto.NotificationForm;
+import com.dnd.ground.global.notification.dto.UserMsgDto;
+import com.dnd.ground.global.notification.repository.FcmTokenRepository;
+import com.dnd.ground.global.notification.repository.NotificationRepository;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
@@ -16,7 +16,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.event.EventListener;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -32,23 +31,17 @@ import java.util.stream.Collectors;
  * @description 푸시 알람 서비스 클래스
  * @author  박찬호
  * @since   2023-03-17
- * @updated 1.PushNotification 객체를 활용해서 각 메소드간 데이터 전달  -> 엔티티가 DTO 역할을 같이 해서 좋지 않은 코드일 수 있다.
- *                                                              비슷한 파라미터가 많고, 똑같은 DTO를 생성하는 것도 복잡도만 올라간다고 판단.
- *                                                              예약 알람까지 개발 후 개선 예정
- *          2.메시지 전처리, 전송, 재전송 메소드 개선
- *          3.FCM 토큰 재발급 요청 메소드 추가
- *          - 2023-05-05 박찬호
+ * @updated 1.메시지 구성 방식 및 재발급 로직 변경
+ *          - 2023-05-11 박찬호
  */
 
 @Service
 @Async("notification")
 @Slf4j
-public class NotificationService {
+public class FcmService {
     private final CommonLogger logger;
     private final NotificationRepository notificationRepository;
-    private final UserRepository userRepository;
-    private final UserPropertyRepository userPropertyRepository;
-    private final RedisTemplate<String, String> redisTemplate;
+    private final FcmTokenRepository fcmTokenRepository;
     private final Random random = new Random();
     private static final String DATA_PARAM_ACTION = "action";
     private static final String DATA_PARAM_MESSAGE_ID = "message_id";
@@ -59,15 +52,11 @@ public class NotificationService {
     private static final int MAX_RETIRES = 5;
     private static final int BASE_SLEEP_TIME = 60000;
 
-    public NotificationService(NotificationRepository notificationRepository,
-                               UserRepository userRepository,
-                               UserPropertyRepository userPropertyRepository,
-                               RedisTemplate<String, String> redisTemplate,
-                               @Qualifier("notificationLogger") CommonLogger logger) {
+    public FcmService(NotificationRepository notificationRepository,
+                      FcmTokenRepository fcmTokenRepository,
+                      @Qualifier("notificationLogger") CommonLogger logger) {
         this.notificationRepository = notificationRepository;
-        this.userRepository = userRepository;
-        this.userPropertyRepository = userPropertyRepository;
-        this.redisTemplate = redisTemplate;
+        this.fcmTokenRepository = fcmTokenRepository;
         this.logger = logger;
     }
 
@@ -99,36 +88,15 @@ public class NotificationService {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void messageInit(NotificationForm form) {
         List<User> users = form.getUsers();
+        if (users.isEmpty()) return;
+
         LocalDateTime created = form.getCreated() != null ? form.getCreated() : LocalDateTime.now();
         LocalDateTime reserved = form.getReserved() != null ? form.getReserved() : LocalDateTime.now();
-
         NotificationMessage message = form.getMessage();
-        if (message == null) {
-            logger.errorWrite("메시지가 존재하지 않습니다.");
-            return;
-        }
+        PushNotificationType type = NotificationMessage.getType(message);
 
         Map<String, String> data = form.getData() != null ? form.getData() : new HashMap<>();
         data.put(DATA_PARAM_ACTION, message.name());
-
-        //트랜잭션 분리에 따른 UserProperty 프록시 확인 및 필터 확인
-        List<User> exceptUsers = new ArrayList<>();
-        for (User user : users) {
-            if (user.getProperty().getFcmToken() == null) {
-                Optional<UserProperty> userPropertyOpt = userPropertyRepository.findByNickname(user.getNickname());
-                if (userPropertyOpt.isPresent()) {
-                    user.setUserProperty(userPropertyOpt.get());
-                } else {
-                    logger.errorWrite(String.format("회원 정보 조회에 실패했습니다. | 닉네임:%s", user.getNickname()));
-                    return;
-                }
-            }
-
-            if (!user.getProperty().checkNotiFilter(message)) exceptUsers.add(user);
-        }
-
-        users.removeAll(exceptUsers);
-        if (users.isEmpty()) return;
 
         /*메시지 구성*/
         String title;
@@ -154,7 +122,7 @@ public class NotificationService {
         }
 
         for (User user : users) {
-            PushNotification notification = new PushNotification(getMessageId(), title, content, created, reserved, NotificationStatus.WAIT, user.getNickname());
+            PushNotification notification = new PushNotification(getMessageId(), title, content, created, reserved, NotificationStatus.WAIT, user.getNickname(), type);
             notification.setParams(params);
             notifications.add(notification);
         }
@@ -170,22 +138,27 @@ public class NotificationService {
 
     private void send(List<PushNotification> notifications) {
         List<Message> messages = new ArrayList<>();
-        for (PushNotification pn : notifications) {
-            String fcmToken = (String) redisTemplate.opsForHash().get("fcm:" + pn.getNickname(), "fcmToken");
-            if (fcmToken == null) {
-                fcmToken = userPropertyRepository.findByNickname(pn.getNickname())
-                        .orElseThrow(() -> new UserException(ExceptionCodeSet.USER_NOT_FOUND))
-                        .getFcmToken();
-            }
 
-            messages.add(
-                    Message.builder()
-                            .setNotification(new Notification(pn.getTitle(), pn.getContent()))
-                            .setToken(fcmToken)
-                            .putAllData(pn.getParamMap())
-                            .putData(DATA_PARAM_MESSAGE_ID, pn.getMessageId())
-                            .build()
-            );
+        for (PushNotification pn : notifications) {
+            List<String> tokens = fcmTokenRepository.findAllTokens(pn.getNickname());
+            for (String token : tokens) {
+                messages.add(
+                        Message.builder()
+                                .setNotification(new Notification(pn.getTitle(), pn.getContent()))
+                                .setToken(token)
+                                .putAllData(pn.getParamMap())
+                                .putData(DATA_PARAM_MESSAGE_ID, pn.getMessageId())
+                                .build()
+                );
+            }
+        }
+
+        if (messages.isEmpty()) {
+            notifications.forEach(n -> {
+                logger.errorWrite(String.format("메시지가 생성되지 않아 푸시 알람 전송에 실패했습니다: 닉네임:%s", n.getNickname()));
+                n.updateStatus(NotificationStatus.FAIL);
+            });
+            return;
         }
 
         /*메시지 전송 시도*/
@@ -211,11 +184,15 @@ public class NotificationService {
                         .map(PushNotification::getNickname)
                         .collect(Collectors.toList());
 
-                userRepository.findAllByNickname(nicknames)
-                        .forEach(NotificationService::requestReissueFCMToken);
+                for (String nickname : nicknames) {
+                    List<String> tokens = fcmTokenRepository.findAllTokens(nickname);
+                    for (String token : tokens) {
+                        requestReissueFCMToken(nickname, token);
+                    }
+                }
             } else {
                 //발송 실패
-                logger.errorWrite(String.format("푸시 알람 전송에 실패했습니다. 시간:%s 에러코드:%s", LocalDateTime.now().toString(), e.getErrorCode()));
+                logger.errorWrite(String.format("푸시 알람 전송에 실패했습니다. 시간:%s 에러코드:%s", LocalDateTime.now(), e.getErrorCode()));
                 notifications.forEach(n -> {
                             n.updateStatus(NotificationStatus.FAIL);
                             notificationRepository.save(n);
@@ -278,11 +255,15 @@ public class NotificationService {
                             .map(UserMsgDto::getNickname)
                             .collect(Collectors.toList());
 
-                    userRepository.findAllByNickname(nicknames)
-                            .forEach(NotificationService::requestReissueFCMToken);
+                    for (String nickname : nicknames) {
+                        List<String> tokens = fcmTokenRepository.findAllTokens(nickname);
+                        for (String token : tokens) {
+                            requestReissueFCMToken(nickname, token);
+                        }
+                    }
                 } else {
                     //전송 실패
-                    logger.errorWrite(String.format("푸시 알람 재전송에 실패했습니다. 시간:%s | 에러코드:%s", LocalDateTime.now().toString(), e.getErrorCode()));
+                    logger.errorWrite(String.format("푸시 알람 재전송에 실패했습니다. 시간:%s | 에러코드:%s", LocalDateTime.now(), e.getErrorCode()));
                     retryMessages.forEach(rm -> {
                         PushNotification notification = rm.getNotification();
                         notification.updateStatus(NotificationStatus.FAIL);
@@ -341,9 +322,14 @@ public class NotificationService {
     }
 
     /*FCM 토큰 재발급 요청 (Silent Message)*/
-    public static void requestReissueFCMToken(User user) {
+    public static void requestReissueFCMToken(String nickname, String token) {
+        if (token == null) {
+            log.warn("토큰이 존재하지 않습니다: {}", nickname);
+            return;
+        }
+
         Message msg = Message.builder()
-                .setToken(user.getProperty().getFcmToken())
+                .setToken(token)
                 .putData(DATA_PARAM_ACTION, NotificationMessage.COMMON_REISSUE_FCM_TOKEN.name())
                 .setApnsConfig(
                         ApnsConfig.builder()
@@ -361,8 +347,9 @@ public class NotificationService {
 
         try {
             FirebaseMessaging.getInstance().send(msg);
+            log.info("토큰 재발급 요청에 성공했습니다: {}", nickname);
         } catch (FirebaseMessagingException e) {
-            log.warn("토큰 재발급 요청에 실패했습니다. user:{}", user.getNickname());
+            log.warn("토큰 재발급 요청에 실패했습니다: {}", nickname);
         }
     }
 
