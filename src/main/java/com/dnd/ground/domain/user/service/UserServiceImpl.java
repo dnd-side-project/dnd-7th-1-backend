@@ -42,7 +42,6 @@ import org.springframework.web.multipart.MultipartFile;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -55,8 +54,8 @@ import static java.time.temporal.TemporalAdjusters.lastDayOfMonth;
  * @description 유저 서비스 클래스
  * @author 박세헌, 박찬호
  * @since 2022-08-01
- * @updated 1.회원의 알람 필터 조회 API 구현
- *          - 2023-04-17 박찬호
+ * @updated 1.친구 추천 목록 제외 필터 조회 API 구현
+ *          - 2023-05-25 박찬호
  */
 
 @Slf4j
@@ -89,10 +88,13 @@ public class UserServiceImpl implements UserService {
 
         Location location = Objects.requireNonNull(request.getCenter(), ExceptionCodeSet.EMPTY_LOCATION.getMessage());
         double spanDelta = Objects.requireNonNull(request.getSpanDelta(), ExceptionCodeSet.EMPTY_RANGE.getMessage());
+        final LocalDateTime monday = LocalDateTime.now().with(MONDAY).withHour(0).withMinute(0).withSecond(0).withNano(0);
 
         /*회원 영역 조회*/
-        LocalDateTime monday = LocalDateTime.now().with(MONDAY).withHour(0).withMinute(0).withSecond(0).withNano(0);
-        List<Location> userMatricesThisWeek = matrixRepository.findMatrixListDistinct(new MatrixCond(user, location, spanDelta, monday, LocalDateTime.now()));
+        List<Location> userMatricesThisWeek = null;
+        if (user.getProperty().getIsShowMine()) {
+            userMatricesThisWeek = matrixRepository.findMatrixListDistinct(new MatrixCond(user, location, spanDelta, monday, LocalDateTime.now()));
+        }
 
         UserResponseDto.UserMatrix userMatrix  = UserResponseDto.UserMatrix.builder()
                 .nickname(user.getNickname())
@@ -116,9 +118,8 @@ public class UserServiceImpl implements UserService {
         friends.removeAll(challengeMembers); // 챌린지를 함께하는 친구 제외
 
         //친구, 챌린지 멤버의 영역 한 번에 조회
-        Set<User> friendsMembers = new HashSet<>();
-        friendsMembers.addAll(challengeMembers);
-        friendsMembers.addAll(friends);
+        Set<User> friendsMembers = new HashSet<>(challengeMembers);
+        if (user.getProperty().getIsShowFriend()) friendsMembers.addAll(friends);
         Map<User, List<Location>> usersMatrix = matrixRepository.findMatrixMapDistinct(new MatrixCond(friendsMembers, location, spanDelta, monday, LocalDateTime.now()));
         /*----------*/
 
@@ -132,7 +133,7 @@ public class UserServiceImpl implements UserService {
                             .latitude(friend.getLatitude())
                             .longitude(friend.getLongitude())
                             .picturePath(friend.getPicturePath())
-                            .matrices(usersMatrix.get(friend))
+                            .matrices(friend.getProperty().getIsPublicRecord() ? usersMatrix.get(friend) : null)
                             .build()
             );
         }
@@ -142,13 +143,13 @@ public class UserServiceImpl implements UserService {
         List<UserResponseDto.ChallengeMatrix> challengeMatrices = new ArrayList<>();
 
         //함께하는 챌린지 개수 조회
-        Map<User, Long> challengeCount = challengeRepository.findUsersProgressChallengeCount(user);
+        Map<User, Long> challengeCount = challengeRepository.findUserProgressChallengeCount(user);
 
         //챌린지 진행 정보 조회
         Map<User, Challenge> challengeInfo = challengeRepository.findProgressChallengesInfo(user);
 
         //챌린지 색깔 조회
-        Map<Challenge, ChallengeColor>  challengesColor = challengeRepository.findChallengesColor(new ChallengeCond(user, ChallengeStatus.PROGRESS));
+        Map<Challenge, ChallengeColor>  challengesColor = challengeRepository.findChallengesColor(new ChallengeCond(user, List.of(ChallengeStatus.PROGRESS)));
 
         for (User member : challengeMembers) {
 
@@ -260,35 +261,17 @@ public class UserServiceImpl implements UserService {
 
         // 활동 내역 정보
         for (ExerciseRecord exerciseRecord : record) {
-
-            // 운동 시작 시간 formatting
-            String started = exerciseRecord.getStarted().format(DateTimeFormatter.ofPattern("MM월 dd일 E요일 HH:mm").withLocale(Locale.forLanguageTag("ko")));
-
-            // 운동 시간 formatting
-            Integer exerciseTime = exerciseRecord.getExerciseTime();
-            String time = "";
-
-            if (exerciseTime < 60) {
-                time = Integer.toString(exerciseTime) + "초";
-            } else {
-                time = Integer.toString(exerciseTime / 60) + "분";
-            }
-
-            activityRecords.add(RecordResponseDto.activityRecord
-                    .builder()
+            activityRecords.add(RecordResponseDto.activityRecord.builder()
                     .recordId(exerciseRecord.getId())
                     .matrixNumber((long) exerciseRecord.getMatrices().size())
                     .stepCount(exerciseRecord.getStepCount())
                     .distance(exerciseRecord.getDistance())
-                    .exerciseTime(time)
-                    .started(started)
+                    .exerciseTime(exerciseRecord.getExerciseTime())
+                    .started(exerciseRecord.getStarted())
                     .build());
         }
 
-        return UserResponseDto.ActivityRecordResponseDto
-                .builder()
-                .activityRecords(activityRecords)
-                .build();
+        return new UserResponseDto.ActivityRecordResponseDto(activityRecords);
     }
 
     /* 나의 운동기록에 대한 정보 조회 */
@@ -296,36 +279,17 @@ public class UserServiceImpl implements UserService {
         ExerciseRecord exerciseRecord = exerciseRecordRepository.findById(exerciseId).orElseThrow(
                 () -> new ExerciseRecordException(ExceptionCodeSet.RECORD_NOT_FOUND));
 
-        // 운동 시작, 끝 시간 formatting
-        String date = exerciseRecord.getStarted().format(DateTimeFormatter.ofPattern("MM월 dd일 E요일").withLocale(Locale.forLanguageTag("ko")));
-        String started = exerciseRecord.getStarted().format(DateTimeFormatter.ofPattern("HH:mm"));
-        String ended = exerciseRecord.getEnded().format(DateTimeFormatter.ofPattern("HH:mm"));
-
-        // 운동 시간 formatting
-        Integer exerciseTime = exerciseRecord.getExerciseTime();
-        int minute = exerciseTime / 60;
-        int second = exerciseTime % 60;
-        String time;
-
-        // 10초 미만이라면 앞에 0하나 붙여주기
-        if (Integer.toString(second).length() == 1) {
-            time = minute + ":0" + second;
-        } else {
-            time = minute + ":" + second;
-        }
-
         // 해당 운동 기록이 참여한 챌린지들 조회
         List<ChallengeResponseDto.CInfoRes> challenges = challengeService.findChallengeByRecord(exerciseRecord);
 
-        return RecordResponseDto.EInfo
-                .builder()
+        return RecordResponseDto.EInfo.builder()
                 .recordId(exerciseRecord.getId())
-                .date(date)
-                .started(started)
-                .ended(ended)
-                .matrixNumber((long) exerciseRecord.getMatrices().size())
+                .date(exerciseRecord.getStarted())
+                .started(exerciseRecord.getStarted())
+                .ended(exerciseRecord.getEnded())
+                .matrixNumber(exerciseRecord.getMatrices().size())
                 .distance(exerciseRecord.getDistance())
-                .exerciseTime(time)
+                .exerciseTime(exerciseRecord.getExerciseTime())
                 .stepCount(exerciseRecord.getStepCount())
                 .message(exerciseRecord.getMessage())
                 .matrices(matrixRepository.findMatrixListDistinct(new MatrixCond(exerciseRecord.getUser(), exerciseRecord.getStarted(), exerciseRecord.getEnded())))
@@ -335,13 +299,12 @@ public class UserServiceImpl implements UserService {
 
     /* 상세 지도 보기 */
     public UserResponseDto.DetailMap getDetailMap(Long recordId) {
-        // 운동 기록 찾기
-        ExerciseRecord exerciseRecord = exerciseRecordRepository.findById(recordId).orElseThrow(
-                () -> new ExerciseRecordException(ExceptionCodeSet.RECORD_NOT_FOUND));
-        // 유저 찾기
-        User user = userRepository.findByExerciseRecord(exerciseRecord).orElseThrow(
-                () -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
-        // 운동기록의 칸 찾기
+        ExerciseRecord exerciseRecord = exerciseRecordRepository.findById(recordId)
+                .orElseThrow(() -> new ExerciseRecordException(ExceptionCodeSet.RECORD_NOT_FOUND));
+
+        User user = userRepository.findByExerciseRecord(exerciseRecord)
+                .orElseThrow(() -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
+
         List<Location> matrices = matrixRepository.findMatrixListDistinct(new MatrixCond(user, exerciseRecord.getStarted(), exerciseRecord.getEnded()));
 
         return new UserResponseDto.DetailMap(user.getLatitude(), user.getLongitude(), matrices, user.getPicturePath());
@@ -371,11 +334,29 @@ public class UserServiceImpl implements UserService {
                 .changeFilterRecord();
     }
 
+    /*필터 변경: 친구 추천 목록 제외*/
+    @Transactional
+    public Boolean changeFilterExceptRecommend(String nickname) {
+        return userPropertyRepository.findByNickname(nickname)
+                .orElseThrow(() -> new UserException(ExceptionCodeSet.USER_NOT_FOUND))
+                .changeFilterExceptRecommend();
+    }
+
+    /*필터 변경: 푸시 알람*/
     @Transactional
     public Boolean changeFilterNotification(UserRequestDto.NotificationFilter request) {
         return userPropertyRepository.findByNickname(request.getNickname())
                 .orElseThrow(() -> new UserException(ExceptionCodeSet.USER_NOT_FOUND))
                 .changeFilterNotification(request.getNotification());
+    }
+
+    /*필터 조회: 친구 추천 제외*/
+    public UserResponseDto.Filter getFilterExceptRecommend(String nickname) {
+        return new UserResponseDto.Filter(
+                userPropertyRepository.findByNickname(nickname)
+                .orElseThrow(() -> new UserException(ExceptionCodeSet.USER_NOT_FOUND))
+                .getIsExceptRecommend()
+        );
     }
 
     /* 운동 기록의 상세 메시지 수정 */
@@ -401,8 +382,8 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
 
         String intro = requestDto.getIntro();
-        String pictureName = user.getPictureName();
-        String picturePath = user.getPicturePath();
+        String pictureName;
+        String picturePath;
 
         // 기본 이미지로 변경
         if (requestDto.getIsBasic()) {
@@ -410,14 +391,15 @@ public class UserServiceImpl implements UserService {
             picturePath = DEFAULT_PATH;
             if (!user.getPictureName().equals(pictureName)) amazonS3Service.deleteFile(user.getPictureName());
         } else {
-            // 기본 이미지가 아닌 유저의 사진으로 변경 (프로필 사진 이름: 닉네임+카카오ID (Ex. NickA18345)
-            if (!file.isEmpty()) {
-                if (!user.getPictureName().equals(DEFAULT_NAME)) amazonS3Service.deleteFile(user.getPictureName());
-                Map<String, String> fileInfo = amazonS3Service.uploadToS3(file, "user/profile", user.getEmail() + UserClaim.changeCreatedToLong(user.getCreated()));
-                pictureName = fileInfo.get("fileName");
-                picturePath = fileInfo.get("filePath");
-            } else throw new UserException(ExceptionCodeSet.EMPTY_FILE);
+            // 기본 이미지가 아닌 유저의 사진으로 변경 (프로필 사진 이름: 이메일+회원가입 시간 (Ex. abc@gmail.com123455)
+            if (file.isEmpty()) throw new UserException(ExceptionCodeSet.EMPTY_FILE);
+
+            if (!user.getPictureName().equals(DEFAULT_NAME)) amazonS3Service.deleteFile(user.getPictureName());
+            Map<String, String> fileInfo = amazonS3Service.uploadToS3(file, "user/profile", user.getEmail() + UserClaim.changeCreatedToLong(user.getCreated()));
+            pictureName = fileInfo.get("fileName");
+            picturePath = fileInfo.get("filePath");
         }
+
         user.updateProfile(editNick, intro, pictureName, picturePath);
 
         return new UserResponseDto.UInfo(editNick, picturePath);
@@ -450,6 +432,17 @@ public class UserServiceImpl implements UserService {
                 .mail(user.getEmail())
                 .picturePath(user.getPicturePath())
                 .build();
+    }
+
+    /*프로필 사진 조회*/
+    @Override
+    public UserResponseDto.UInfo getPicture(String nickname) {
+        return new UserResponseDto.UInfo(
+                nickname,
+                userRepository.findByNickname(nickname)
+                        .orElseThrow(() -> new UserException(ExceptionCodeSet.USER_NOT_FOUND))
+                        .getPicturePath()
+        );
     }
 
     /*회원 알람 목록 조회*/

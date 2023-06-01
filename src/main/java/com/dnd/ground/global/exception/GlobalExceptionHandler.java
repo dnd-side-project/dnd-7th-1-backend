@@ -17,9 +17,9 @@ import java.util.stream.Collectors;
  * @author 박찬호
  * @description 전역 예외 처리를 위한 Advice 클래스
  * @since 2022-08-24
- * @updated 1.예외처리 리팩토링에 따른 Response 변경
- *          2.각 패키지별 예외 처리 및 로깅 방식 변경
- *          - 2022.12.03 박찬호
+ * @updated 1 카카오 예외에 대한 핸들러 추가
+ * @note 코드 정리 필요
+ *          - 2023.05.19 박찬호
  *
  */
 
@@ -66,13 +66,35 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(ChallengeException.class)
     public ResponseEntity<ErrorResponse> handleChallengeException(ChallengeException e) {
         //4500 초과는 회원-챌린지 간 예외사항
+        ExceptionCodeSet exceptionCode = e.getExceptionCode();
         if (Integer.parseInt(e.getCode()) > 4500) {
             log.error("Challenge exceed exception: Code:{}, Message:{}, StackTrace:{}", e.getCode(), e.getMessage(), e.fewStackTrace());
-            return makeUCResponseFormat(e.getExceptionCode(), e.getNickname(), e.fewStackTrace());
+            if (e.getNicknameList() != null)
+                return makeUCResponseFormat(exceptionCode, e.getNickname(), e.fewStackTrace());
+            else
+                return ResponseEntity.status(exceptionCode.getHttpStatus())
+                        .body(ErrorResponse.builder()
+                                .code(exceptionCode.getCode())
+                                .message(exceptionCode.getMessage())
+                                .nicknameList(e.getNicknameList())
+                                .trace(e.fewStackTrace())
+                                .build());
         } else {
             log.error("Challenge exception: Code:{}, Message:{}, StackTrace:{}", e.getCode(), e.getMessage(), e.fewStackTrace());
-            return makeResponseFormat(e.getExceptionCode(), e.fewStackTrace());
+            return makeResponseFormat(exceptionCode, e.fewStackTrace());
         }
+    }
+
+    @ExceptionHandler(ExerciseRecordException.class)
+    public ResponseEntity<ErrorResponse> handleExerciseRecordException(ExerciseRecordException e) {
+        log.error("ExerciseRecord exception: Code:{}, Message:{}, StackTrace:{}", e.getCode(), e.getMessage(), e.fewStackTrace());
+        return makeResponseFormat(e.getExceptionCode(), e.fewStackTrace());
+    }
+
+    @ExceptionHandler(KakaoException.class)
+    public ResponseEntity<ErrorResponse> handleCommonException(KakaoException e) {
+        log.error("WebClientException: Code:{} | message:{}", e.getCode(), e.getMessage());
+        return makeResponseFormat(e.getExceptionCode(), null);
     }
 
     //Default Exception
@@ -85,9 +107,16 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(NullPointerException.class)
     public ResponseEntity<ErrorResponse> handleNullPointerException(NullPointerException e) {
+        ExceptionCodeSet exceptionByMsg = ExceptionCodeSet.findExceptionByMsg(e.getMessage());
         List<String> trace = getFewTrace(e.getStackTrace());
-        log.error("NullPointException: Code:{}, StackTrace:{}", ExceptionCodeSet.NULL_POINTER_ERROR.getCode(), trace);
-        return makeResponseFormat(ExceptionCodeSet.NULL_POINTER_ERROR, trace);
+
+        if (exceptionByMsg != null) {
+            log.error("NullPointException: Code:{}, StackTrace:{}", exceptionByMsg.getCode(), trace);
+            return makeResponseFormat(exceptionByMsg, trace);
+        } else {
+            log.error("NullPointException: Code:{}, StackTrace:{}", ExceptionCodeSet.NULL_POINTER_ERROR.getCode(), trace);
+            return makeResponseFormat(ExceptionCodeSet.NULL_POINTER_ERROR, trace);
+        }
     }
 
     @ExceptionHandler(WebClientException.class)

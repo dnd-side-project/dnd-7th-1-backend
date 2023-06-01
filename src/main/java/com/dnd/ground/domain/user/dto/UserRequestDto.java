@@ -21,7 +21,6 @@ import java.time.LocalDateTime;
  *          - 2023-04-13 박찬호
  */
 
-@Data
 public class UserRequestDto {
 
     @Getter

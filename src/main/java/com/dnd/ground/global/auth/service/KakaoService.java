@@ -1,19 +1,26 @@
 package com.dnd.ground.global.auth.service;
 
-import com.dnd.ground.domain.friend.FriendStatus;
-import com.dnd.ground.domain.friend.service.FriendService;
+import com.amazonaws.util.StringUtils;
+import com.dnd.ground.domain.friend.Friend;
+import com.dnd.ground.domain.friend.repository.FriendRepository;
 import com.dnd.ground.domain.user.User;
-import com.dnd.ground.domain.user.dto.KakaoDto;
+import com.dnd.ground.global.auth.dto.KakaoDto;
+import com.dnd.ground.domain.user.repository.UserPropertyRepository;
 import com.dnd.ground.global.auth.dto.SocialResponseDto;
 import com.dnd.ground.domain.user.repository.UserRepository;
+import com.dnd.ground.global.auth.vo.KakaoFriendVo;
 import com.dnd.ground.global.exception.AuthException;
 import com.dnd.ground.global.exception.ExceptionCodeSet;
+import com.dnd.ground.global.exception.KakaoException;
+import com.dnd.ground.global.exception.UserException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.json.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
@@ -21,16 +28,18 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.UriComponentsBuilder;
+import reactor.core.publisher.Mono;
 
 import javax.annotation.PostConstruct;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author 박찬호
  * @description 카카오를 비롯한 회원 정보와 관련한 서비스
  * @since 2022-08-23
- * @updated 1. 카카오 엑세스 토큰을 통한 회원정보 반환 API 생성
- *           - 2023.01.20 박찬호
+ * @updated 1.카카오 친구 목록 조회 API 수정
+ *           - 2023.05.25 박찬호
  */
 
 @RequiredArgsConstructor
@@ -39,21 +48,24 @@ import java.util.*;
 public class KakaoService {
     WebClient webClient;
     private final UserRepository userRepository;
-    private final FriendService friendService;
+    private final UserPropertyRepository userPropertyRepository;
+    private final FriendRepository friendRepository;
 
     @Value("${kakao.REST_KEY}")
-    private String REST_API_KEY;
+    private static String REST_API_KEY;
 
-    /*로컬과 배포 환경의 Redirect URI가 다른 점 확인!*/
     @Value("${kakao.REDIRECT_URI}")
-    private String REDIRECT_URI;
-    
-    private final String AUTHORIZATION = "Authorization";
-    private final String BEARER = "Bearer ";
-    private final String GRANT_TYPE = "grant_type";
-    private final String CLIENT_ID = "client_id";
-    private final String REDIRECT_URI_KEY = "redirect_uri";
-    private final String CODE = "code";
+    private static String REDIRECT_URI;
+
+    @Value("${picture.path}")
+    private static String DEFAULT_PATH;
+
+    private static final String AUTHORIZATION = "Authorization";
+    private static final String BEARER = "Bearer ";
+    private static final String GRANT_TYPE = "grant_type";
+    private static final String CLIENT_ID = "client_id";
+    private static final String REDIRECT_URI_KEY = "redirect_uri";
+    private static final String CODE = "code";
 
     @PostConstruct
     public void initWebClient() {
@@ -77,6 +89,11 @@ public class KakaoService {
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                 .body(BodyInserters.fromFormData(getTokenBody))
                 .retrieve()
+                .onStatus(HttpStatus::is4xxClientError, error -> error.bodyToMono(KakaoDto.KakaoExceptionDto.class)
+                        .flatMap(dto -> Mono.error(new KakaoException(dto)))
+                )
+                .onStatus(HttpStatus::is5xxServerError, error -> error.bodyToMono(KakaoDto.KakaoExceptionDto.class)
+                        .flatMap(dto -> Mono.error(new KakaoException(dto))))
                 .bodyToMono(KakaoDto.Token.class)
                 .block();
 
@@ -91,7 +108,7 @@ public class KakaoService {
 
     public SocialResponseDto kakaoLogin(String token) {
         KakaoDto.UserInfo userInfo = getUserInfo(token);
-        Optional<User> userOpt = userRepository.findByKakaoId(userInfo.getKakaoId());
+        Optional<User> userOpt = userRepository.findByEmail(userInfo.getEmail());
 
         boolean isSigned;
         String email = userInfo.getEmail();
@@ -118,6 +135,11 @@ public class KakaoService {
                 .uri("https://kapi.kakao.com/v1/user/access_token_info")
                 .header(AUTHORIZATION, BEARER + token)
                 .retrieve()
+                .onStatus(HttpStatus::is4xxClientError, error -> error.bodyToMono(KakaoDto.KakaoExceptionDto.class)
+                        .flatMap(dto -> Mono.error(new KakaoException(dto)))
+                )
+                .onStatus(HttpStatus::is5xxServerError, error -> error.bodyToMono(KakaoDto.KakaoExceptionDto.class)
+                        .flatMap(dto -> Mono.error(new KakaoException(dto))))
                 .bodyToMono(KakaoDto.TokenInfo.class)
                 .block();
     }
@@ -128,6 +150,11 @@ public class KakaoService {
                 .uri("https://kapi.kakao.com/v2/user/me")
                 .header(AUTHORIZATION, BEARER + token)
                 .retrieve()
+                .onStatus(HttpStatus::is4xxClientError, error -> error.bodyToMono(KakaoDto.KakaoExceptionDto.class)
+                        .flatMap(dto -> Mono.error(new KakaoException(dto)))
+                )
+                .onStatus(HttpStatus::is5xxServerError, error -> error.bodyToMono(KakaoDto.KakaoExceptionDto.class)
+                        .flatMap(dto -> Mono.error(new KakaoException(dto))))
                 .bodyToMono(String.class)
                 .block();
 
@@ -156,113 +183,98 @@ public class KakaoService {
                 .build();
     }
 
+
     /*카카오 친구 목록 조회*/
-    public KakaoDto.kakaoFriendResponse getKakaoFriends(String token, Integer offset) throws ParseException {
-        final int PAGING_NUMBER = 15;
+    public KakaoDto.KakaoFriendResponse getKakaoFriends(String targetNickname, String token, Integer offset, Integer size) {
+        KakaoDto.FriendsInfoFromKakao friendsInfoFromKakao = requestKakaoFriends(token, offset, size);
+        List<KakaoDto.KakaoFriendResponse.KakaoFriend> friends = new ArrayList<>();
 
-        //회원 조회
-        KakaoDto.UserInfo userInfo = getUserInfo(token);
-        Long kakaoId = userInfo.getKakaoId();
-        Optional<User> userOpt = userRepository.findByKakaoId(kakaoId);
+        List<String> kakaoIds = friendsInfoFromKakao.getElements().stream()
+                .map(KakaoDto.FriendsInfoFromKakao.KakaoFriendElement::getId)
+                .map(String::valueOf)
+                .collect(Collectors.toList());
 
-        //Variable setting
-        KakaoDto.kakaoFriendResponse response = new KakaoDto.kakaoFriendResponse();
-        int nextOffset = 100;
-        boolean isLast = false;
+        Map<Long, User> signedFriend = userPropertyRepository.findBySocialIds(kakaoIds)
+                .stream()
+                .collect(Collectors.toMap(KakaoFriendVo::getSocialId, KakaoFriendVo::getUser));
 
-        //친구 조회
-        KakaoDto.FriendsInfoFromKakao kakaoFriends = requestKakaoFriends(token, offset);
-        List<KakaoDto.FriendsInfoFromKakao.KakaoFriend> elements = Objects.requireNonNull(kakaoFriends).getElements();
+        //친구 제외
+        List<User> allFriends = new ArrayList<>();
+        if (targetNickname != null) {
+            User target = userRepository.findByNickname(targetNickname)
+                    .orElseThrow(() -> new UserException(ExceptionCodeSet.USER_NOT_FOUND));
 
-        //신규 유저
-        if (userOpt.isEmpty()) {
-            Loop1:
-            while (response.getFriendsInfo().size() < PAGING_NUMBER) {
-                for (KakaoDto.FriendsInfoFromKakao.KakaoFriend element : elements) {
-                    Optional<User> kakaoUserInNemoduOpt = userRepository.findByKakaoId(element.getId());
-
-                    //네모두 회원인 카카오 친구는 친구 추천에 포함
-                    if (kakaoUserInNemoduOpt.isPresent()) {
-                        User kakaoUserInNemodu = kakaoUserInNemoduOpt.get();
-                        response.getFriendsInfo().add(
-                                KakaoDto.kakaoFriendResponse.FriendsInfo.builder()
-                                        .nickname(kakaoUserInNemodu.getNickname())
-                                        .kakaoName(element.getProfile_nickname())
-                                        .status(FriendStatus.NoFriend)
-                                        .picturePath(kakaoUserInNemodu.getPicturePath())
-                                        .build()
-                        );
-                    }
-
-                    if (response.getFriendsInfo().size() >= PAGING_NUMBER || kakaoFriends.getAfter_url() == null) {
-                        break Loop1;
-                    }
-
-                    nextOffset += 100;
-                    kakaoFriends = requestKakaoFriends(token, nextOffset);
-                }
-                if (kakaoFriends.getAfter_url() == null) break;
-            }
-        } else {
-            //기존 유저
-            User user = userOpt.get();
-            Loop1:
-            while (response.getFriendsInfo().size() < PAGING_NUMBER) {
-                for (KakaoDto.FriendsInfoFromKakao.KakaoFriend kakaoFriend : elements) {
-                    Optional<User> kakaoUserInNemoduOpt = userRepository.findByKakaoId(kakaoFriend.getId());
-
-                    //네모두 회원인 카카오 친구는 친구 추천에 포함
-                    if (kakaoUserInNemoduOpt.isPresent()) {
-                        User kakaoUserInNemodu = kakaoUserInNemoduOpt.get();
-                        response.getFriendsInfo().add(
-                                KakaoDto.kakaoFriendResponse.FriendsInfo.builder()
-                                        .nickname(kakaoUserInNemodu.getNickname())
-                                        .kakaoName(kakaoFriend.getProfile_nickname())
-                                        .status(friendService.getFriendStatus(user, kakaoUserInNemodu))
-                                        .picturePath(kakaoUserInNemodu.getPicturePath())
-                                        .build()
-                        );
-                    }
-
-                    if (response.getFriendsInfo().size() >= PAGING_NUMBER || kakaoFriends.getAfter_url() == null) {
-                        break Loop1;
-                    }
-
-                    nextOffset += 100;
-                    kakaoFriends = requestKakaoFriends(token, nextOffset);
-                }
+            List<Friend> allFriendRelations = friendRepository.findAllFriends(target);
+            for (Friend friend : allFriendRelations) {
+                if (friend.getFriend() == target) allFriends.add(friend.getUser());
+                else if (friend.getUser() == target) allFriends.add(friend.getFriend());
             }
         }
 
-        //다음 URL이 없으면 마지막 페이지.
-        if (kakaoFriends.getAfter_url() == null) {
-            isLast = true;
-            nextOffset = 0;
+        for (KakaoDto.FriendsInfoFromKakao.KakaoFriendElement element : friendsInfoFromKakao.getElements()) {
+            String nickname = null;
+            boolean isSigned = false;
+            String picturePath = StringUtils.isNullOrEmpty(element.getProfile_thumbnail_image()) ? DEFAULT_PATH : element.getProfile_thumbnail_image();
+
+            User user = signedFriend.getOrDefault(element.getId(), null);
+            if (allFriends.contains(user)) continue;
+
+            if (user != null) {
+                nickname = user.getNickname();
+                isSigned = true;
+                picturePath = user.getPicturePath();
+            }
+
+            friends.add(new KakaoDto.KakaoFriendResponse.KakaoFriend(
+                    element.getUuid(),
+                    element.getProfile_nickname(),
+                    nickname,
+                    isSigned,
+                    picturePath
+            ));
         }
 
-        response.setNextOffset(nextOffset);
-        response.setSize(response.getFriendsInfo().size());
-        response.setIsLast(isLast);
-
-        return response;
+        return new KakaoDto.KakaoFriendResponse(friendsInfoFromKakao.getAfter_url() == null, friends, offset + friends.size());
     }
 
-    /*카카오 친구 목록 요청*/
-    public KakaoDto.FriendsInfoFromKakao requestKakaoFriends(String token, int offset) {
-        return webClient.get()
-                .uri(UriComponentsBuilder.newInstance()
-                        .scheme("https")
-                        .host("kapi.kakao.com")
-                        .path("/v1/api/talk/friends")
-                        .queryParam("offset", offset)
-                        .queryParam("limit", 100)
-                        .toUriString())
+    /*카카오 친구 초대 메시지 발송*/
+    public ExceptionCodeSet sendInviteMessage(String token, String uuid, String nickname) {
+        final String TEMPLATE_ID = "93844";
+
+        /*메시지 템플릿 완성 후 전처리 예정*/
+        Map<String, String> templateArgs = new HashMap<>();
+        templateArgs.put("nickname", nickname);
+
+        MultiValueMap<String, String> templateParams = new LinkedMultiValueMap<>();
+        templateParams.add("template_id", TEMPLATE_ID);
+        templateParams.add("receiver_uuids", new JSONArray(Collections.singletonList(uuid)).toString());
+        templateParams.add("template_args", new JSONObject(templateArgs).toString());
+
+
+        KakaoDto.SendMessage result = webClient.post()
+                .uri("https://kapi.kakao.com/v1/api/talk/friends/message/send")
                 .header(AUTHORIZATION, BEARER + token)
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .body(BodyInserters.fromFormData(templateParams))
                 .retrieve()
-                .bodyToMono(KakaoDto.FriendsInfoFromKakao.class)
+                .onStatus(HttpStatus::is4xxClientError, error -> error.bodyToMono(KakaoDto.KakaoExceptionDto.class)
+                        .flatMap(dto -> Mono.error(new KakaoException(dto)))
+                )
+                .onStatus(HttpStatus::is5xxServerError, error -> error.bodyToMono(KakaoDto.KakaoExceptionDto.class)
+                        .flatMap(dto -> Mono.error(new KakaoException(dto))))
+                .bodyToMono(KakaoDto.SendMessage.class)
                 .block();
+
+        if (result == null) throw new KakaoException(ExceptionCodeSet.KAKAO_FAILED);
+
+        if (result.getFailure_info() == null && result.getSuccessful_receiver_uuids()[0].equals(uuid)) {
+            return ExceptionCodeSet.OK;
+        } else {
+            return ExceptionCodeSet.KAKAO_FAILED;
+        }
     }
 
+    /*카카오 토큰 재발급*/
     public Map<String, String> reissueKakaoToken(String token) {
         MultiValueMap<String, String> reissueTokenBody = new LinkedMultiValueMap<>();
         reissueTokenBody.add(GRANT_TYPE, "refresh_token");
@@ -275,6 +287,11 @@ public class KakaoService {
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                 .body(BodyInserters.fromFormData(reissueTokenBody))
                 .retrieve()
+                .onStatus(HttpStatus::is4xxClientError, error -> error.bodyToMono(KakaoDto.KakaoExceptionDto.class)
+                        .flatMap(dto -> Mono.error(new KakaoException(dto)))
+                )
+                .onStatus(HttpStatus::is5xxServerError, error -> error.bodyToMono(KakaoDto.KakaoExceptionDto.class)
+                        .flatMap(dto -> Mono.error(new KakaoException(dto))))
                 .bodyToMono(KakaoDto.ReissueToken.class)
                 .block();
 
@@ -283,5 +300,44 @@ public class KakaoService {
         response.put("Kakao-Refresh-Token", result.getRefresh_token());
 
         return response;
+    }
+
+    /*카카오 친구 목록 요청*/
+    private KakaoDto.FriendsInfoFromKakao requestKakaoFriends(String token, int offset, int limit) {
+        return webClient.get()
+                .uri(UriComponentsBuilder.newInstance()
+                        .scheme("https")
+                        .host("kapi.kakao.com")
+                        .path("/v1/api/talk/friends")
+                        .queryParam("offset", offset)
+                        .queryParam("limit", limit)
+                        .toUriString())
+                .header(AUTHORIZATION, BEARER + token)
+                .retrieve()
+                .onStatus(HttpStatus::is4xxClientError, error -> error.bodyToMono(KakaoDto.KakaoExceptionDto.class)
+                        .flatMap(dto -> Mono.error(new KakaoException(dto)))
+                )
+                .onStatus(HttpStatus::is5xxServerError, error -> error.bodyToMono(KakaoDto.KakaoExceptionDto.class)
+                        .flatMap(dto -> Mono.error(new KakaoException(dto))))
+                .bodyToMono(KakaoDto.FriendsInfoFromKakao.class)
+                .block();
+    }
+
+    /*연결 끊기*/
+    public void unlink(String kakaoToken, long socialId) {
+        KakaoDto.KakaoUnlinkResponseDto result = webClient.post()
+                .uri("https://kapi.kakao.com/v1/user/unlink")
+                .header(AUTHORIZATION, BEARER + kakaoToken)
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .retrieve()
+                .onStatus(HttpStatus::is4xxClientError, error -> error.bodyToMono(KakaoDto.KakaoExceptionDto.class)
+                        .flatMap(dto -> Mono.error(new KakaoException(dto)))
+                )
+                .onStatus(HttpStatus::is5xxServerError, error -> error.bodyToMono(KakaoDto.KakaoExceptionDto.class)
+                        .flatMap(dto -> Mono.error(new KakaoException(dto))))
+                .bodyToMono(KakaoDto.KakaoUnlinkResponseDto.class)
+                .block();
+
+        if (result == null || result.getId() != socialId) throw new AuthException(ExceptionCodeSet.KAKAO_UNLINK_FAILED);
     }
 }

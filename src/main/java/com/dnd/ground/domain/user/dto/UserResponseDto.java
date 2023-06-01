@@ -192,7 +192,6 @@ public class UserResponseDto {
     }
 
     /* 나의 활동 기록 조회 */
-    @Builder
     @AllArgsConstructor
     @Getter
     static public class ActivityRecordResponseDto {
@@ -231,5 +230,12 @@ public class UserResponseDto {
 
         @ApiModelProperty(name = "회원 알람 필터: 챌린지 결과 알림", example = "true")
         private Boolean notiChallengeResult;
+    }
+
+    @AllArgsConstructor
+    @NoArgsConstructor
+    @Getter
+    public static class Filter {
+        private Boolean value;
     }
 }

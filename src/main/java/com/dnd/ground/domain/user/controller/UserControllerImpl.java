@@ -21,8 +21,8 @@ import org.springframework.web.multipart.MultipartFile;
  * @description 회원 관련 컨트롤러 구현체
  * @author  박세헌, 박찬호
  * @since   2022-08-02
- * @updated 1.회원의 알람 필터 조회 API 구현
- *          - 2023-04-17 박찬호
+ * @updated 1.친구 추천 목록 제외 필터 변경 API 구현
+ *          - 2023-05-23 박찬호
  */
 
 @Api(tags = "회원")
@@ -103,6 +103,12 @@ public class UserControllerImpl implements UserController {
         return ResponseEntity.ok().body(userService.changeFilterNotification(request));
     }
 
+    @PostMapping("/filter/recommend/friend")
+    @Operation(summary = "필터 변경: 친구 추천 제외", description = "'친구 추천 목록 제외' 옵션이 변경됩니다.")
+    public ResponseEntity<Boolean> changeFilterRecommendFriend(@RequestParam("nickname") String nickname) {
+        return ResponseEntity.ok().body(userService.changeFilterExceptRecommend(nickname));
+    }
+
     @GetMapping("/filter/notification")
     @Operation(summary = "회원의 알람 옵션 조회", description = "회원의 현재 옵션 정보를 반환합니다.")
     public ResponseEntity<UserResponseDto.NotificationFilters> getNotificationFilters(@RequestParam("nickname") String nickname) {
@@ -117,6 +123,12 @@ public class UserControllerImpl implements UserController {
                                                                  @RequestParam(value = "intro") String intro,
                                                                  @RequestParam(value = "isBasic") Boolean isBasic) {
         return ResponseEntity.ok().body(userService.editUserProfile(picture, new UserRequestDto.Profile(originNickname, editNickname, intro, isBasic)));
+    }
+
+    @GetMapping("/info/profile/picture")
+    @Operation(summary = "회원 프로필 사진 조회", description = "회원의 프로필 사진 조회")
+    public ResponseEntity<UserResponseDto.UInfo> getPicture(@RequestParam("nickname") String nickname) {
+        return ResponseEntity.ok().body(userService.getPicture(nickname));
     }
 
     @PostMapping("/info/activity/record/edit")

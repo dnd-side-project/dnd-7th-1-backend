@@ -8,8 +8,8 @@ import org.springframework.http.HttpStatus;
  * @description 에러 코드 구현체
  * @author  박찬호
  * @since   2022-08-24
- * @updated 1.푸시 알람 관련 에러 코드 추가
- *          -2023.04.13 박찬호
+ * @updated 1.예외 코드 생성
+ *          -2023.05.30 박찬호
  */
 
 @RequiredArgsConstructor
@@ -44,6 +44,7 @@ public enum ExceptionCodeSet {
     TOKEN_EMPTY(HttpStatus.BAD_REQUEST, "2017", "토큰이 존재하지 않습니다."),
     REFRESH_TOKEN_INVALID(HttpStatus.BAD_REQUEST, "2018", "리프레시 토큰이 유효하지 않습니다."),
     CREDENTIAL_FAIL(HttpStatus.UNAUTHORIZED, "2019", "인증에 실패했습니다."),
+    SOCIAL_ID_INVALID(HttpStatus.BAD_REQUEST, "2020", "OAuth ID가 올바르지 않습니다."),
 
 
     //친구
@@ -51,7 +52,7 @@ public enum ExceptionCodeSet {
     FRIEND_NOT_FOUND(HttpStatus.BAD_REQUEST, "3001", "해당 친구가 존재하지 않습니다."),
     FRIEND_EXCEED(HttpStatus.BAD_REQUEST, "3002", "최대 친구 수를 초과하였습니다."),
     FRIEND_RES_FAIL(HttpStatus.INTERNAL_SERVER_ERROR, "3003", "친구 요청에 대한 응답을 실패했습니다."),
-    FRIEND_FAIL_DELETE(HttpStatus.INTERNAL_SERVER_ERROR, "3004", "친구 삭제를 실패했습니다."),
+    FRIEND_FAIL_DELETE(HttpStatus.BAD_REQUEST, "3004", "친구 삭제를 실패했습니다."),
     FRIEND_DUPL(HttpStatus.BAD_REQUEST, "3005", "이미 친구입니다."),
     FRIEND_INVALID_STATUS(HttpStatus.BAD_REQUEST, "3006", "친구 상태가 올바르지 않습니다."),
 
@@ -60,7 +61,6 @@ public enum ExceptionCodeSet {
     CHALLENGE_DATE_INVALID(HttpStatus.BAD_REQUEST, "4001", "챌린지 시작 날짜는 오늘 이후부터 가능합니다."),
     CHALLENGE_INVALID(HttpStatus.BAD_REQUEST, "4002", "챌린지 정보가 올바르지 않습니다."),
     CHALLENGE_TYPE_INVALID(HttpStatus.BAD_REQUEST, "4003", "챌린지 종류가 올바르지 않습니다."),
-    CHALLENGE_UUID_INVALID(HttpStatus.BAD_REQUEST, "4004", "챌린지 UUID가 올바르지 않습니다."),
 
     //회원-챌린지
     USER_CHALLENGE_NOT_FOUND(HttpStatus.BAD_REQUEST, "4500", "챌린지에 참가하는 회원이 아닙니다."),
@@ -76,8 +76,10 @@ public enum ExceptionCodeSet {
     RANKING_CAL_FAIL(HttpStatus.INTERNAL_SERVER_ERROR, "5001", "랭킹 계산 과정에서 에러가 발생했습니다"),
     INVALID_TIME(HttpStatus.BAD_REQUEST, "5002", "시간이 올바르지 않습니다."),
     MATRIX_TYPE_INVALID(HttpStatus.BAD_REQUEST, "5003", "조회하는 영역의 회원 종류가 올바르지 않습니다."),
+    MATRIX_CENTER_EMPTY(HttpStatus.BAD_REQUEST, "5004", "CENTER 영역이 존재하지 않습니다."),
+    SPAN_DELTA_EMPTY(HttpStatus.BAD_REQUEST, "5005", "Span Delta가 존재하지 않습니다."),
 
-    //Firebase
+    //FCM, KAKAO
     UNSPECIFIED_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "6000", "예상치 못한 에러가 발생했습니다."),
     INVALID_ARGUMENT(HttpStatus.BAD_REQUEST, "6001", "메시지가 유효하지 않습니다."),
     UNREGISTERED(HttpStatus.NOT_FOUND, "6002", "토큰이 유효하지 않습니다."),
@@ -86,6 +88,17 @@ public enum ExceptionCodeSet {
     UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "6005", "FCM 서버가 불안정합니다."),
     INTERNAL(HttpStatus.INTERNAL_SERVER_ERROR, "6006", "FCM 서버에서 오류가 발생했습니다."),
     THIRD_PARTY_AUTH_ERROR(HttpStatus.UNAUTHORIZED, "6007", "메시지 전송 권한이 유효하지 않습니다."),
+    NOT_FOUND_NOTIFICATION(HttpStatus.BAD_REQUEST, "6008", "푸시 알람이 존재하지 않습니다."),
+    NOTIFICATION_DELETE_FAILED(HttpStatus.BAD_REQUEST, "6009", "알림을 삭제할 수 없습니다."),
+
+
+    KAKAO_NO_AGREE(HttpStatus.FORBIDDEN, "6100", "API 사용 동의가 필요합니다."),
+    KAKAO_OVER_QUOTA(HttpStatus.BAD_REQUEST, "6101", "API 사용 쿼터를 초과했습니다."),
+    KAKAO_INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "6102", "카카오 토큰이 올바르지 않습니다."),
+    KAKAO_CLOSED(HttpStatus.BAD_REQUEST, "6103", "카카오 서버가 점검중입니다."),
+    KAKAO_FAILED(HttpStatus.BAD_REQUEST, "6104", "카카오 API 호출에 실패했습니다."),
+    KAKAO_UNLINK_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "6105", "카카오 연결 끊기에 실패했습니다."),
+
 
     //ETC
     OK(HttpStatus.OK, "0000", "성공적으로 동작하였습니다."),
@@ -96,7 +109,10 @@ public enum ExceptionCodeSet {
     INVALID_HTTP_METHOD(HttpStatus.BAD_REQUEST, "9004", "잘못된 HTTP Method입니다."),
     WEBCLIENT_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "9005", "외부 API 통신 중 에러가 발생했습니다."),
     PARSE_EXCEPTION(HttpStatus.INTERNAL_SERVER_ERROR, "9006", "파싱 중 에러가 발생했습니다."),
-    BAD_REQUEST(HttpStatus.BAD_REQUEST, "9007", "올바르지 않은 요청입니다.");
+    BAD_REQUEST(HttpStatus.BAD_REQUEST, "9007", "올바르지 않은 요청입니다."),
+    DEVICE_TYPE_INVALID(HttpStatus.BAD_REQUEST, "9008", "디바이스 타입이 올바르지 않습니다."),
+    SEARCH_KEYWORD_INVALID(HttpStatus.BAD_REQUEST, "9009", "검색 키워드가 올바르지 않습니다."),
+    UUID_INVALID(HttpStatus.BAD_REQUEST, "9010", "UUID가 올바르지 않습니다."),;
 
     private final HttpStatus httpStatus;
     private final String code;

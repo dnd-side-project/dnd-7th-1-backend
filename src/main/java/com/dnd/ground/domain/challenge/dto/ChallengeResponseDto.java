@@ -15,15 +15,17 @@ import java.util.List;
  * @description 챌린지와 관련한 Response DTO
  * @author  박찬호
  * @since   2022-08-12
- * @updated 1. MatrixDto -> Location
- *          2023-03-01 박찬호
+ * @updated 1. @Data 어노테이션 제거
+ *          2. 챌린지 상세보기를 위한 Response DTO 이름 변경 (ProgressDetail -> Detail)
+ *          3. Detail center 필드 추가
+ *          2023-05-22 박찬호
  */
 
 
 public class ChallengeResponseDto {
 
     /*상태에 상관 없이 사용되는 챌린지 관련 공통 정보*/
-    @Data
+    @Getter
     @Builder
     @AllArgsConstructor
     static public class CInfoRes {
@@ -44,7 +46,7 @@ public class ChallengeResponseDto {
     }
 
     /*진행 대기 중 상태의 챌린지 정보*/
-    @Data
+    @Getter
     @AllArgsConstructor
     @Builder
     static public class Wait {
@@ -74,7 +76,7 @@ public class ChallengeResponseDto {
     }
 
     /*진행 중 상태의 챌린지 정보*/
-    @Data
+    @Getter
     @Builder
     static public class Progress {
         @ApiModelProperty(value="챌린지 이름", example="챌린지1")
@@ -100,7 +102,7 @@ public class ChallengeResponseDto {
     }
 
     /*진행 완료 상태의 챌린지 정보*/
-    @Data
+    @Getter
     @Builder
     static public class Done {
         @ApiModelProperty(value="챌린지 이름", example="챌린지1")
@@ -126,7 +128,7 @@ public class ChallengeResponseDto {
     }
 
     /*초대 받은 챌린지 정보*/
-    @Data
+    @Getter
     @Builder
     static public class Invite {
         @ApiModelProperty(value="챌린지 이름", example="챌린지A")
@@ -148,10 +150,10 @@ public class ChallengeResponseDto {
         private String picturePath;
     }
 
-    /*진행 중 챌린지 상세 보기*/
-    @Data
+    /*진행 중, 완 챌린지 상세 보기*/
+    @Getter
     @Builder
-    static public class ProgressDetail {
+    static public class Detail {
         @ApiModelProperty(value="챌린지 이름", example="챌린지1")
         private String name;
 
@@ -185,10 +187,16 @@ public class ChallengeResponseDto {
 
         @ApiModelProperty(value="걸음 수", example="15")
         private Integer stepCount;
+
+        @ApiModelProperty(value="영역 내 조회 기준이 되는 위도", example="37.1234")
+        private Double latitude;
+
+        @ApiModelProperty(value="영역 내 조회 기준이 되는 경도", example="127.5678")
+        private Double longitude;
     }
 
     //진행 대기 중 챌린지 상세 보기
-    @Data
+    @Getter
     @Builder
     static public class WaitDetail {
         @ApiModelProperty(value="챌린지 이름", example="챌린지1")

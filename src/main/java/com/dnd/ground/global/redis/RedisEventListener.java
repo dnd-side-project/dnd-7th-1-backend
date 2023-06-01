@@ -1,7 +1,9 @@
 package com.dnd.ground.global.redis;
 
-import com.dnd.ground.domain.user.repository.UserRepository;
 import com.dnd.ground.global.notification.NotificationService;
+import com.dnd.ground.global.notification.repository.FcmTokenRepository;
+import com.dnd.ground.global.util.DeviceType;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.connection.Message;
 import org.springframework.data.redis.connection.MessageListener;
@@ -14,29 +16,34 @@ import java.util.regex.Pattern;
  * @description Redis Expire Event Listener
  * @author  박찬호
  * @since   2023-05-04
- * @updated 1.FCM 토큰 만료에 대한 이벤트 처리 구현
- *          - 2023-05-04 박찬호
+ * @updated 1.재발급 요청 방식 변경
+ *          - 2023-05-11 박찬호
  */
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class RedisEventListener implements MessageListener {
-    public RedisEventListener(UserRepository userRepository) {
-        this.userRepository = userRepository;
-    }
-
-    private final UserRepository userRepository;
-    private static final Pattern fcmPattern = Pattern.compile("^fcm:.*$");
+    private final FcmTokenRepository fcmTokenRepository;
+    private static final Pattern fcmPattern = Pattern.compile("^fcm.*$");
 
     @Override
     public void onMessage(Message message, byte[] pattern) {
-        String msg = message.toString();
-        Matcher fcmMatcher = fcmPattern.matcher(msg);
+        Matcher fcmMatcher = fcmPattern.matcher(message.toString());
 
         if (fcmMatcher.find()) {
-            String nickname = fcmMatcher.group().split(":")[1];
-            userRepository.findByNicknameWithProperty(nickname)
-                   .ifPresentOrElse(NotificationService::requestReissueFCMToken, () -> log.warn("회원이 존재하지 않습니다."));
+            String[] keyAndValue = fcmMatcher.group().split(":");
+
+            if (keyAndValue.length != 2) {
+                log.warn("FCM 토큰 만료 이벤트의 메시지가 올바르지 않습니다: {}", message);
+                return;
+            }
+
+            String nickname = keyAndValue[1];
+            DeviceType type = DeviceType.getType(keyAndValue[0].split("_")[1]);
+
+            String token = fcmTokenRepository.findToken(nickname, type);
+            NotificationService.requestReissueFCMToken(nickname, token);
         }
     }
 }

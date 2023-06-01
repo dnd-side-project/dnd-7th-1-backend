@@ -1,5 +1,6 @@
 package com.dnd.ground.global.notification;
 
+import com.dnd.ground.domain.user.User;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -16,9 +17,8 @@ import java.util.Map;
  * @description 푸시 알람 기록용 엔티티
  * @author  박찬호
  * @since   2023-03-20
- * @updated 1.메시지에 포함된 파라미터 Map 반환 메소드 추가
- *          2.상태 변경 메소드 추가
- *          - 2023-05-05 박찬호
+ * @updated 1.대상 닉네임 -> 회원 엔티티 연관 관계 설정
+ *          - 2023-05-26 박찬호
  */
 
 @Entity
@@ -45,22 +45,37 @@ public class PushNotification {
     @Enumerated(EnumType.STRING)
     private NotificationStatus status;
 
-    @Column(name="target_nickname", nullable = false)
-    private String nickname;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+
+    @Column(name="is_read", nullable = false)
+    private Boolean isRead;
+
+    @Column(name="is_deleted", nullable = false)
+    private Boolean isDeleted;
+
+    @Column(name="type", nullable = false)
+    @Enumerated(EnumType.STRING)
+    private PushNotificationType type;
 
     @OneToMany(mappedBy = "notification", cascade = CascadeType.ALL)
     private List<PushNotificationParam> params;
 
     public PushNotification(String messageId, String title, String content,
-                            LocalDateTime created, LocalDateTime reserved, NotificationStatus status, String nickname) {
+                            LocalDateTime created, LocalDateTime reserved,
+                            NotificationStatus status, User user, PushNotificationType type) {
         this.messageId = messageId;
         this.title = title;
         this.content = content;
         this.created = created;
         this.reserved = reserved;
         this.status = status;
-        this.nickname = nickname;
+        this.user = user;
         this.params = new ArrayList<>();
+        this.type = type;
+        this.isRead = false;
+        this.isDeleted = false;
     }
 
     public void setParams(List<PushNotificationParam> params) {
@@ -72,6 +87,14 @@ public class PushNotification {
 
     public void updateStatus(NotificationStatus status) {
         this.status = status;
+    }
+
+    public void read() {
+        this.isRead = true;
+    }
+
+    public void delete() {
+        this.isDeleted = true;
     }
 
     public Map<String, String> getParamMap() {

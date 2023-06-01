@@ -6,15 +6,13 @@ import com.dnd.ground.global.notification.NotificationMessage;
 import lombok.*;
 
 import javax.persistence.*;
-import java.time.LocalDateTime;
 
 /**
  * @description 회원 정보 엔티티
  * @author  박찬호
  * @since   2023.03.20
- * @updated 1.챌린지 수락 알람 관련 필드 생성
- *          2.푸시 알람 관련 필드 변경 메소드 생성
- *           - 2023-04-13 박찬호
+ * @updated 1.친구 추천 목록 제외 필터 변경 API 구현
+ *          - 2023-05-23 박찬호
  */
 
 @Entity
@@ -31,14 +29,11 @@ public class UserProperty {
     @OneToOne(mappedBy = "property", fetch = FetchType.LAZY)
     private User user;
 
-    @Column(name = "fcm_token", nullable = false, unique = true)
-    private String fcmToken;
-
-    @Column(name = "fcm_token_updated", nullable = false)
-    private LocalDateTime fcmTokenUpdated;
-
     @Column(name = "social_id", unique = true)
     private String socialId;
+
+    @Column(name = "is_except_recommend", nullable = false)
+    private Boolean isExceptRecommend;
 
     /**
      * 메인 화면 필터
@@ -107,6 +102,12 @@ public class UserProperty {
         return this.isPublicRecord;
     }
 
+    //'친구 추천 목록 제외' 필터 변경
+    public Boolean changeFilterExceptRecommend() {
+        this.isExceptRecommend = !this.isExceptRecommend;
+        return this.isExceptRecommend;
+    }
+
     public Boolean changeFilterNotification(NotificationMessage message) {
         switch (message) {
             case COMMON_WEEK_START:
@@ -127,6 +128,31 @@ public class UserProperty {
                 return this.notiChallengeCancel = !this.notiChallengeCancel;
             case CHALLENGE_RESULT:
                 return this.notiChallengeResult = !this.notiChallengeResult;
+            default:
+                throw new UserException(ExceptionCodeSet.NOTI_INVALID_MSG);
+        }
+    }
+
+    public boolean checkNotiFilter(NotificationMessage message) {
+        switch (message) {
+            case COMMON_WEEK_START:
+                return this.notiWeekStart;
+            case COMMON_WEEK_END:
+                return this.notiWeekEnd;
+            case FRIEND_RECEIVED_REQUEST:
+                return this.notiFriendRequest;
+            case FRIEND_ACCEPT:
+                return this.notiFriendAccept;
+            case CHALLENGE_RECEIVED_REQUEST:
+                return this.notiChallengeRequest;
+            case CHALLENGE_ACCEPTED:
+                return this.notiChallengeAccept;
+            case CHALLENGE_START_SOON:
+                return this.notiChallengeStart;
+            case CHALLENGE_CANCELED:
+                return this.notiChallengeCancel;
+            case CHALLENGE_RESULT:
+                return this.notiChallengeResult;
             default:
                 throw new UserException(ExceptionCodeSet.NOTI_INVALID_MSG);
         }
